@@ -113,6 +113,14 @@
 }
 
 @media (max-width: 700px) {
+  .sidebar {
+    display: none;
+  }
+
+  .main-content {
+    width: 100%;
+  }
+
   .search-box input,
   #dish-form input,
   #dish-form select {
