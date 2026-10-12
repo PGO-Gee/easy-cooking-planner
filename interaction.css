@@ -227,3 +227,14 @@
     padding: 20px;
   }
 }
+
+
+@media print {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    color: #27342b;
+  }
+}
