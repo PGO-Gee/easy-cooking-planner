@@ -9,11 +9,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="interaction.css?v=20261012-2" />
+  <link rel="stylesheet" href="interaction.css?v=20261012-4" />
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
       <a class="brand" href="#" aria-label="Wochentisch Startseite"><span class="brand-mark">w.</span><span>wochentisch</span></a>
       <div class="side-label">DEIN BEREICH</div>
       <button class="nav-item active" data-view="week"><span class="nav-icon">▦</span> Wochenplan <span class="nav-count" id="nav-count">7</span></button>
@@ -22,9 +22,10 @@
         <div class="profile"><div class="avatar">P</div><div><b>Dein Zuhause</b><small>Persönlicher Plan</small></div><span class="dots">···</span></div>
       </div>
     </aside>
+    <button id="menu-backdrop" class="menu-backdrop" type="button" aria-label="Menü schließen" hidden></button>
 
     <main class="main-content">
-      <header class="topbar"><div class="breadcrumb">Dein Zuhause <span>/</span> <b id="crumb-view">Wochenplan</b></div><div class="top-actions"><button class="icon-button" id="help-btn" aria-label="Hilfe">?</button><div class="mini-avatar">P</div></div></header>
+      <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb">Dein Zuhause <span>/</span> <b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button" id="help-btn" aria-label="Hilfe">?</button><div class="mini-avatar">P</div></div></header>
       <section id="week-view" class="view">
         <div class="page-heading"><div><div class="eyebrow">ESSENSPLAN</div><h1>Dein Wochenplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Plane deine Gerichte für die Woche.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> Woche neu mischen</button></div>
         <div class="week-toolbar"><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorige Woche">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste Woche">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Kochideen geplant</span></span><button class="secondary-button" id="print-btn"><span>↗</span> Plan exportieren</button></div></div>
@@ -43,6 +44,6 @@
   <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label class="time-slider-label"><span class="time-label-row"><span>Zeitaufwand</span><output id="dish-time-output" for="dish-time">30 Min.</output></span><input id="dish-time" type="range" min="0" max="5" step="1" value="1"><span class="slider-scale"><span>15</span><span>30</span><span>45</span><span>60</span><span>90</span><span>120 Min.</span></span></label></div><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
   <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><div id="choose-dish-list" class="choose-list"></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20261012-1"></script>
+  <script src="app.js?v=20261012-4"></script>
 </body>
 </html>
