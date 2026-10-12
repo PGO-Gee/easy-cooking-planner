@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="interaction.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -18,7 +19,6 @@
       <button class="nav-item active" data-view="week"><span class="nav-icon">▦</span> Wochenplan <span class="nav-count" id="nav-count">7</span></button>
       <button class="nav-item" data-view="dishes"><span class="nav-icon">♡</span> Meine Gerichte <span class="nav-count" id="dish-count">12</span></button>
       <div class="side-bottom">
-        <div class="tip-card"><span class="tip-spark">✳</span><strong>Weniger grübeln,<br>mehr genießen.</strong><p>Ein guter Plan macht Platz für die schönen Dinge.</p></div>
         <div class="profile"><div class="avatar">P</div><div><b>Dein Zuhause</b><small>Persönlicher Plan</small></div><span class="dots">···</span></div>
       </div>
     </aside>
@@ -26,21 +26,22 @@
     <main class="main-content">
       <header class="topbar"><div class="breadcrumb">Dein Zuhause <span>/</span> <b id="crumb-view">Wochenplan</b></div><div class="top-actions"><button class="icon-button" id="help-btn" aria-label="Hilfe">?</button><div class="mini-avatar">P</div></div></header>
       <section id="week-view" class="view">
-        <div class="page-heading"><div><div class="eyebrow"><span class="sun">☀</span> GUT GEPLANT, GUT GEGESSEN</div><h1>Dein Wochenplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Eine entspannte Woche beginnt mit einer guten Idee fürs Abendessen.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> Woche neu mischen</button></div>
+        <div class="page-heading"><div><div class="eyebrow">ESSENSPLAN</div><h1>Dein Wochenplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Plane deine Gerichte für die Woche.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> Woche neu mischen</button></div>
         <div class="week-toolbar"><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorige Woche">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste Woche">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Kochideen geplant</span></span><button class="secondary-button" id="print-btn"><span>↗</span> Plan exportieren</button></div></div>
         <div id="calendar" class="calendar-grid"></div>
-        <div id="bottom-note" class="bottom-note"><span class="note-icon">✦</span><span><b>Ein bisschen Abwechslung tut gut.</b> Wir achten beim Mischen darauf, dass sich Hauptzutaten nicht direkt wiederholen.</span><button id="note-close" aria-label="Hinweis schließen">×</button></div>
+        <div id="bottom-note" class="bottom-note"><span>Beim Mischen werden Hauptzutaten an aufeinanderfolgenden Tagen möglichst variiert.</span><button id="note-close" aria-label="Hinweis schließen">×</button></div>
       </section>
       <section id="dishes-view" class="view hidden">
-        <div class="page-heading"><div><div class="eyebrow"><span class="sun">♡</span> DEINE LIEBLINGSKÜCHE</div><h1>Meine Gerichte<span class="heading-period"> <span id="dish-heading-count">12</span> Ideen</span></h1><p class="subheading">Sammle deine Favoriten — wir bringen sie auf den Tisch.</p></div><button id="add-dish-btn" class="primary-button"><span>＋</span> Gericht hinzufügen</button></div>
+        <div class="page-heading"><div><div class="eyebrow">GERICHTE</div><h1>Meine Gerichte<span class="heading-period"> <span id="dish-heading-count">12</span> Ideen</span></h1><p class="subheading">Verwalte deine Gerichte für die Wochenplanung.</p></div><button id="add-dish-btn" class="primary-button"><span>＋</span> Gericht hinzufügen</button></div>
         <div class="dish-toolbar"><div class="search-box"><span>⌕</span><input id="search-dishes" placeholder="Gericht suchen …" /></div><div class="toolbar-actions"><button id="import-btn" class="secondary-button"><span>↓</span> Importieren</button><button id="export-btn" class="secondary-button"><span>↑</span> Exportieren</button><input type="file" id="import-file" accept="application/json,.json" hidden></div></div>
         <div id="dish-list" class="dish-list"></div>
-        <div class="starter-tip"><span>✳</span><div><b>Deine Liste, deine Küche.</b><p>Füge Gerichte hinzu, die du gerne kochst. Ein paar Ideen fehlen? Ergänze sie jederzeit.</p></div><button id="starter-add">＋ Gericht ergänzen</button></div>
+        <div class="starter-tip"><span>＋</span><div><b>Gericht ergänzen</b><p>Füge weitere Gerichte zu deiner Liste hinzu.</p></div><button id="starter-add">＋ Gericht ergänzen</button></div>
       </section>
-      <footer class="footer"><span>Mit Liebe geplant <span class="heart">♥</span></span><span>Deine Daten bleiben auf diesem Gerät.</span></footer>
+      <footer class="footer"><span>Deine Daten bleiben auf diesem Gerät.</span></footer>
     </main>
   </div>
-  <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label>Zeitaufwand<select id="dish-time"><option value="15">15 Min.</option><option value="25" selected>25 Min.</option><option value="35">35 Min.</option><option value="45">45 Min.</option><option value="60">60+ Min.</option></select></label></div><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
+  <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label class="time-slider-label"><span class="time-label-row"><span>Zeitaufwand</span><output id="dish-time-output" for="dish-time">30 Min.</output></span><input id="dish-time" type="range" min="0" max="5" step="1" value="1"><span class="slider-scale"><span>15</span><span>30</span><span>45</span><span>60</span><span>90</span><span>120 Min.</span></span></label></div><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
+  <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><div id="choose-dish-list" class="choose-list"></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="app.js"></script>
 </body>
