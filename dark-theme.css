@@ -200,6 +200,51 @@
     color: var(--ink);
   }
 
+  .shopping-filter-label {
+    color: #b3beb2;
+  }
+
+  .shopping-meal-filter {
+    border-color: #3a463c;
+    background: #151c17;
+    color: var(--ink);
+    color-scheme: dark;
+  }
+
+  .shopping-overview {
+    color: #a8c6a8;
+  }
+
+  .shopping-list {
+    border-color: #303a32;
+    background: #151c17;
+  }
+
+  .shopping-list li {
+    border-bottom-color: #303a32;
+  }
+
+  .shopping-list label {
+    color: #d3ddd2;
+  }
+
+  .shopping-list input {
+    accent-color: #8eaf91;
+  }
+
+  .shopping-list li small {
+    color: #9aa69a;
+  }
+
+  .shopping-list .shopping-heading {
+    background: #202a22;
+    color: #aab9a8;
+  }
+
+  .shopping-list .shopping-no-ingredients {
+    color: #a0aca0;
+  }
+
   #dish-form input[type="range"]::-webkit-slider-runnable-track {
     background: #3a463c;
   }
