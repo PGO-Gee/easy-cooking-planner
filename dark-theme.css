@@ -228,3 +228,6 @@
   #menu-backdrop:not([hidden]) {
     background: #0009;
   }
+
+.dish-nutrition{color:#a8c6a8!important}
+.meal-nutrition{color:#b3c7b0}
