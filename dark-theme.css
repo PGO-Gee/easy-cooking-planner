@@ -286,6 +286,11 @@
     border-color: #465349;
   }
 
+  .shopping-tile-status {
+    background: #719775;
+    color: #fff;
+  }
+
   .shopping-tile.is-checked {
     border-color: #405343;
     background: #202a22;
@@ -302,6 +307,28 @@
   .shopping-screen .empty-state {
     background: #1a221c;
     color: #a0aca0;
+  }
+
+  .shopping-category-title {
+    color: #aab9a8;
+    border-top-color: #303a32;
+  }
+
+  .shopping-add-form input {
+    border-color: #3a463c;
+    background: #151c17;
+    color: #e6ece5;
+  }
+
+  .shopping-tile-remove {
+    background: #29332b;
+    color: #b5c2b4;
+  }
+
+  .shopping-tile-remove:hover,
+  .shopping-tile-remove:focus-visible {
+    background: #49332f;
+    color: #f0b0a2;
   }
 
   #dish-form input[type="range"]::-webkit-slider-runnable-track {
