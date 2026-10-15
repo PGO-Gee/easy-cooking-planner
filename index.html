@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="interaction.css?v=20261012-6" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261015-4" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261015-5" />
   <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261015-2" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
@@ -20,6 +20,7 @@
       <div class="side-label">DEIN BEREICH</div>
       <button class="nav-item active" data-view="week"><span class="nav-icon">▦</span> Wochenplan <span class="nav-count" id="nav-count">7</span></button>
       <button class="nav-item" data-view="dishes"><span class="nav-icon">♡</span> Meine Gerichte <span class="nav-count" id="dish-count">12</span></button>
+      <button class="nav-item" data-view="shopping"><span class="nav-icon">☷</span> Einkaufszettel</button>
       <div class="side-bottom">
         <div class="profile"><div class="avatar">P</div><div><b>Dein Zuhause</b><small>Persönlicher Plan</small></div><span class="dots">···</span></div>
       </div>
@@ -40,13 +41,19 @@
         <div id="dish-list" class="dish-list"></div>
         <div class="starter-tip"><span>＋</span><div><b>Gericht ergänzen</b><p>Füge weitere Gerichte zu deiner Liste hinzu.</p></div><button id="starter-add">＋ Gericht ergänzen</button></div>
       </section>
+      <section id="shopping-view" class="view shopping-screen hidden">
+        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><button type="button" id="shopping-print" class="secondary-button">Drucken</button></div>
+        <div class="page-heading shopping-page-heading"><div><div class="eyebrow">WOCHENPLAN</div><h1>Einkaufszettel</h1><p id="shopping-period" class="subheading"></p></div></div>
+        <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
+        <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
+        <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section class="shopping-section"><h2>Schon eingekauft <span id="shopping-done-count"></span></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
+      </section>
       <footer class="footer"><span>Deine Daten bleiben auf diesem Gerät.</span></footer>
     </main>
   </div>
   <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label class="time-slider-label"><span class="time-label-row"><span>Zeitaufwand</span><output id="dish-time-output" for="dish-time">30 Min.</output></span><input id="dish-time" type="range" min="0" max="5" step="1" value="1"><span class="slider-scale"><span>15</span><span>30</span><span>45</span><span>60</span><span>90</span><span>120 Min.</span></span></label></div><label class="ingredients-field">Wichtige Zutaten <small>Kommagetrennt, ohne Mengen oder Gewürze</small><textarea id="dish-ingredients" rows="3" placeholder="z. B. Reis, Hühnchen, Paprika"></textarea></label><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
-  <dialog id="shopping-dialog"><div class="shopping-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Einkaufszettel</h2><p id="shopping-period" class="subheading"></p></div><button type="button" class="close-button" id="close-shopping" aria-label="Schließen">×</button></div><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button><p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p><ul id="shopping-list" class="shopping-list"></ul><div class="dialog-actions"><button type="button" class="secondary-button" id="print-shopping">Drucken</button><button type="button" class="primary-button" id="close-shopping-footer">Fertig</button></div></div></dialog>
   <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><div id="choose-dish-list" class="choose-list"></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20261015-4"></script>
+  <script src="app.js?v=20261015-5"></script>
 </body>
 </html>
