@@ -28,15 +28,131 @@ const authClient=window.supabase?.createClient&&supabaseConfig?.url&&supabaseCon
   :null;
 let state=loadState(); let weekOffset=0; let toastTimer;
 let appInitialized=false;
+let appInitializationPromise;
+let currentUserId='';
+let currentHouseholdId='';
+let cloudReady=false;
+let cloudSyncTimer;
+let cloudSyncInProgress=false;
+let cloudSyncRequested=false;
+let loadingCloudState=false;
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
-function revealApp(){
+function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${currentUserId}`:''}
+function cloudError(message){console.error(message);if(appInitialized)showToast('Änderung konnte nicht gespeichert werden. Bitte später erneut versuchen.')}
+function ensureUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)}
+function newId(){return crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`}
+function prepareLocalIdsForCloud(){
+  const idMap=new Map();
+  state.dishes.forEach(dish=>{if(!ensureUuid(dish.id)){const id=newId();idMap.set(dish.id,id);dish.id=id}});
+  if(idMap.size)Object.values(state.plans).forEach(days=>days.forEach(day=>{
+    for(let index=0;index<day.length;index++)day[index]=idMap.get(day[index])||day[index];
+  }));
+}
+async function getCurrentHousehold(){
+  const {data,error}=await authClient.from('households').select('id').limit(1);
+  if(error)throw error;
+  if(!data?.[0])throw new Error('Für dieses Konto wurde noch kein Haushalt angelegt.');
+  return data[0].id;
+}
+async function readStateFromCloud(){
+  const [dishesResult,plansResult]=await Promise.all([
+    authClient.from('dishes').select('*').eq('household_id',currentHouseholdId).order('created_at'),
+    authClient.from('weekly_plans').select('id, week_start').eq('household_id',currentHouseholdId).order('week_start')
+  ]);
+  if(dishesResult.error)throw dishesResult.error;
+  if(plansResult.error)throw plansResult.error;
+  const plans=plansResult.data||[],planIds=plans.map(plan=>plan.id);
+  let meals=[],shoppingItems=[],shoppingChecks=[];
+  if(planIds.length){
+    const [mealsResult,itemsResult,checksResult]=await Promise.all([
+      authClient.from('planned_meals').select('*').in('weekly_plan_id',planIds).order('position'),
+      authClient.from('shopping_items').select('*').in('weekly_plan_id',planIds),
+      authClient.from('shopping_item_checks').select('*').in('weekly_plan_id',planIds)
+    ]);
+    if(mealsResult.error)throw mealsResult.error;
+    if(itemsResult.error)throw itemsResult.error;
+    if(checksResult.error)throw checksResult.error;
+    meals=mealsResult.data||[];shoppingItems=itemsResult.data||[];shoppingChecks=checksResult.data||[];
+  }
+  const nextState={dishes:(dishesResult.data||[]).map(dish=>({
+    id:dish.id,name:dish.name,ingredient:dish.ingredient,time:dish.cooking_time_minutes,
+    emoji:dish.emoji,ingredients:dish.ingredients||[],nutrition:dish.nutrition||null
+  })),plans:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}};
+  const weekByPlanId=new Map();
+  plans.forEach(plan=>{nextState.plans[plan.week_start]=Array.from({length:7},()=>[]);weekByPlanId.set(plan.id,plan.week_start)});
+  meals.forEach(meal=>{const week=weekByPlanId.get(meal.weekly_plan_id);if(week&&nextState.plans[week][meal.day_of_week])nextState.plans[week][meal.day_of_week][meal.position]=meal.dish_id});
+  Object.values(nextState.plans).forEach(days=>days.forEach((day,index)=>{days[index]=day.filter(Boolean)}));
+  shoppingItems.forEach(item=>{const week=weekByPlanId.get(item.weekly_plan_id);if(week)(nextState.manualShoppingItems[week]??=[]).push(item.name)});
+  shoppingChecks.forEach(item=>{const week=weekByPlanId.get(item.weekly_plan_id);if(week)(nextState.shoppingChecks[week]??={})[item.item_key]=true});
+  return {state:nextState,hasCloudData:Boolean(dishesResult.data?.length||plans.length)};
+}
+async function syncStateToCloud(){
+  if(!cloudReady||!currentHouseholdId)return;
+  prepareLocalIdsForCloud();
+  const currentState=structuredClone(state);
+  const {data:oldPlans,error:oldPlansError}=await authClient.from('weekly_plans').select('id').eq('household_id',currentHouseholdId);
+  if(oldPlansError)throw oldPlansError;
+  const oldPlanIds=(oldPlans||[]).map(plan=>plan.id);
+  if(oldPlanIds.length){
+    const {error}=await authClient.from('weekly_plans').delete().in('id',oldPlanIds);
+    if(error)throw error;
+  }
+  const {error:deleteDishesError}=await authClient.from('dishes').delete().eq('household_id',currentHouseholdId);
+  if(deleteDishesError)throw deleteDishesError;
+  if(currentState.dishes.length){
+    const {error}=await authClient.from('dishes').insert(currentState.dishes.map(dish=>({
+      id:dish.id,household_id:currentHouseholdId,name:dish.name,ingredient:dish.ingredient||'',
+      cooking_time_minutes:Number(dish.time)||30,emoji:dish.emoji||'🍽️',ingredients:dish.ingredients||[],nutrition:dish.nutrition||null
+    })));
+    if(error)throw error;
+  }
+  const planRows=Object.keys(currentState.plans).map(week_start=>({id:newId(),household_id:currentHouseholdId,week_start}));
+  if(planRows.length){
+    const {error}=await authClient.from('weekly_plans').insert(planRows);
+    if(error)throw error;
+  }
+  const planByWeek=new Map(planRows.map(plan=>[plan.week_start,plan.id]));
+  const mealRows=[];
+  Object.entries(currentState.plans).forEach(([week,days])=>days.forEach((day,day_of_week)=>day.forEach((dish_id,position)=>mealRows.push({weekly_plan_id:planByWeek.get(week),dish_id,day_of_week,position}))));
+  if(mealRows.length){const {error}=await authClient.from('planned_meals').insert(mealRows);if(error)throw error}
+  const manualRows=[];
+  Object.entries(currentState.manualShoppingItems||{}).forEach(([week,items])=>items.forEach(name=>manualRows.push({weekly_plan_id:planByWeek.get(week),name,normalized_name:normalizeIngredient(name).toLocaleLowerCase('de-DE')})));
+  if(manualRows.length){const {error}=await authClient.from('shopping_items').insert(manualRows);if(error)throw error}
+  const checkRows=[];
+  Object.entries(currentState.shoppingChecks||{}).forEach(([week,checks])=>Object.entries(checks).filter(([,checked])=>checked).forEach(([item_key])=>checkRows.push({weekly_plan_id:planByWeek.get(week),item_key})));
+  if(checkRows.length){const {error}=await authClient.from('shopping_item_checks').insert(checkRows);if(error)throw error}
+}
+function scheduleCloudSync(){
+  if(!cloudReady||loadingCloudState)return;
+  cloudSyncRequested=true;clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(flushCloudSync,350);
+}
+async function flushCloudSync(){
+  if(cloudSyncInProgress||!cloudSyncRequested)return;
+  cloudSyncInProgress=true;
+  try{while(cloudSyncRequested){cloudSyncRequested=false;await syncStateToCloud()}}
+  catch(error){cloudError(error)}
+  finally{cloudSyncInProgress=false}
+}
+async function revealApp(){
   $('#auth-gate').hidden=true;
   $('.app-shell').hidden=false;
-  if(appInitialized)return;
-  appInitialized=true;
-  if(state.noteHidden)$('#bottom-note').classList.add('hidden');
-  updateCounts();
-  renderCalendar();
+  if(appInitializationPromise)return appInitializationPromise;
+  appInitializationPromise=(async()=>{
+    try{
+      currentHouseholdId=await getCurrentHousehold();
+      const cloud=await readStateFromCloud(),migrationKey=cloudMigrationKey();
+      cloudReady=true;
+      if(!cloud.hasCloudData&&!localStorage.getItem(migrationKey)){
+        await syncStateToCloud();
+        localStorage.setItem(migrationKey,'true');
+      }else state=cloud.state;
+    }catch(error){cloudError(error);showAuthError('Die Datenbank ist gerade nicht erreichbar. Deine Änderungen werden vorübergehend nur auf diesem Gerät gespeichert.');}
+    appInitialized=true;
+    if(state.noteHidden)$('#bottom-note').classList.add('hidden');
+    updateCounts();renderCalendar();
+  })();
+  return appInitializationPromise;
 }
 function showLogin(){
   $('.app-shell').hidden=true;
@@ -62,10 +178,10 @@ $('#sign-out').addEventListener('click',async()=>{
   if(error)showToast(`Abmelden fehlgeschlagen: ${error.message}`);
 });
 if(authClient){
-  authClient.auth.onAuthStateChange((_event,session)=>{if(session)revealApp();else showLogin()});
+  authClient.auth.onAuthStateChange((_event,session)=>{if(session){currentUserId=session.user.id;revealApp()}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;showLogin()}});
   authClient.auth.getSession().then(({data,error})=>{
     if(error){showLogin();showAuthError(`Anmeldestatus konnte nicht geprüft werden: ${error.message}`)}
-    else if(data.session)revealApp();
+    else if(data.session){currentUserId=data.session.user.id;revealApp()}
     else showLogin();
   }).catch(()=>{showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')});
 }else{
@@ -73,16 +189,16 @@ if(authClient){
   showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
 }
 function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){const defaults=seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}}));const isOldSeed=s.dishes.length===12&&s.dishes.every(d=>/^d(?:[1-9]|1[0-2])$/.test(d.id));if(isOldSeed){s.dishes=defaults;s.plans={}}else{const existingIds=new Set(s.dishes.map(d=>d.id));const missing=defaults.filter(d=>!existingIds.has(d.id));const missingByName=missing.filter(d=>!s.dishes.some(saved=>saved.name.trim().toLocaleLowerCase('de-DE')===d.name.toLocaleLowerCase('de-DE')));s.dishes.push(...missingByName)}s.dishes=s.dishes.map(d=>{const seeded=defaults.find(x=>x.id===d.id);if(d.id==='d2'&&['Pizza','Pizza Prosciutto','Pizza Prosciutto e funghi'].includes(d.name)){d.name=seeded.name;d.ingredient=seeded.ingredient;d.ingredients=[...seeded.ingredients];d.nutrition={...seeded.nutrition};d.emoji=seeded.emoji}return{...d,ingredients:Array.isArray(d.ingredients)?d.ingredients:seeded?.ingredients||[],nutrition:d.nutrition||seeded?.nutrition||null}});return s}}catch(e){}return{dishes:seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}})),plans:{},noteHidden:false}}
-function save(){localStorage.setItem('wochentisch-v1',JSON.stringify(state));updateCounts()}
+function save({sync=true}={}){localStorage.setItem('wochentisch-v1',JSON.stringify(state));updateCounts();if(sync)scheduleCloudSync()}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
 function mondayFor(offset=0){const d=new Date();d.setHours(0,0,0,0);const shift=(d.getDay()+6)%7;d.setDate(d.getDate()-shift+offset*7);return d}
 function keyFor(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function getPlan(){const start=mondayFor(weekOffset),key=keyFor(start);if(!state.plans[key])state.plans[key]=makePlan(start);return state.plans[key]}
+function getPlan(){const start=mondayFor(weekOffset),key=keyFor(start);if(!state.plans[key]){state.plans[key]=makePlan(start);save()}return state.plans[key]}
 function makePlan(start){const pool=shuffle(state.dishes.slice());const plan=[];let last='';for(let i=0;i<7;i++){let idx=pool.findIndex(d=>d.ingredient!==last);if(idx<0)idx=0;const dish=pool.splice(idx,1)[0];plan.push(dish?[dish.id]:[]);last=dish?.ingredient||'';if(!pool.length)pool.push(...shuffle(state.dishes.slice()))}return plan}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function formatRange(start){const end=new Date(start);end.setDate(end.getDate()+6);const opts={day:'numeric',month:'short'};const monthA=start.toLocaleDateString('de-DE',{month:'long'}),monthB=end.toLocaleDateString('de-DE',{month:'long'});return monthA===monthB?`${start.getDate()}. – ${end.getDate()}. ${monthA} ${end.getFullYear()}`:`${start.toLocaleDateString('de-DE',opts)} – ${end.toLocaleDateString('de-DE',opts)} ${end.getFullYear()}`}
 function nutritionText(n){return n?`~${n.kcal} kcal · E ${n.protein} g · F ${n.fat} g · KH ${n.carbs} g / Portion`:''}
-function renderCalendar({shuffleAnimation=false}={}){const start=mondayFor(weekOffset),plan=getPlan();$('#week-date').textContent=formatRange(start);$('#heading-period').textContent=`· ${start.toLocaleDateString('de-DE',{month:'long',year:'numeric'})}`;$('#nav-count').textContent=plan.reduce((n,x)=>n+x.length,0);$('#plan-meta').textContent=`${plan.reduce((n,x)=>n+x.length,0)} ${plan.reduce((n,x)=>n+x.length,0)===1?'Kochidee':'Kochideen'} geplant`;const today=keyFor(new Date());const grid=$('#calendar');grid.innerHTML='';for(let i=0;i<7;i++){const date=new Date(start);date.setDate(start.getDate()+i);const card=document.createElement('article');card.className='day-card'+(keyFor(date)===today?' today':'')+(shuffleAnimation?' shuffle-in':'');if(shuffleAnimation)card.style.setProperty('--shuffle-index',i);card.innerHTML=`<div class="day-head"><div><div class="day-name">${shortDays[i]}</div><div class="day-num">${date.getDate()} <span style="font:400 10px var(--sans);color:#a0a79e">${date.toLocaleDateString('de-DE',{month:'short'})}</span></div></div>${keyFor(date)===today?'<span class="today-pill">Heute</span>':''}</div><div class="day-content" data-day="${i}"></div>`;const content=card.querySelector('.day-content');plan[i].forEach((id,j)=>{const dish=state.dishes.find(d=>d.id===id);if(!dish)return;const meal=document.createElement('div');meal.className='meal-card';meal.innerHTML=`<button class="meal-remove" aria-label="Gericht entfernen">×</button><div class="meal-label">${j===0?'ABENDESSEN':j===1?'MITTAGESSEN':'WEITERE IDEE'}</div><div class="meal-title"><span class="meal-icon"></span><div class="meal-name"></div></div><div class="meal-meta"><span>◷ ${dish.time||25} min</span><span class="dot">·</span><span>${dish.ingredient||'Lieblingsgericht'}</span></div><div class="meal-nutrition"></div>`;meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;meal.querySelector('.meal-remove').addEventListener('click',e=>{e.stopPropagation();plan[i].splice(j,1);save();renderCalendar()});meal.addEventListener('click',()=>openDish(dish.id));content.append(meal)});const add=document.createElement('button');add.className='add-meal';add.textContent='＋ Gericht eintragen';add.addEventListener('click',()=>chooseDish(i));content.append(add);grid.append(card)}save();$('#bottom-note').classList.toggle('hidden',state.noteHidden)}
+function renderCalendar({shuffleAnimation=false}={}){const start=mondayFor(weekOffset),plan=getPlan();$('#week-date').textContent=formatRange(start);$('#heading-period').textContent=`· ${start.toLocaleDateString('de-DE',{month:'long',year:'numeric'})}`;$('#nav-count').textContent=plan.reduce((n,x)=>n+x.length,0);$('#plan-meta').textContent=`${plan.reduce((n,x)=>n+x.length,0)} ${plan.reduce((n,x)=>n+x.length,0)===1?'Kochidee':'Kochideen'} geplant`;const today=keyFor(new Date());const grid=$('#calendar');grid.innerHTML='';for(let i=0;i<7;i++){const date=new Date(start);date.setDate(start.getDate()+i);const card=document.createElement('article');card.className='day-card'+(keyFor(date)===today?' today':'')+(shuffleAnimation?' shuffle-in':'');if(shuffleAnimation)card.style.setProperty('--shuffle-index',i);card.innerHTML=`<div class="day-head"><div><div class="day-name">${shortDays[i]}</div><div class="day-num">${date.getDate()} <span style="font:400 10px var(--sans);color:#a0a79e">${date.toLocaleDateString('de-DE',{month:'short'})}</span></div></div>${keyFor(date)===today?'<span class="today-pill">Heute</span>':''}</div><div class="day-content" data-day="${i}"></div>`;const content=card.querySelector('.day-content');plan[i].forEach((id,j)=>{const dish=state.dishes.find(d=>d.id===id);if(!dish)return;const meal=document.createElement('div');meal.className='meal-card';meal.innerHTML=`<button class="meal-remove" aria-label="Gericht entfernen">×</button><div class="meal-label">${j===0?'ABENDESSEN':j===1?'MITTAGESSEN':'WEITERE IDEE'}</div><div class="meal-title"><span class="meal-icon"></span><div class="meal-name"></div></div><div class="meal-meta"><span>◷ ${dish.time||25} min</span><span class="dot">·</span><span>${dish.ingredient||'Lieblingsgericht'}</span></div><div class="meal-nutrition"></div>`;meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;meal.querySelector('.meal-remove').addEventListener('click',e=>{e.stopPropagation();plan[i].splice(j,1);save();renderCalendar()});meal.addEventListener('click',()=>openDish(dish.id));content.append(meal)});const add=document.createElement('button');add.className='add-meal';add.textContent='＋ Gericht eintragen';add.addEventListener('click',()=>chooseDish(i));content.append(add);grid.append(card)}save({sync:false});$('#bottom-note').classList.toggle('hidden',state.noteHidden)}
 function renderDishes(){const q=$('#search-dishes').value.trim().toLowerCase(),list=$('#dish-list');list.innerHTML='';const dishes=state.dishes.filter(d=>d.name.toLowerCase().includes(q)||String(d.ingredient||'').toLowerCase().includes(q)||(d.ingredients||[]).some(i=>i.toLowerCase().includes(q)));if(!dishes.length){list.innerHTML='<div class="empty-state"><b>Keine Gerichte gefunden.</b>Ändere die Suche oder füge ein Gericht hinzu.</div>';return}dishes.forEach(d=>{const row=document.createElement('div');row.className='dish-row';row.innerHTML=`<div class="dish-icon">${d.emoji||emojiMap[d.ingredient]||'🍽️'}</div><div class="dish-copy"><b></b><small>◷ ${d.time||25} Min. <span style="padding:0 5px;color:#d0d5cc">·</span> ${d.ingredient||'Ohne Angabe'}</small><small class="dish-nutrition"></small><small class="dish-ingredients-preview"></small></div><span class="dish-tag">${d.ingredient||'Ohne Kategorie'}</span><button class="row-edit" aria-label="Bearbeiten">···</button>`;row.querySelector('.dish-copy b').textContent=d.name;row.querySelector('.dish-nutrition').textContent=nutritionText(d.nutrition);row.querySelector('.dish-nutrition').hidden=!d.nutrition;row.querySelector('.dish-ingredients-preview').textContent=(d.ingredients||[]).join(' · ')||'Noch keine Zutaten';row.querySelector('.row-edit').addEventListener('click',()=>openDish(d.id));row.addEventListener('dblclick',()=>openDish(d.id));list.append(row)})}
 function showToast(text){const t=$('#toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600)}
 function openDish(id=''){const d=state.dishes.find(x=>x.id===id),minutes=Number(d?.time)||30;let timeIndex=0;for(let i=1;i<timeBlocks.length;i++){if(Math.abs(timeBlocks[i]-minutes)<Math.abs(timeBlocks[timeIndex]-minutes))timeIndex=i}$('#dish-id').value=id;$('#dish-name').value=d?.name||'';$('#dish-ingredient').value=d?.ingredient||'';$('#dish-ingredients').value=(d?.ingredients||[]).join(', ');$('#dish-time').value=timeIndex;$('#dish-time-output').textContent=`${timeBlocks[timeIndex]} Min.`;$('#dialog-title').textContent=d?'Gericht bearbeiten':'Gericht hinzufügen';$('#delete-dish').hidden=!d;$('#dish-dialog').showModal();setTimeout(()=>$('#dish-name').focus(),30)}
