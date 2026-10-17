@@ -22,7 +22,56 @@ const emojiMap={'Hühnchen':'🍗','Rind':'🥘','Fisch':'🐟','Schwein':'🥓'
 const shortDays=['MO','DI','MI','DO','FR','SA','SO'];
 const timeBlocks=[15,30,45,60,90,120];
 const $=s=>document.querySelector(s);
+const supabaseConfig=window.WOCHENTISCH_SUPABASE;
+const authClient=window.supabase?.createClient&&supabaseConfig?.url&&supabaseConfig?.publishableKey
+  ?window.supabase.createClient(supabaseConfig.url,supabaseConfig.publishableKey)
+  :null;
 let state=loadState(); let weekOffset=0; let toastTimer;
+let appInitialized=false;
+function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
+function revealApp(){
+  $('#auth-gate').hidden=true;
+  $('.app-shell').hidden=false;
+  if(appInitialized)return;
+  appInitialized=true;
+  if(state.noteHidden)$('#bottom-note').classList.add('hidden');
+  updateCounts();
+  renderCalendar();
+}
+function showLogin(){
+  $('.app-shell').hidden=true;
+  $('#auth-gate').hidden=false;
+}
+$('#password-sign-in').addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!authClient){showAuthError('Die Anmeldung konnte nicht geladen werden. Bitte Seite neu laden.');return}
+  const button=$('#password-sign-in-button');
+  const email=$('#auth-email').value.trim();
+  const password=$('#auth-password').value;
+  button.disabled=true;showAuthError('');
+  try{
+    const {error}=await authClient.auth.signInWithPassword({
+      email,
+      password
+    });
+    if(error){showAuthError('E-Mail-Adresse oder Passwort sind nicht korrekt.');button.disabled=false}
+  }catch(error){showAuthError('Anmeldung fehlgeschlagen. Bitte prüfe deine Internetverbindung.');button.disabled=false}
+});
+$('#sign-out').addEventListener('click',async()=>{
+  const {error}=await authClient.auth.signOut();
+  if(error)showToast(`Abmelden fehlgeschlagen: ${error.message}`);
+});
+if(authClient){
+  authClient.auth.onAuthStateChange((_event,session)=>{if(session)revealApp();else showLogin()});
+  authClient.auth.getSession().then(({data,error})=>{
+    if(error){showLogin();showAuthError(`Anmeldestatus konnte nicht geprüft werden: ${error.message}`)}
+    else if(data.session)revealApp();
+    else showLogin();
+  }).catch(()=>{showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')});
+}else{
+  showLogin();
+  showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
+}
 function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){const defaults=seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}}));const isOldSeed=s.dishes.length===12&&s.dishes.every(d=>/^d(?:[1-9]|1[0-2])$/.test(d.id));if(isOldSeed){s.dishes=defaults;s.plans={}}else{const existingIds=new Set(s.dishes.map(d=>d.id));const missing=defaults.filter(d=>!existingIds.has(d.id));const missingByName=missing.filter(d=>!s.dishes.some(saved=>saved.name.trim().toLocaleLowerCase('de-DE')===d.name.toLocaleLowerCase('de-DE')));s.dishes.push(...missingByName)}s.dishes=s.dishes.map(d=>{const seeded=defaults.find(x=>x.id===d.id);if(d.id==='d2'&&['Pizza','Pizza Prosciutto','Pizza Prosciutto e funghi'].includes(d.name)){d.name=seeded.name;d.ingredient=seeded.ingredient;d.ingredients=[...seeded.ingredients];d.nutrition={...seeded.nutrition};d.emoji=seeded.emoji}return{...d,ingredients:Array.isArray(d.ingredients)?d.ingredients:seeded?.ingredients||[],nutrition:d.nutrition||seeded?.nutrition||null}});return s}}catch(e){}return{dishes:seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}})),plans:{},noteHidden:false}}
 function save(){localStorage.setItem('wochentisch-v1',JSON.stringify(state));updateCounts()}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}

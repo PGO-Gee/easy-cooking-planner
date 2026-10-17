@@ -11,10 +11,29 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="interaction.css?v=20261012-6" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261015-10" />
+  <link rel="stylesheet" href="auth.css?v=20261017-2" />
   <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261015-6" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
-  <div class="app-shell">
+  <main id="auth-gate" class="auth-gate" aria-labelledby="auth-title">
+    <section class="auth-card">
+      <a class="brand auth-brand" href="#" aria-label="Wochentisch Startseite"><span class="brand-mark">w.</span><span>wochentisch</span></a>
+      <div class="eyebrow">DEIN ESSENSPLAN</div>
+      <h1 id="auth-title">Willkommen zurück</h1>
+      <p class="subheading">Melde dich mit deinen Zugangsdaten an, um Wochentisch zu öffnen.</p>
+      <form id="password-sign-in" class="password-sign-in">
+        <label for="auth-email">E-Mail-Adresse</label>
+        <input id="auth-email" type="email" autocomplete="email" required placeholder="name@beispiel.de" />
+        <label for="auth-password">Passwort</label>
+        <input id="auth-password" type="password" autocomplete="current-password" required minlength="8" />
+        <button id="password-sign-in-button" class="password-sign-in-button" type="submit">Anmelden</button>
+      </form>
+      <p id="auth-error" class="auth-error" role="alert" hidden></p>
+      <p class="auth-note">Zugänge werden für die geschlossene Testphase manuell vergeben.</p>
+      <p class="auth-privacy-notice">Zur Verwaltung deines Zugangs verarbeitet Supabase deine E-Mail-Adresse und Sitzungsdaten. Gerichte und Wochenpläne bleiben derzeit lokal in diesem Browser. <a href="datenschutz.html">Datenschutzerklärung</a></p>
+    </section>
+  </main>
+  <div class="app-shell" hidden>
     <aside class="sidebar" id="sidebar">
       <a class="brand" href="#" aria-label="Wochentisch Startseite"><span class="brand-mark">w.</span><span>wochentisch</span></a>
       <div class="side-label">DEIN BEREICH</div>
@@ -28,7 +47,7 @@
     <button id="menu-backdrop" class="menu-backdrop" type="button" aria-label="Menü schließen" hidden></button>
 
     <main class="main-content">
-      <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb">Dein Zuhause <span>/</span> <b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Dunkelmodus testen" title="Dunkelmodus testen">☾</button><button class="icon-button" id="help-btn" aria-label="Hilfe">?</button><div class="mini-avatar">P</div></div></header>
+      <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb">Dein Zuhause <span>/</span> <b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Dunkelmodus testen" title="Dunkelmodus testen">☾</button><button class="icon-button" id="help-btn" aria-label="Hilfe">?</button><button class="sign-out-button" id="sign-out" type="button">Abmelden</button></div></header>
       <section id="week-view" class="view">
         <div class="page-heading"><div><div class="eyebrow">ESSENSPLAN</div><h1>Dein Wochenplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Plane deine Gerichte für die Woche.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> Woche neu mischen</button></div>
         <div class="week-toolbar"><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorige Woche">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste Woche">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Kochideen geplant</span></span><button class="secondary-button" id="shopping-btn"><span>☷</span> Einkaufszettel</button><button class="secondary-button" id="print-btn"><span>↗</span> Plan exportieren</button></div></div>
@@ -49,12 +68,14 @@
         <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
         <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section class="shopping-section"><h2>Schon eingekauft <span id="shopping-done-count"></span></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
       </section>
-      <footer class="footer"><span>Deine Daten bleiben auf diesem Gerät.</span></footer>
+      <footer class="footer"><span>Deine Gerichte und Pläne bleiben auf diesem Gerät.</span><a href="datenschutz.html">Datenschutz</a></footer>
     </main>
   </div>
   <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Wurst</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label class="time-slider-label"><span class="time-label-row"><span>Zeitaufwand</span><output id="dish-time-output" for="dish-time">30 Min.</output></span><input id="dish-time" type="range" min="0" max="5" step="1" value="1"><span class="slider-scale"><span>15</span><span>30</span><span>45</span><span>60</span><span>90</span><span>120 Min.</span></span></label></div><label class="ingredients-field">Wichtige Zutaten <small>Kommagetrennt, ohne Mengen oder Gewürze</small><textarea id="dish-ingredients" rows="3" placeholder="z. B. Reis, Hühnchen, Paprika"></textarea></label><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
   <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><div id="choose-dish-list" class="choose-list"></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=20261015-11"></script>
+  <script src="supabase-config.js?v=20261017-2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js?v=20261017-2"></script>
 </body>
 </html>
