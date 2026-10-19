@@ -47,7 +47,7 @@ document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.addEventListener('close',unlockPageScroll);
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
-    requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
+    requestAnimationFrame(()=>event.target.scrollIntoView({block:'center',inline:'nearest'}));
   });
   const showModal=dialog.showModal.bind(dialog);
   dialog.showModal=()=>{lockPageScroll();showModal()};

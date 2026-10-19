@@ -293,7 +293,7 @@
     position: fixed;
     top: calc(var(--visual-viewport-top, 0px) + 12px);
     bottom: auto;
-    margin: auto;
+    margin: 0 auto;
     max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
@@ -437,6 +437,11 @@
     margin: 8px -20px -20px;
     padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
     background: var(--paper);
+  }
+
+  #pantry-dialog .dialog-actions {
+    position: static;
+    margin: 18px -20px -20px;
   }
 
   .dialog-actions .secondary-button,
