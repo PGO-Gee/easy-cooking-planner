@@ -51,19 +51,17 @@ document.querySelectorAll('dialog').forEach(dialog=>{
     if(event.target.id==='dish-ingredient-input'||event.target.id==='dish-ingredient'){
       const field=event.target.closest('.dish-ingredient-suggest');
       const reveal=()=>{
-        const viewport=window.visualViewport;
-        const dialogRect=dialog.getBoundingClientRect();
-        const visibleTop=Math.max(dialogRect.top,viewport?.offsetTop||0)+12;
-        const visibleBottom=Math.min(dialogRect.bottom,viewport?viewport.offsetTop+viewport.height:window.innerHeight)-12;
-        const rect=event.target.getBoundingClientRect();
-        const list=event.target.id==='dish-ingredient-input'?$('#dish-ingredient-suggestions'):$('#dish-main-ingredient-suggestions');
-        const listHeight=list.hidden?0:Math.min(list.scrollHeight,window.innerHeight*.36);
-        const neededTop=rect.top-listHeight-8;
-        if(neededTop<visibleTop)dialog.scrollTop+=neededTop-visibleTop;
-        else if(rect.bottom>visibleBottom)dialog.scrollTop+=rect.bottom-visibleBottom;
+        field.scrollIntoView({block:'center',inline:'nearest',behavior:'smooth'});
       };
-      setTimeout(()=>requestAnimationFrame(reveal),350);
-      window.visualViewport?.addEventListener('resize',()=>setTimeout(()=>requestAnimationFrame(reveal),80),{once:true});
+      let completed=false;
+      const onViewportResize=()=>{
+        if(completed)return;
+        completed=true;
+        setTimeout(()=>requestAnimationFrame(reveal),120);
+        window.visualViewport?.removeEventListener('resize',onViewportResize);
+      };
+      window.visualViewport?.addEventListener('resize',onViewportResize);
+      setTimeout(()=>{if(!completed){completed=true;reveal();window.visualViewport?.removeEventListener('resize',onViewportResize)}},500);
       return;
     }
     requestAnimationFrame(()=>event.target.scrollIntoView({block:'center',inline:'nearest'}));

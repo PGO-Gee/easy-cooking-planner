@@ -477,7 +477,14 @@
     touch-action: pan-y;
   }
 
-  #dish-dialog,
+  #dish-dialog {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
   #dish-form {
     overflow: visible;
   }
