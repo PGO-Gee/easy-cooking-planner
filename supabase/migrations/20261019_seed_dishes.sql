@@ -31,4 +31,3 @@ where not exists (
   select 1 from public.dishes existing
   where existing.household_id = h.id and lower(existing.name) = lower(seed.name)
 );
-

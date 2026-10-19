@@ -248,4 +248,3 @@ with check (exists (
   select 1 from public.weekly_plans wp
   where wp.id = weekly_plan_id and public.is_household_member(wp.household_id)
 ));
-
