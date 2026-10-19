@@ -186,9 +186,124 @@
     color: var(--ink);
   }
 
+  .pantry-search {
+    border-color: #3a463c;
+    background: #151c17;
+    color-scheme: dark;
+  }
+
+  #pantry-input {
+    border-color: #3a463c;
+    background: transparent;
+    color: var(--ink);
+    color-scheme: dark;
+  }
+
+  .pantry-search #dish-ingredient-input,
+  .pantry-search #dish-ingredient {
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    color-scheme: dark;
+  }
+
+  .dish-ingredients-editor .pantry-search {
+    border-color: #3a463c;
+    background: #151c17;
+  }
+
+  .dish-main-ingredient-field .pantry-search {
+    border-color: #3a463c;
+    background: #151c17;
+  }
+
+  #dish-ingredient-chips {
+    border-color: #303a32;
+    background: #151c17;
+  }
+
+  .dish-main-ingredient-field > label {
+    color: #b9c4b8;
+  }
+
+  #dish-ingredient-chips .pantry-chip {
+    color: #c7dec7;
+  }
+
+  #dish-ingredient-chips .pantry-empty-selection {
+    color: #a0aca0;
+  }
+
+  .pantry-suggestions {
+    border-color: #3a463c;
+    background: #1b231d;
+  }
+
+  .pantry-suggestion {
+    border-color: #303a32;
+    background: #1b231d;
+    color: var(--ink);
+  }
+
+  .pantry-suggestion:hover,
+  .pantry-suggestion:focus-visible {
+    background: #29362c;
+  }
+
+  .pantry-chip {
+    background: #293b2d;
+    color: #c7dec7;
+  }
+
+  .pantry-ingredient-icon {
+    background: #344237;
+  }
+
+  .pantry-chip-remove {
+    color: #c7dec7;
+  }
+
+  .pantry-chip-remove:hover,
+  .pantry-chip-remove:focus-visible {
+    background: #3a4d3c;
+  }
+
+  .pantry-search:focus-within {
+    box-shadow: 0 0 0 3px #9caf9940;
+  }
+
+  .pantry-selected-area {
+    border-color: #303a32;
+    background: #151c17;
+  }
+
+  .pantry-selected-heading {
+    color: #c0cabe;
+  }
+
+  .pantry-selected-heading span {
+    background: #29362c;
+    color: #c0cabe;
+  }
+
+  .pantry-empty-selection {
+    color: #a0aaa0;
+  }
+
+  .pantry-intro,
+  .pantry-label,
+  .pantry-label small {
+    color: #b3beb2;
+  }
+
+  .pantry-hint {
+    color: #a0aaa0;
+  }
+
   .dialog-head .eyebrow,
   .dialog-head+input+label,
-  .form-row label {
+  .form-row label,
+  .ingredients-field > label {
     color: #b3beb2;
   }
 

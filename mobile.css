@@ -1,0 +1,586 @@
+/* Mobile refinements for compact iPhone viewports and touch interaction. */
+@media (max-width: 700px) {
+  :root {
+    --mobile-gutter: 16px;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-width: 320px;
+  }
+
+  body.has-open-dialog {
+    position: fixed;
+    right: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .app-shell {
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .main-content {
+    padding-right: max(var(--mobile-gutter), env(safe-area-inset-right));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    padding-left: max(var(--mobile-gutter), env(safe-area-inset-left));
+  }
+
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    height: 56px;
+    margin: 0 calc(-1 * max(var(--mobile-gutter), env(safe-area-inset-left)));
+    padding: 0 max(var(--mobile-gutter), env(safe-area-inset-left));
+    background: var(--canvas);
+  }
+
+  #menu-toggle {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    touch-action: manipulation;
+  }
+
+  .topbar-leading {
+    min-width: 0;
+    gap: 9px;
+  }
+
+  .breadcrumb {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-actions {
+    gap: 8px;
+  }
+
+  .top-actions .household-open {
+    min-height: 40px;
+    padding: 0 10px;
+  }
+
+  .top-actions .theme-toggle,
+  .top-actions #help-btn {
+    display: none;
+  }
+
+  .sign-out-button {
+    min-height: 40px;
+    padding: 0 9px;
+  }
+
+  .view {
+    padding-top: 24px;
+  }
+
+  .page-heading {
+    margin-bottom: 20px;
+  }
+
+  .page-heading h1 {
+    font-size: clamp(23px, 6.5vw, 28px);
+    line-height: 1.15;
+    letter-spacing: -.8px;
+  }
+
+  .heading-period {
+    display: block;
+    margin: 5px 0 0;
+    font-size: 12px;
+  }
+
+  .page-heading .primary-button {
+    min-height: 46px;
+    margin-top: 15px;
+  }
+
+  .week-toolbar {
+    gap: 12px;
+  }
+
+  .week-switch {
+    width: 100%;
+    justify-content: space-between;
+    gap: 5px;
+  }
+
+  .arrow-button,
+  .today-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    margin: 0;
+    font-size: 18px;
+  }
+
+  .today-button {
+    width: auto;
+    padding: 0 13px;
+    font-size: 12px;
+  }
+
+  .week-date {
+    min-height: 44px;
+    flex: 1;
+    font-size: 12px;
+  }
+
+  .week-toolbar > .toolbar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .plan-meta {
+    grid-column: 1 / -1;
+    min-height: 20px;
+    font-size: 11px;
+  }
+
+  .week-toolbar .toolbar-actions .secondary-button {
+    width: 100%;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 11px;
+  }
+
+  .calendar-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .day-card,
+  .day-card:nth-child(n + 5),
+  .day-card:last-child {
+    grid-column: auto;
+    min-height: 0;
+  }
+
+  .day-head {
+    min-height: 64px;
+    padding: 11px 14px;
+  }
+
+  .day-name {
+    font-size: 10px;
+  }
+
+  .day-num {
+    font-size: 17px;
+  }
+
+  .day-content {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .meal-card {
+    min-height: 70px;
+    padding: 10px 11px;
+    touch-action: manipulation;
+  }
+
+  .meal-label {
+    font-size: 9px;
+  }
+
+  .meal-name {
+    font-size: 13px;
+  }
+
+  .meal-meta {
+    font-size: 10px;
+  }
+
+  .meal-remove {
+    top: 3px;
+    right: 3px;
+    width: 40px;
+    height: 40px;
+    opacity: 1;
+    font-size: 18px;
+  }
+
+  .add-meal {
+    min-height: 44px;
+    font-size: 12px;
+    touch-action: manipulation;
+  }
+
+  .dish-toolbar .toolbar-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .dish-toolbar .toolbar-actions .secondary-button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 8px;
+    white-space: normal;
+  }
+
+  .search-box {
+    height: 46px;
+  }
+
+  .search-box input {
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  .dish-row {
+    min-height: 62px;
+    padding: 10px 12px;
+  }
+
+  .dish-copy {
+    min-width: 0;
+  }
+
+  .dish-copy b {
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .row-edit {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+  }
+
+  .starter-tip button {
+    min-height: 44px;
+  }
+
+  .shopping-add-form {
+    gap: 8px;
+  }
+
+  .shopping-add-form input,
+  .shopping-add-form .primary-button {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  .shopping-add-form .primary-button {
+    flex: 0 0 auto;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .shopping-tile {
+    min-height: 112px;
+    touch-action: manipulation;
+  }
+
+  .footer {
+    gap: 12px;
+    padding-top: 24px;
+    font-size: 10px;
+  }
+
+  dialog[open] {
+    position: fixed;
+    top: calc(var(--visual-viewport-top, 0px) + 12px);
+    bottom: auto;
+    margin: 0 auto;
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+
+  dialog {
+    width: calc(100% - 24px);
+    max-width: 520px;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    margin: auto;
+    border-radius: 16px;
+    overflow: auto;
+    overscroll-behavior: contain;
+  }
+
+  #dish-form,
+  .choose-dialog-content,
+  .pantry-dialog-content,
+  .household-dialog-content,
+  .catalog-dialog-content {
+    padding: 20px;
+  }
+
+  #catalog-dialog {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .catalog-dialog-content {
+    display: flex;
+    flex-direction: column;
+    max-height: inherit;
+    min-width: 0;
+  }
+
+  .catalog-dialog-content .dialog-head {
+    flex: 0 0 auto;
+    gap: 10px;
+    min-width: 0;
+    margin-bottom: 12px;
+  }
+
+  .catalog-dialog-content .dialog-head > div {
+    min-width: 0;
+  }
+
+  .catalog-dialog-content .dialog-head .eyebrow {
+    letter-spacing: .8px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-dialog-content .dialog-head h2 {
+    font-size: 20px;
+  }
+
+  .catalog-dialog-content .choose-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .catalog-dialog-content .dialog-actions {
+    position: static;
+    flex: 0 0 auto;
+    margin: 12px -20px -20px;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  #catalog-add-all {
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+    padding: 10px 14px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .catalog-feedback {
+    flex: 0 0 auto;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid #d9e5d7;
+    border-radius: 8px;
+    background: #f0f5ef;
+    color: #365b43;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-feedback[hidden] {
+    display: none;
+  }
+
+  .dialog-head {
+    margin-bottom: 18px;
+  }
+
+  .close-button {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    font-size: 27px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  #dish-form label:not(.ingredients-field) {
+    font-size: 12px;
+  }
+
+  #dish-form input:not([type="hidden"]),
+  #dish-form select,
+  #dish-ingredients,
+  .household-join-form input {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  #dish-ingredients {
+    min-height: 88px;
+  }
+
+  #dish-form input[type="range"] {
+    min-height: 44px;
+  }
+
+  .slider-scale {
+    font-size: 10px;
+  }
+
+  .dialog-actions {
+    position: sticky;
+    bottom: -20px;
+    z-index: 1;
+    margin: 8px -20px -20px;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+    background: var(--paper);
+  }
+
+  #pantry-dialog .dialog-actions {
+    position: static;
+    margin: 18px -20px -20px;
+  }
+
+  .pantry-search-group {
+    position: relative;
+  }
+
+  .pantry-suggestions {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 3;
+    max-height: min(264px, 36dvh);
+    margin-top: 0;
+    overscroll-behavior: contain;
+  }
+
+  .dish-ingredient-suggest {
+    position: relative;
+  }
+
+  .dish-ingredient-suggest .pantry-suggestions {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    max-height: min(264px, 36dvh);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  #dish-dialog {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+  }
+
+  #dish-form {
+    overflow: visible;
+  }
+
+  .dish-main-ingredient-field .dish-ingredient-suggest {
+    position: relative;
+  }
+
+  .dish-main-ingredient-field .pantry-suggestions {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 10;
+    margin: 0;
+    max-height: min(264px, 36dvh);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .dish-ingredients-editor .dish-ingredient-suggest {
+    position: relative;
+  }
+
+  .dialog-actions .secondary-button,
+  .dialog-actions .primary-button {
+    min-height: 44px;
+    padding: 0 12px;
+  }
+
+  .choose-list {
+    max-height: min(58dvh, 560px);
+    padding-bottom: 2px;
+    overscroll-behavior: contain;
+  }
+
+  .choose-item {
+    min-height: 60px;
+    touch-action: manipulation;
+  }
+
+  .household-dialog-content {
+    overflow-wrap: anywhere;
+  }
+
+  .household-dialog-content .primary-button,
+  .household-join-form .secondary-button {
+    min-height: 44px;
+  }
+
+  #toast {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: max-content;
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 380px) {
+  .main-content {
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .topbar {
+    margin-right: calc(-1 * max(12px, env(safe-area-inset-right)));
+    margin-left: calc(-1 * max(12px, env(safe-area-inset-left)));
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .top-actions .household-open {
+    font-size: 10px;
+  }
+
+  .shopping-add-form {
+    flex-wrap: wrap;
+  }
+
+  .shopping-add-form input {
+    flex-basis: 100%;
+  }
+
+  .shopping-add-form .primary-button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .day-card,
+  .meal-card,
+  .shopping-tile {
+    transition: none;
+    animation: none;
+  }
+}
