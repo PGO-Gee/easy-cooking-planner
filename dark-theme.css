@@ -199,6 +199,18 @@
     color-scheme: dark;
   }
 
+  .pantry-search #dish-ingredient-input {
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    color-scheme: dark;
+  }
+
+  #dish-ingredient-chips {
+    border-color: #303a32;
+    background: #151c17;
+  }
+
   .pantry-suggestions {
     border-color: #3a463c;
     background: #1b231d;
@@ -267,7 +279,8 @@
 
   .dialog-head .eyebrow,
   .dialog-head+input+label,
-  .form-row label {
+  .form-row label,
+  .ingredients-field > label {
     color: #b3beb2;
   }
 

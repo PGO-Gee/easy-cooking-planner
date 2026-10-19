@@ -119,6 +119,46 @@
   font: 16px/1.4 var(--sans);
 }
 
+.dish-ingredients-editor {
+  display: grid;
+  gap: 9px;
+}
+
+.ingredients-field > label {
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+#dish-ingredient-chips {
+  min-height: 42px;
+  padding: 11px;
+  border: 1px solid #e8ebe4;
+  border-radius: 9px;
+  background: #f8f9f6;
+}
+
+.dish-ingredients-editor .pantry-search {
+  width: 100%;
+}
+
+.pantry-search #dish-ingredient-input {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 16px/1.4 var(--sans);
+}
+
+.pantry-search #dish-ingredient-input:focus {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+}
+
 .pantry-search:focus-within {
   border-color: #9caf99;
   outline: none;
