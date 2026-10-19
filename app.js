@@ -27,6 +27,7 @@ function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(clou
 function cleanIngredients(ingredients){return Array.isArray(ingredients)?ingredients.filter(item=>typeof item==='string').map(normalizeIngredient).filter(Boolean):[]}
 function cleanNutrition(nutrition){return nutrition&&typeof nutrition==='object'&&!Array.isArray(nutrition)?nutrition:null}
 function cloudError(message){console.error(message);if(appInitialized)showToast('Änderung konnte nicht gespeichert werden. Bitte später erneut versuchen.')}
+function householdError(message){const error=$('#household-error');error.textContent=message;error.hidden=!message}
 function ensureUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)}
 function newId(){return crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`}
 function prepareLocalIdsForCloud(){
@@ -146,6 +147,54 @@ async function revealApp(){
   })();
   return appInitializationPromise;
 }
+async function loadHouseholdMembers(){
+  const list=$('#household-members');list.innerHTML='<p class="household-loading">Wird geladen …</p>';
+  const {data,error}=await authClient.rpc('list_my_household_members');
+  if(error)throw error;
+  list.replaceChildren();
+  (data||[]).forEach(member=>{
+    const row=document.createElement('div');row.className='household-member-row';
+    const email=document.createElement('span');email.textContent=member.email||'Mitglied';
+    const role=document.createElement('small');role.textContent=member.role==='owner'?'Verwaltung':'Mitglied';
+    row.append(email,role);list.append(row);
+  });
+  if(!data?.length)list.innerHTML='<p class="household-loading">Noch keine Mitglieder gefunden.</p>';
+}
+$('#household-open').addEventListener('click',async()=>{
+  householdError('');$('#household-code-result').hidden=true;$('#household-code').textContent='';
+  $('#household-dialog').showModal();
+  try{await loadHouseholdMembers()}catch(error){console.error(error);householdError('Mitglieder konnten gerade nicht geladen werden.')}
+});
+$('#household-close').addEventListener('click',()=>$('#household-dialog').close());
+$('#create-household-code').addEventListener('click',async event=>{
+  const button=event.currentTarget;button.disabled=true;householdError('');
+  try{
+    const {data,error}=await authClient.rpc('create_household_join_code');
+    if(error)throw error;
+    $('#household-code').textContent=data;$('#household-code-result').hidden=false;
+  }catch(error){console.error(error);householdError('Der Beitrittscode konnte nicht erstellt werden. Bitte später erneut versuchen.')}
+  finally{button.disabled=false}
+});
+$('#household-join-code').addEventListener('input',event=>{event.currentTarget.value=event.currentTarget.value.toUpperCase().replace(/[^A-F0-9]/g,'')});
+$('#household-join-form').addEventListener('submit',async event=>{
+  event.preventDefault();const button=event.currentTarget.querySelector('button[type="submit"]');
+  const code=$('#household-join-code').value.trim();button.disabled=true;householdError('');
+  try{
+    const {data,error}=await authClient.rpc('join_household_with_code',{join_code:code});
+    if(error)throw error;
+    if(!data)throw new Error('Household was not returned');
+    currentHouseholdId=data;cloudReady=false;loadingCloudState=true;
+    clearTimeout(cloudSyncTimer);cloudSyncRequested=false;
+    $('#household-dialog').close();
+    const cloud=await readStateFromCloud();state=cloud.state;cloudReady=true;
+    save({sync:false});
+    loadingCloudState=false;weekOffset=0;renderCalendar();
+    showToast('Du bist dem Haushalt beigetreten.');
+  }catch(error){
+    loadingCloudState=false;console.error(error);
+    householdError(/Invalid or expired join code/i.test(error.message)?'Der Code ist ungültig, abgelaufen oder wurde bereits verwendet.':'Beitritt fehlgeschlagen. Bitte prüfe den Code und versuche es erneut.');
+  }finally{button.disabled=false}
+});
 function showLogin(){
   $('.app-shell').hidden=true;
   $('#auth-gate').hidden=false;
