@@ -52,25 +52,18 @@ document.querySelectorAll('dialog').forEach(dialog=>{
       const field=event.target.closest('.dish-ingredient-suggest');
       const reveal=()=>{
         const viewport=window.visualViewport;
-        const visibleBottom=viewport?viewport.offsetTop+viewport.height:window.innerHeight;
-        const rect=field.getBoundingClientRect();
+        const dialogRect=dialog.getBoundingClientRect();
+        const visibleTop=Math.max(dialogRect.top,viewport?.offsetTop||0)+12;
+        const visibleBottom=Math.min(dialogRect.bottom,viewport?viewport.offsetTop+viewport.height:window.innerHeight)-12;
+        const rect=event.target.getBoundingClientRect();
         const list=event.target.id==='dish-ingredient-input'?$('#dish-ingredient-suggestions'):$('#dish-main-ingredient-suggestions');
         const listHeight=list.hidden?0:Math.min(list.scrollHeight,window.innerHeight*.36);
-        const neededTop=rect.top-listHeight-12;
-        if(neededTop<12)dialog.scrollBy({top:neededTop-12,behavior:'smooth'});
-        else if(rect.bottom>visibleBottom-12)dialog.scrollBy({top:rect.bottom-visibleBottom+12,behavior:'smooth'});
+        const neededTop=rect.top-listHeight-8;
+        if(neededTop<visibleTop)dialog.scrollTop+=neededTop-visibleTop;
+        else if(rect.bottom>visibleBottom)dialog.scrollTop+=rect.bottom-visibleBottom;
       };
-      let revealed=false;
-      const revealAfterKeyboard=()=>{
-        requestAnimationFrame(()=>{
-          reveal();
-          if(revealed)return;
-          revealed=true;
-          window.visualViewport?.removeEventListener('resize',revealAfterKeyboard);
-        });
-      };
-      setTimeout(revealAfterKeyboard,220);
-      window.visualViewport?.addEventListener('resize',revealAfterKeyboard);
+      setTimeout(()=>requestAnimationFrame(reveal),350);
+      window.visualViewport?.addEventListener('resize',()=>setTimeout(()=>requestAnimationFrame(reveal),80),{once:true});
       return;
     }
     requestAnimationFrame(()=>event.target.scrollIntoView({block:'center',inline:'nearest'}));
