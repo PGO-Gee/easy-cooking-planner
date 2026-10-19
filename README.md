@@ -10,13 +10,13 @@ Eine kleine, statische Webapp zum Planen der Mahlzeiten für die Woche.
 
 Die App verwendet für die geschlossene Testphase E-Mail/Passwort-Login über Supabase Auth. Neue Konten werden nur im Supabase-Dashboard angelegt; öffentliche Registrierungen bleiben deaktiviert. Projekt-URL und Publishable Key stehen in `supabase-config.js`; diese Browserwerte sind öffentlich. Niemals einen Supabase Secret Key oder `service_role`-Key in die Website oder das Repository eintragen.
 
-Gerichte und Wochenpläne bleiben in diesem ersten Schritt lokal im Browser gespeichert. Die Anmeldung synchronisiert sie noch nicht zwischen Geräten oder Haushaltsmitgliedern.
+Gerichte, Wochenpläne und Einkaufszettel werden in Supabase gespeichert und zwischen Mitgliedern desselben Haushalts synchronisiert. Die lokale Speicherung dient zusätzlich als Browserzustand und Backup.
 
 ## Supabase-Datenbank
 
-Die erste Migration liegt in `supabase/migrations/20261017_initial_schema.sql`. Sie erstellt private Haushalte, Gerichte, Wochenpläne, geplante Mahlzeiten und Einkaufslisten. Für neue Auth-Nutzer wird automatisch ein privater Haushalt angelegt; Row Level Security erlaubt Zugriff nur für Mitglieder dieses Haushalts. `supabase/migrations/20261019_restore_household.sql` stellt den Haushalt eines bestehenden Kontos wieder her, falls diese Einträge gelöscht wurden.
+Die Migrationen liegen in `supabase/migrations/`. `20261017_initial_schema.sql` erstellt Haushalte, Mitgliedschaften, Gerichte, Wochenpläne und Einkaufslisten. `20261019_restore_household.sql` stellt bei Bedarf einen fehlenden Haushalt wieder her. `20261019_household_join_codes.sql` ergänzt Beitrittscodes; `20261019_shorten_household_join_codes.sql` verkürzt sie auf 8 Stellen und begrenzt die Gültigkeit auf 10 Minuten. Codes sind einmalig nutzbar, pro Haushalt gilt jeweils nur der zuletzt erstellte. Ein angemeldetes Haushaltsmitglied kann den Code direkt teilen; eingelöste Codes fügen das zweite Konto dem Haushalt hinzu. Der vorherige private Haushalt bleibt bestehen. Row Level Security erlaubt Zugriff auf gemeinsame Daten nur für Haushaltsmitglieder.
 
-Die Datei wird im Supabase Dashboard unter **SQL Editor** ausgeführt. Anschließend stellt die App in einem separaten Schritt die bestehende lokale Speicherung auf diese Tabellen um.
+Führe alle Migrationen in zeitlicher Reihenfolge im Supabase Dashboard unter **SQL Editor** aus.
 
 `datenschutz.html` enthält einen Entwurf der Datenschutzerklärung. Vor einer Veröffentlichung müssen Verantwortlicher, Kontaktadresse und Supabase-Projektregion ergänzt sowie der Text geprüft werden.
 
@@ -27,5 +27,4 @@ Das Projekt besteht aus statischen Dateien und kann direkt mit GitHub Pages ver�
 1. Im Repository unter **Settings → Pages** bei **Build and deployment** die Quelle **Deploy from a branch** auswählen.
 2. Den Branch `main` und den Ordner `/(root)` auswählen und speichern.
 
-Gerichte und Pläne werden im Browser der jeweiligen Person gespeichert. Es gibt noch keine gemeinsame Synchronisierung.
-
+Gerichte, Wochenpläne und Einkaufszettel werden über Supabase zwischen den Mitgliedern eines Haushalts synchronisiert.
