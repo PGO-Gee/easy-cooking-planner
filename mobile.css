@@ -459,6 +459,18 @@
     overscroll-behavior: contain;
   }
 
+  .dish-ingredient-suggest {
+    position: relative;
+  }
+
+  .dish-ingredient-suggest .pantry-suggestions {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    left: 0;
+    z-index: 3;
+  }
+
   .dialog-actions .secondary-button,
   .dialog-actions .primary-button {
     min-height: 44px;
