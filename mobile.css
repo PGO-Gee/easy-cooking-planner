@@ -299,6 +299,7 @@
 
   #dish-form,
   .choose-dialog-content,
+  .pantry-dialog-content,
   .household-dialog-content,
   .catalog-dialog-content {
     padding: 20px;
