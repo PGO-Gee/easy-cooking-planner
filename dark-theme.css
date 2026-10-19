@@ -207,6 +207,11 @@
     color-scheme: dark;
   }
 
+  .dish-ingredients-editor .pantry-search {
+    border-color: #3a463c;
+    background: #151c17;
+  }
+
   .dish-main-ingredient-field .pantry-search {
     border-color: #3a463c;
     background: #151c17;
