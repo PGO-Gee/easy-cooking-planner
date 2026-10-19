@@ -91,7 +91,7 @@ for each row execute procedure public.set_updated_at();
 create trigger weekly_plans_set_updated_at before update on public.weekly_plans
 for each row execute procedure public.set_updated_at();
 
--- Jeder neue Google-Nutzer erhält automatisch einen privaten Haushalt.
+-- Jeder neue angemeldete Nutzer erhält automatisch einen privaten Haushalt.
 create function public.create_household_for_new_user()
 returns trigger
 language plpgsql
