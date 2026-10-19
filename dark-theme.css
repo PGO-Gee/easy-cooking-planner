@@ -221,6 +221,14 @@
     color: #b9c4b8;
   }
 
+  #dish-ingredient-chips .pantry-chip {
+    color: #c7dec7;
+  }
+
+  #dish-ingredient-chips .pantry-empty-selection {
+    color: #a0aca0;
+  }
+
   .pantry-suggestions {
     border-color: #3a463c;
     background: #1b231d;

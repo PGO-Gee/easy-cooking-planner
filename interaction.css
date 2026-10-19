@@ -138,6 +138,15 @@
   background: #f8f9f6;
 }
 
+#dish-ingredient-chips .pantry-chip,
+#dish-ingredient-chips .pantry-empty-selection {
+  color: var(--ink);
+}
+
+#dish-ingredient-chips .pantry-chip {
+  color: #365b43;
+}
+
 .dish-ingredients-editor .pantry-search {
   width: 100%;
 }
@@ -178,12 +187,21 @@
 }
 
 .dish-ingredient-suggest .pantry-suggestions {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 10;
   max-height: min(264px, 36dvh);
-  margin-top: 6px;
+  margin: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+.dish-ingredient-suggest {
+  position: relative;
 }
 
 .dish-ingredient-suggest .pantry-suggestion {
@@ -213,7 +231,11 @@
   border-radius: 8px;
   background: var(--paper);
   color: var(--ink);
-  font: 14px var(--sans);
+  font: 16px var(--sans);
+}
+
+#dish-form input:not([type="hidden"]):not([type="range"]) {
+  font-size: 16px;
 }
 
 .pantry-search #dish-ingredient-input {
