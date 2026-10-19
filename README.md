@@ -12,6 +12,12 @@ Die App verwendet für die geschlossene Testphase E-Mail/Passwort-Login über Su
 
 Gerichte und Wochenpläne bleiben in diesem ersten Schritt lokal im Browser gespeichert. Die Anmeldung synchronisiert sie noch nicht zwischen Geräten oder Haushaltsmitgliedern.
 
+## Supabase-Datenbank
+
+Die erste Migration liegt in `supabase/migrations/20261017_initial_schema.sql`. Sie erstellt private Haushalte, Gerichte, Wochenpläne, geplante Mahlzeiten und Einkaufslisten. Für neue Auth-Nutzer wird automatisch ein privater Haushalt angelegt; Row Level Security erlaubt Zugriff nur für Mitglieder dieses Haushalts. `supabase/migrations/20261019_restore_household.sql` stellt den Haushalt eines bestehenden Kontos wieder her, falls diese Einträge gelöscht wurden.
+
+Die Datei wird im Supabase Dashboard unter **SQL Editor** ausgeführt. Anschließend stellt die App in einem separaten Schritt die bestehende lokale Speicherung auf diese Tabellen um.
+
 `datenschutz.html` enthält einen Entwurf der Datenschutzerklärung. Vor einer Veröffentlichung müssen Verantwortlicher, Kontaktadresse und Supabase-Projektregion ergänzt sowie der Text geprüft werden.
 
 ## GitHub Pages

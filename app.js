@@ -1,23 +1,3 @@
-const seedDishes=[
-  {id:'d1',name:'Reis mit Hühnchen und Gemüse',ingredient:'Hühnchen',time:35,emoji:'🍚',ingredients:['Reis','Hühnchen','Paprika','Brokkoli','Karotten'],nutrition:{kcal:560,protein:42,fat:12,carbs:68}},
-  {id:'d2',name:'Pizza Prosciutto e funghi',ingredient:'Wurst',time:30,emoji:'🍕',ingredients:['Pizzateig','Tomatensoße','Mozzarella','Prosciutto','Champignons'],nutrition:{kcal:780,protein:38,fat:31,carbs:84}},
-  {id:'d3',name:'Spaghetti Bolognese',ingredient:'Rind',time:35,emoji:'🍝',ingredients:['Spaghetti','Hackfleisch','Passierte Tomaten','Zwiebel','Karotten'],nutrition:{kcal:650,protein:34,fat:22,carbs:78}},
-  {id:'d4',name:'Nudeln mit Fleisch und Gemüse',ingredient:'Rind',time:30,emoji:'🍝',ingredients:['Nudeln','Fleisch','Paprika','Zucchini','Karotten'],nutrition:{kcal:640,protein:35,fat:20,carbs:76}},
-  {id:'d5',name:'Nudelsuppe mit Würstchen',ingredient:'Schwein',time:30,emoji:'🍲',ingredients:['Suppennudeln','Würstchen','Karotten','Sellerie','Lauch'],nutrition:{kcal:430,protein:18,fat:19,carbs:47}},
-  {id:'d6',name:'Fisch mit Kartoffeln',ingredient:'Fisch',time:40,emoji:'🐟',ingredients:['Fischfilet','Kartoffeln','Zitrone'],nutrition:{kcal:520,protein:36,fat:16,carbs:56}},
-  {id:'d7',name:'Pommes und Chicken Nuggets',ingredient:'Hühnchen',time:25,emoji:'🍟',ingredients:['Pommes','Chicken Nuggets'],nutrition:{kcal:700,protein:24,fat:38,carbs:62}},
-  {id:'d8',name:'Hühnchen-Wraps',ingredient:'Hühnchen',time:25,emoji:'🌯',ingredients:['Wraps','Hühnchen','Salat','Tomaten','Gurke','Joghurtsoße'],nutrition:{kcal:540,protein:38,fat:17,carbs:57}},
-  {id:'d9',name:'Pelmeni (russische Teigtaschen)',ingredient:'Rind',time:45,emoji:'🥟',ingredients:['Pelmeni','Schmand'],nutrition:{kcal:620,protein:27,fat:25,carbs:70}},
-  {id:'d10',name:'Burger und Kartoffel-Pommes',ingredient:'Rind',time:40,emoji:'🍔',ingredients:['Burgerbrötchen','Rinderpatty','Käse','Salat','Tomaten','Kartoffeln'],nutrition:{kcal:820,protein:38,fat:42,carbs:72}},
-  {id:'d11',name:'Plov mit Hühnchen',ingredient:'Hühnchen',time:55,emoji:'🍛',ingredients:['Reis','Hühnchen','Karotten','Zwiebel'],nutrition:{kcal:610,protein:36,fat:18,carbs:76}},
-  {id:'d12',name:'Hühnchen mit Kartoffeln',ingredient:'Hühnchen',time:50,emoji:'🍗',ingredients:['Hühnchen','Kartoffeln','Zwiebel'],nutrition:{kcal:590,protein:42,fat:18,carbs:58}},
-  {id:'d13',name:'Reis-Bowl mit Salat',ingredient:'Vegetarisch',time:25,emoji:'🥗',ingredients:['Reis','Salat','Gurke','Tomaten','Avocado'],nutrition:{kcal:480,protein:10,fat:16,carbs:72}},
-  {id:'d14',name:'Linsensuppe',ingredient:'Vegetarisch',time:40,emoji:'🍲',ingredients:['Linsen','Karotten','Sellerie','Zwiebel'],nutrition:{kcal:390,protein:23,fat:8,carbs:55}},
-  {id:'d15',name:'Chili con Carne mit Reis',ingredient:'Rind',time:45,emoji:'🌶️',ingredients:['Hackfleisch','Kidneybohnen','Passierte Tomaten','Reis','Zwiebel'],nutrition:{kcal:670,protein:38,fat:21,carbs:78}},
-  {id:'d16',name:'Buchweizen-Eintopf',ingredient:'Vegetarisch',time:45,emoji:'🍲',ingredients:['Buchweizen','Kartoffeln','Karotten','Zwiebel'],nutrition:{kcal:420,protein:15,fat:10,carbs:70}},
-  {id:'d17',name:'Ofenkartoffel mit Quark',ingredient:'Vegetarisch',time:55,emoji:'🥔',ingredients:['Kartoffeln','Quark','Schnittlauch'],nutrition:{kcal:460,protein:25,fat:12,carbs:65}},
-  {id:'d18',name:'Thunfisch-Nudeln',ingredient:'Fisch',time:25,emoji:'🍝',ingredients:['Nudeln','Thunfisch','Sahne','Zwiebel'],nutrition:{kcal:590,protein:34,fat:17,carbs:75}}
-];
 const emojiMap={'Hühnchen':'🍗','Rind':'🥘','Fisch':'🐟','Schwein':'🥓','Wurst':'🌭','Vegetarisch':'🥦','Pasta':'🍝','Ei':'🍳'};
 const shortDays=['MO','DI','MI','DO','FR','SA','SO'];
 const timeBlocks=[15,30,45,60,90,120];
@@ -28,15 +8,143 @@ const authClient=window.supabase?.createClient&&supabaseConfig?.url&&supabaseCon
   :null;
 let state=loadState(); let weekOffset=0; let toastTimer;
 let appInitialized=false;
+let appInitializationPromise;
+let currentUserId='';
+let currentHouseholdId='';
+let cloudReady=false;
+let cloudSyncTimer;
+let cloudSyncInProgress=false;
+let cloudSyncRequested=false;
+let loadingCloudState=false;
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
-function revealApp(){
+function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${currentUserId}`:''}
+function localStateOwnerKey(){return 'wochentisch-local-owner'}
+function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${currentUserId}`:''}
+function canUseLocalState(){const owner=localStorage.getItem(localStateOwnerKey());return !owner||owner===currentUserId}
+function starterState(){return{dishes:[],plans:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}}}
+function saveCloudBackup(){if(currentUserId&&canUseLocalState()&&state.dishes.length)localStorage.setItem(cloudBackupKey(),JSON.stringify(state))}
+function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(cloudBackupKey()));return backup?.dishes?.length?backup:null}catch(error){return null}}
+function cleanIngredients(ingredients){return Array.isArray(ingredients)?ingredients.filter(item=>typeof item==='string').map(normalizeIngredient).filter(Boolean):[]}
+function cleanNutrition(nutrition){return nutrition&&typeof nutrition==='object'&&!Array.isArray(nutrition)?nutrition:null}
+function cloudError(message){console.error(message);if(appInitialized)showToast('Änderung konnte nicht gespeichert werden. Bitte später erneut versuchen.')}
+function ensureUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)}
+function newId(){return crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`}
+function prepareLocalIdsForCloud(){
+  const idMap=new Map();
+  state.dishes.forEach(dish=>{if(!ensureUuid(dish.id)){const id=newId();idMap.set(dish.id,id);dish.id=id}});
+  if(idMap.size)Object.values(state.plans).forEach(days=>days.forEach(day=>{
+    for(let index=0;index<day.length;index++)day[index]=idMap.get(day[index])||day[index];
+  }));
+}
+async function getCurrentHousehold(){
+  const {data,error}=await authClient.rpc('ensure_my_household');
+  if(error)throw error;
+  if(!data)throw new Error('Für dieses Konto konnte kein Haushalt angelegt werden.');
+  return data;
+}
+async function readStateFromCloud(){
+  const [dishesResult,plansResult]=await Promise.all([
+    authClient.from('dishes').select('*').eq('household_id',currentHouseholdId).order('created_at'),
+    authClient.from('weekly_plans').select('id, week_start').eq('household_id',currentHouseholdId).order('week_start')
+  ]);
+  if(dishesResult.error)throw dishesResult.error;
+  if(plansResult.error)throw plansResult.error;
+  const plans=plansResult.data||[],planIds=plans.map(plan=>plan.id);
+  let meals=[],shoppingItems=[],shoppingChecks=[];
+  if(planIds.length){
+    const [mealsResult,itemsResult,checksResult]=await Promise.all([
+      authClient.from('planned_meals').select('*').in('weekly_plan_id',planIds).order('position'),
+      authClient.from('shopping_items').select('*').in('weekly_plan_id',planIds),
+      authClient.from('shopping_item_checks').select('*').in('weekly_plan_id',planIds)
+    ]);
+    if(mealsResult.error)throw mealsResult.error;
+    if(itemsResult.error)throw itemsResult.error;
+    if(checksResult.error)throw checksResult.error;
+    meals=mealsResult.data||[];shoppingItems=itemsResult.data||[];shoppingChecks=checksResult.data||[];
+  }
+  const nextState={dishes:(dishesResult.data||[]).map(dish=>({
+    id:dish.id,name:dish.name,ingredient:dish.ingredient,time:dish.cooking_time_minutes,
+    emoji:dish.emoji,ingredients:cleanIngredients(dish.ingredients),nutrition:cleanNutrition(dish.nutrition)
+  })),plans:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}};
+  const weekByPlanId=new Map();
+  plans.forEach(plan=>{nextState.plans[plan.week_start]=Array.from({length:7},()=>[]);weekByPlanId.set(plan.id,plan.week_start)});
+  meals.forEach(meal=>{const week=weekByPlanId.get(meal.weekly_plan_id);if(week&&nextState.plans[week][meal.day_of_week])nextState.plans[week][meal.day_of_week][meal.position]=meal.dish_id});
+  Object.values(nextState.plans).forEach(days=>days.forEach((day,index)=>{days[index]=day.filter(Boolean)}));
+  shoppingItems.forEach(item=>{const week=weekByPlanId.get(item.weekly_plan_id);if(week)(nextState.manualShoppingItems[week]??=[]).push(item.name)});
+  shoppingChecks.forEach(item=>{const week=weekByPlanId.get(item.weekly_plan_id);if(week)(nextState.shoppingChecks[week]??={})[item.item_key]=true});
+  return {state:nextState,hasCloudData:Boolean(dishesResult.data?.length||plans.length)};
+}
+async function syncStateToCloud(){
+  if(!cloudReady||!currentHouseholdId)return;
+  prepareLocalIdsForCloud();
+  const currentState=structuredClone(state);
+  const {data:oldPlans,error:oldPlansError}=await authClient.from('weekly_plans').select('id').eq('household_id',currentHouseholdId);
+  if(oldPlansError)throw oldPlansError;
+  const oldPlanIds=(oldPlans||[]).map(plan=>plan.id);
+  if(oldPlanIds.length){
+    const {error}=await authClient.from('weekly_plans').delete().in('id',oldPlanIds);
+    if(error)throw error;
+  }
+  const {error:deleteDishesError}=await authClient.from('dishes').delete().eq('household_id',currentHouseholdId);
+  if(deleteDishesError)throw deleteDishesError;
+  if(currentState.dishes.length){
+    const {error}=await authClient.from('dishes').insert(currentState.dishes.map(dish=>({
+      id:dish.id,household_id:currentHouseholdId,name:dish.name,ingredient:dish.ingredient||'',
+      cooking_time_minutes:Number(dish.time)||30,emoji:dish.emoji||'🍽️',ingredients:cleanIngredients(dish.ingredients),nutrition:cleanNutrition(dish.nutrition)
+    })));
+    if(error)throw error;
+  }
+  const planRows=Object.keys(currentState.plans).map(week_start=>({id:newId(),household_id:currentHouseholdId,week_start}));
+  if(planRows.length){
+    const {error}=await authClient.from('weekly_plans').insert(planRows);
+    if(error)throw error;
+  }
+  const planByWeek=new Map(planRows.map(plan=>[plan.week_start,plan.id]));
+  const mealRows=[];
+  Object.entries(currentState.plans).forEach(([week,days])=>days.forEach((day,day_of_week)=>day.forEach((dish_id,position)=>mealRows.push({weekly_plan_id:planByWeek.get(week),dish_id,day_of_week,position}))));
+  if(mealRows.length){const {error}=await authClient.from('planned_meals').insert(mealRows);if(error)throw error}
+  const manualRows=[];
+  Object.entries(currentState.manualShoppingItems||{}).forEach(([week,items])=>items.forEach(name=>manualRows.push({weekly_plan_id:planByWeek.get(week),name,normalized_name:normalizeIngredient(name).toLocaleLowerCase('de-DE')})));
+  if(manualRows.length){const {error}=await authClient.from('shopping_items').insert(manualRows);if(error)throw error}
+  const checkRows=[];
+  Object.entries(currentState.shoppingChecks||{}).forEach(([week,checks])=>Object.entries(checks).filter(([,checked])=>checked).forEach(([item_key])=>checkRows.push({weekly_plan_id:planByWeek.get(week),item_key})));
+  if(checkRows.length){const {error}=await authClient.from('shopping_item_checks').insert(checkRows);if(error)throw error}
+}
+function scheduleCloudSync(){
+  if(!cloudReady||loadingCloudState)return;
+  cloudSyncRequested=true;clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(flushCloudSync,350);
+}
+async function flushCloudSync(){
+  if(cloudSyncInProgress||!cloudSyncRequested)return;
+  cloudSyncInProgress=true;
+  try{while(cloudSyncRequested){cloudSyncRequested=false;await syncStateToCloud()}}
+  catch(error){cloudError(error)}
+  finally{cloudSyncInProgress=false}
+}
+async function revealApp(){
   $('#auth-gate').hidden=true;
   $('.app-shell').hidden=false;
-  if(appInitialized)return;
-  appInitialized=true;
-  if(state.noteHidden)$('#bottom-note').classList.add('hidden');
-  updateCounts();
-  renderCalendar();
+  if(appInitializationPromise)return appInitializationPromise;
+  appInitializationPromise=(async()=>{
+    try{
+      currentHouseholdId=await getCurrentHousehold();
+      const cloud=await readStateFromCloud(),migrationKey=cloudMigrationKey();
+      cloudReady=true;
+      saveCloudBackup();
+      if(!cloud.hasCloudData){
+        // Gerichte werden zentral in Supabase verwaltet. Lokale Gerichte werden
+        // bei einem leeren Haushalt nicht automatisch wieder hochgeladen.
+        state=starterState();
+        await syncStateToCloud();
+        localStorage.setItem(migrationKey,'true');
+      }else state=cloud.state;
+    }catch(error){cloudError(error);showAuthError('Die Datenbank ist gerade nicht erreichbar. Deine Änderungen werden vorübergehend nur auf diesem Gerät gespeichert.');}
+    appInitialized=true;
+    if(state.noteHidden)$('#bottom-note').classList.add('hidden');
+    updateCounts();renderCalendar();
+  })();
+  return appInitializationPromise;
 }
 function showLogin(){
   $('.app-shell').hidden=true;
@@ -62,27 +170,27 @@ $('#sign-out').addEventListener('click',async()=>{
   if(error)showToast(`Abmelden fehlgeschlagen: ${error.message}`);
 });
 if(authClient){
-  authClient.auth.onAuthStateChange((_event,session)=>{if(session)revealApp();else showLogin()});
+  authClient.auth.onAuthStateChange((_event,session)=>{if(session){currentUserId=session.user.id;revealApp()}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;showLogin()}});
   authClient.auth.getSession().then(({data,error})=>{
     if(error){showLogin();showAuthError(`Anmeldestatus konnte nicht geprüft werden: ${error.message}`)}
-    else if(data.session)revealApp();
+    else if(data.session){currentUserId=data.session.user.id;revealApp()}
     else showLogin();
   }).catch(()=>{showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')});
 }else{
   showLogin();
   showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
 }
-function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){const defaults=seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}}));const isOldSeed=s.dishes.length===12&&s.dishes.every(d=>/^d(?:[1-9]|1[0-2])$/.test(d.id));if(isOldSeed){s.dishes=defaults;s.plans={}}else{const existingIds=new Set(s.dishes.map(d=>d.id));const missing=defaults.filter(d=>!existingIds.has(d.id));const missingByName=missing.filter(d=>!s.dishes.some(saved=>saved.name.trim().toLocaleLowerCase('de-DE')===d.name.toLocaleLowerCase('de-DE')));s.dishes.push(...missingByName)}s.dishes=s.dishes.map(d=>{const seeded=defaults.find(x=>x.id===d.id);if(d.id==='d2'&&['Pizza','Pizza Prosciutto','Pizza Prosciutto e funghi'].includes(d.name)){d.name=seeded.name;d.ingredient=seeded.ingredient;d.ingredients=[...seeded.ingredients];d.nutrition={...seeded.nutrition};d.emoji=seeded.emoji}return{...d,ingredients:Array.isArray(d.ingredients)?d.ingredients:seeded?.ingredients||[],nutrition:d.nutrition||seeded?.nutrition||null}});return s}}catch(e){}return{dishes:seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}})),plans:{},noteHidden:false}}
-function save(){localStorage.setItem('wochentisch-v1',JSON.stringify(state));updateCounts()}
+function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans)return s}catch(e){}return{dishes:[],plans:{},noteHidden:false,shoppingChecks:{},manualShoppingItems:{}}}
+function save({sync=true}={}){localStorage.setItem('wochentisch-v1',JSON.stringify(state));if(currentUserId){localStorage.setItem(localStateOwnerKey(),currentUserId);saveCloudBackup()}updateCounts();if(sync)scheduleCloudSync()}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
 function mondayFor(offset=0){const d=new Date();d.setHours(0,0,0,0);const shift=(d.getDay()+6)%7;d.setDate(d.getDate()-shift+offset*7);return d}
 function keyFor(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function getPlan(){const start=mondayFor(weekOffset),key=keyFor(start);if(!state.plans[key])state.plans[key]=makePlan(start);return state.plans[key]}
+function getPlan(){const start=mondayFor(weekOffset),key=keyFor(start);if(!state.plans[key]){state.plans[key]=makePlan(start);save()}return state.plans[key]}
 function makePlan(start){const pool=shuffle(state.dishes.slice());const plan=[];let last='';for(let i=0;i<7;i++){let idx=pool.findIndex(d=>d.ingredient!==last);if(idx<0)idx=0;const dish=pool.splice(idx,1)[0];plan.push(dish?[dish.id]:[]);last=dish?.ingredient||'';if(!pool.length)pool.push(...shuffle(state.dishes.slice()))}return plan}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function formatRange(start){const end=new Date(start);end.setDate(end.getDate()+6);const opts={day:'numeric',month:'short'};const monthA=start.toLocaleDateString('de-DE',{month:'long'}),monthB=end.toLocaleDateString('de-DE',{month:'long'});return monthA===monthB?`${start.getDate()}. – ${end.getDate()}. ${monthA} ${end.getFullYear()}`:`${start.toLocaleDateString('de-DE',opts)} – ${end.toLocaleDateString('de-DE',opts)} ${end.getFullYear()}`}
 function nutritionText(n){return n?`~${n.kcal} kcal · E ${n.protein} g · F ${n.fat} g · KH ${n.carbs} g / Portion`:''}
-function renderCalendar({shuffleAnimation=false}={}){const start=mondayFor(weekOffset),plan=getPlan();$('#week-date').textContent=formatRange(start);$('#heading-period').textContent=`· ${start.toLocaleDateString('de-DE',{month:'long',year:'numeric'})}`;$('#nav-count').textContent=plan.reduce((n,x)=>n+x.length,0);$('#plan-meta').textContent=`${plan.reduce((n,x)=>n+x.length,0)} ${plan.reduce((n,x)=>n+x.length,0)===1?'Kochidee':'Kochideen'} geplant`;const today=keyFor(new Date());const grid=$('#calendar');grid.innerHTML='';for(let i=0;i<7;i++){const date=new Date(start);date.setDate(start.getDate()+i);const card=document.createElement('article');card.className='day-card'+(keyFor(date)===today?' today':'')+(shuffleAnimation?' shuffle-in':'');if(shuffleAnimation)card.style.setProperty('--shuffle-index',i);card.innerHTML=`<div class="day-head"><div><div class="day-name">${shortDays[i]}</div><div class="day-num">${date.getDate()} <span style="font:400 10px var(--sans);color:#a0a79e">${date.toLocaleDateString('de-DE',{month:'short'})}</span></div></div>${keyFor(date)===today?'<span class="today-pill">Heute</span>':''}</div><div class="day-content" data-day="${i}"></div>`;const content=card.querySelector('.day-content');plan[i].forEach((id,j)=>{const dish=state.dishes.find(d=>d.id===id);if(!dish)return;const meal=document.createElement('div');meal.className='meal-card';meal.innerHTML=`<button class="meal-remove" aria-label="Gericht entfernen">×</button><div class="meal-label">${j===0?'ABENDESSEN':j===1?'MITTAGESSEN':'WEITERE IDEE'}</div><div class="meal-title"><span class="meal-icon"></span><div class="meal-name"></div></div><div class="meal-meta"><span>◷ ${dish.time||25} min</span><span class="dot">·</span><span>${dish.ingredient||'Lieblingsgericht'}</span></div><div class="meal-nutrition"></div>`;meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;meal.querySelector('.meal-remove').addEventListener('click',e=>{e.stopPropagation();plan[i].splice(j,1);save();renderCalendar()});meal.addEventListener('click',()=>openDish(dish.id));content.append(meal)});const add=document.createElement('button');add.className='add-meal';add.textContent='＋ Gericht eintragen';add.addEventListener('click',()=>chooseDish(i));content.append(add);grid.append(card)}save();$('#bottom-note').classList.toggle('hidden',state.noteHidden)}
+function renderCalendar({shuffleAnimation=false}={}){const start=mondayFor(weekOffset),plan=getPlan();$('#week-date').textContent=formatRange(start);$('#heading-period').textContent=`· ${start.toLocaleDateString('de-DE',{month:'long',year:'numeric'})}`;$('#nav-count').textContent=plan.reduce((n,x)=>n+x.length,0);$('#plan-meta').textContent=`${plan.reduce((n,x)=>n+x.length,0)} ${plan.reduce((n,x)=>n+x.length,0)===1?'Kochidee':'Kochideen'} geplant`;const today=keyFor(new Date());const grid=$('#calendar');grid.innerHTML='';for(let i=0;i<7;i++){const date=new Date(start);date.setDate(start.getDate()+i);const card=document.createElement('article');card.className='day-card'+(keyFor(date)===today?' today':'')+(shuffleAnimation?' shuffle-in':'');if(shuffleAnimation)card.style.setProperty('--shuffle-index',i);card.innerHTML=`<div class="day-head"><div><div class="day-name">${shortDays[i]}</div><div class="day-num">${date.getDate()} <span style="font:400 10px var(--sans);color:#a0a79e">${date.toLocaleDateString('de-DE',{month:'short'})}</span></div></div>${keyFor(date)===today?'<span class="today-pill">Heute</span>':''}</div><div class="day-content" data-day="${i}"></div>`;const content=card.querySelector('.day-content');plan[i].forEach((id,j)=>{const dish=state.dishes.find(d=>d.id===id);if(!dish)return;const meal=document.createElement('div');meal.className='meal-card';meal.innerHTML=`<button class="meal-remove" aria-label="Gericht entfernen">×</button><div class="meal-label">${j===0?'ABENDESSEN':j===1?'MITTAGESSEN':'WEITERE IDEE'}</div><div class="meal-title"><span class="meal-icon"></span><div class="meal-name"></div></div><div class="meal-meta"><span>◷ ${dish.time||25} min</span><span class="dot">·</span><span>${dish.ingredient||'Lieblingsgericht'}</span></div><div class="meal-nutrition"></div>`;meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;meal.querySelector('.meal-remove').addEventListener('click',e=>{e.stopPropagation();plan[i].splice(j,1);save();renderCalendar()});meal.addEventListener('click',()=>openDish(dish.id));content.append(meal)});const add=document.createElement('button');add.className='add-meal';add.textContent='＋ Gericht eintragen';add.addEventListener('click',()=>chooseDish(i));content.append(add);grid.append(card)}save({sync:false});$('#bottom-note').classList.toggle('hidden',state.noteHidden)}
 function renderDishes(){const q=$('#search-dishes').value.trim().toLowerCase(),list=$('#dish-list');list.innerHTML='';const dishes=state.dishes.filter(d=>d.name.toLowerCase().includes(q)||String(d.ingredient||'').toLowerCase().includes(q)||(d.ingredients||[]).some(i=>i.toLowerCase().includes(q)));if(!dishes.length){list.innerHTML='<div class="empty-state"><b>Keine Gerichte gefunden.</b>Ändere die Suche oder füge ein Gericht hinzu.</div>';return}dishes.forEach(d=>{const row=document.createElement('div');row.className='dish-row';row.innerHTML=`<div class="dish-icon">${d.emoji||emojiMap[d.ingredient]||'🍽️'}</div><div class="dish-copy"><b></b><small>◷ ${d.time||25} Min. <span style="padding:0 5px;color:#d0d5cc">·</span> ${d.ingredient||'Ohne Angabe'}</small><small class="dish-nutrition"></small><small class="dish-ingredients-preview"></small></div><span class="dish-tag">${d.ingredient||'Ohne Kategorie'}</span><button class="row-edit" aria-label="Bearbeiten">···</button>`;row.querySelector('.dish-copy b').textContent=d.name;row.querySelector('.dish-nutrition').textContent=nutritionText(d.nutrition);row.querySelector('.dish-nutrition').hidden=!d.nutrition;row.querySelector('.dish-ingredients-preview').textContent=(d.ingredients||[]).join(' · ')||'Noch keine Zutaten';row.querySelector('.row-edit').addEventListener('click',()=>openDish(d.id));row.addEventListener('dblclick',()=>openDish(d.id));list.append(row)})}
 function showToast(text){const t=$('#toast');t.textContent=text;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2600)}
 function openDish(id=''){const d=state.dishes.find(x=>x.id===id),minutes=Number(d?.time)||30;let timeIndex=0;for(let i=1;i<timeBlocks.length;i++){if(Math.abs(timeBlocks[i]-minutes)<Math.abs(timeBlocks[timeIndex]-minutes))timeIndex=i}$('#dish-id').value=id;$('#dish-name').value=d?.name||'';$('#dish-ingredient').value=d?.ingredient||'';$('#dish-ingredients').value=(d?.ingredients||[]).join(', ');$('#dish-time').value=timeIndex;$('#dish-time-output').textContent=`${timeBlocks[timeIndex]} Min.`;$('#dialog-title').textContent=d?'Gericht bearbeiten':'Gericht hinzufügen';$('#delete-dish').hidden=!d;$('#dish-dialog').showModal();setTimeout(()=>$('#dish-name').focus(),30)}
@@ -122,7 +230,7 @@ function updateThemeButton(){const button=$('#theme-toggle');const label=themeOv
 function applyTheme(){const link=$('#theme-stylesheet');link.media=themeOverride?(themeOverride==='dark'?'all':'not all'):'(prefers-color-scheme: dark)';updateThemeButton()}
 function toggleTheme(){themeOverride=themeOverride?null:systemTheme.matches?'light':'dark';applyTheme()}
 function exportDishes(){const data={format:'wochentisch-dishes',version:1,exportedAt:new Date().toISOString(),dishes:state.dishes};const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wochentisch-gerichte.json';a.click();URL.revokeObjectURL(a.href);showToast('Gerichte wurden exportiert.')}
-function importDishes(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result),incoming=Array.isArray(data)?data:data.dishes;if(!Array.isArray(incoming))throw Error();let added=0;incoming.forEach(raw=>{if(!raw||typeof raw.name!=='string'||!raw.name.trim())return;if(state.dishes.some(d=>d.name.toLowerCase()===raw.name.trim().toLowerCase()))return;state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}${Math.random()}`,name:raw.name.trim(),ingredient:typeof raw.ingredient==='string'?raw.ingredient:'',time:Number(raw.time)||25,emoji:raw.emoji||emojiMap[raw.ingredient]||'🍽️'});added++});save();renderDishes();showToast(added?`${added} ${added===1?'Gericht':'Gerichte'} importiert.`:'Keine neuen Gerichte gefunden.')}catch(e){showToast('Die Datei konnte nicht gelesen werden. Bitte JSON prüfen.')}};reader.readAsText(file)}
+function importDishes(file){const reader=new FileReader();reader.onload=()=>{try{const data=JSON.parse(reader.result),incoming=Array.isArray(data)?data:data.dishes;if(!Array.isArray(incoming))throw Error();let added=0;incoming.forEach(raw=>{if(!raw||typeof raw.name!=='string'||!raw.name.trim())return;if(state.dishes.some(d=>d.name.toLowerCase()===raw.name.trim().toLowerCase()))return;state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}${Math.random()}`,name:raw.name.trim(),ingredient:typeof raw.ingredient==='string'?raw.ingredient:'',time:Number(raw.time)||25,emoji:raw.emoji||emojiMap[raw.ingredient]||'🍽️',ingredients:cleanIngredients(raw.ingredients),nutrition:cleanNutrition(raw.nutrition)});added++});save();renderDishes();showToast(added?`${added} ${added===1?'Gericht':'Gerichte'} importiert.`:'Keine neuen Gerichte gefunden.')}catch(e){showToast('Die Datei konnte nicht gelesen werden. Bitte JSON prüfen.')}};reader.readAsText(file)}
 $('#theme-toggle').addEventListener('click',toggleTheme);systemTheme.addEventListener('change',()=>{if(!themeOverride)updateThemeButton()});applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.view);closeMobileMenu()}));$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-print').addEventListener('click',()=>window.print());$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeIngredient($('#shopping-item-input').value);if(!name)return;const start=mondayFor(weekOffset),weekKey=keyFor(start);state.manualShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=state.manualShoppingItems[weekKey].some(item=>item.toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE'));if(duplicate){showToast('Dieser Artikel steht bereits auf dem Einkaufszettel.');return}state.manualShoppingItems[weekKey].push(name);save();$('#shopping-item-input').value='';$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus()});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
 $('#prev-week').addEventListener('click',()=>{weekOffset--;renderCalendar()});$('#next-week').addEventListener('click',()=>{weekOffset++;renderCalendar()});$('#today-btn').addEventListener('click',()=>{weekOffset=0;renderCalendar()});$('#mix-btn').addEventListener('click',()=>{const key=keyFor(mondayFor(weekOffset));state.plans[key]=makePlan(mondayFor(weekOffset));save();renderCalendar({shuffleAnimation:true});showToast('Deine Woche wurde neu gemischt.')});$('#print-btn').addEventListener('click',()=>window.print());$('#note-close').addEventListener('click',()=>{$('#bottom-note').classList.add('hidden');state.noteHidden=true;save()});$('#help-btn').addEventListener('click',()=>showToast('Deine Gerichte und Pläne werden nur auf diesem Gerät gespeichert.'));$('#close-chooser').addEventListener('click',()=>$('#choose-dialog').close());$('#dish-time').addEventListener('input',e=>{$('#dish-time-output').textContent=`${timeBlocks[Number(e.target.value)]} Min.`});
 $('#add-dish-btn').addEventListener('click',()=>openDish());$('#starter-add').addEventListener('click',()=>openDish());$('#search-dishes').addEventListener('input',renderDishes);$('#export-btn').addEventListener('click',exportDishes);$('#import-btn').addEventListener('click',()=>$('#import-file').click());$('#import-file').addEventListener('change',e=>{if(e.target.files[0])importDishes(e.target.files[0]);e.target.value=''});$('#cancel-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#delete-dish').addEventListener('click',()=>{const id=$('#dish-id').value;if(!id)return;state.dishes=state.dishes.filter(d=>d.id!==id);Object.values(state.plans).forEach(p=>p.forEach(day=>{let i=day.indexOf(id);while(i!==-1){day.splice(i,1);i=day.indexOf(id)}}));save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Gericht gelöscht.')});$('#dish-form').addEventListener('submit',e=>{e.preventDefault();const id=$('#dish-id').value,name=$('#dish-name').value.trim(),ingredient=$('#dish-ingredient').value,time=timeBlocks[Number($('#dish-time').value)]||30,ingredients=$('#dish-ingredients').value.split(',').map(normalizeIngredient).filter(Boolean);if(!name)return;const existing=state.dishes.find(d=>d.id===id);if(existing)Object.assign(existing,{name,ingredient,time,ingredients,emoji:existing.emoji||emojiMap[ingredient]||'🍽️'});else state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}`,name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast(existing?'Gericht aktualisiert.':'Gericht hinzugefügt.')});
