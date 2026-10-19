@@ -299,8 +299,84 @@
 
   #dish-form,
   .choose-dialog-content,
-  .household-dialog-content {
+  .household-dialog-content,
+  .catalog-dialog-content {
     padding: 20px;
+  }
+
+  #catalog-dialog {
+    width: calc(100% - 24px);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .catalog-dialog-content {
+    display: flex;
+    flex-direction: column;
+    max-height: inherit;
+    min-width: 0;
+  }
+
+  .catalog-dialog-content .dialog-head {
+    flex: 0 0 auto;
+    gap: 10px;
+    min-width: 0;
+    margin-bottom: 12px;
+  }
+
+  .catalog-dialog-content .dialog-head > div {
+    min-width: 0;
+  }
+
+  .catalog-dialog-content .dialog-head .eyebrow {
+    letter-spacing: .8px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-dialog-content .dialog-head h2 {
+    font-size: 20px;
+  }
+
+  .catalog-dialog-content .choose-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .catalog-dialog-content .dialog-actions {
+    position: static;
+    flex: 0 0 auto;
+    margin: 12px -20px -20px;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  #catalog-add-all {
+    width: 100%;
+    min-height: 48px;
+    height: auto;
+    padding: 10px 14px;
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .catalog-feedback {
+    flex: 0 0 auto;
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border: 1px solid #d9e5d7;
+    border-radius: 8px;
+    background: #f0f5ef;
+    color: #365b43;
+    font-size: 12px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .catalog-feedback[hidden] {
+    display: none;
   }
 
   .dialog-head {
