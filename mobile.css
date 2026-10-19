@@ -291,8 +291,10 @@
 
   dialog[open] {
     position: fixed;
-    inset: 0;
+    top: calc(var(--visual-viewport-top, 0px) + 12px);
+    bottom: auto;
     margin: auto;
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 
   dialog {

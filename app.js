@@ -20,6 +20,15 @@ let loadingCloudState=false;
 // document during touch gestures. Keep the page position fixed while any dialog is open.
 let dialogScrollLockCount=0;
 let dialogScrollY=0;
+function syncVisualViewport(){
+  const viewport=window.visualViewport;
+  if(!viewport)return;
+  document.documentElement.style.setProperty('--visual-viewport-height',`${viewport.height}px`);
+  document.documentElement.style.setProperty('--visual-viewport-top',`${viewport.offsetTop}px`);
+}
+syncVisualViewport();
+window.visualViewport?.addEventListener('resize',syncVisualViewport);
+window.visualViewport?.addEventListener('scroll',syncVisualViewport);
 function lockPageScroll(){
   dialogScrollLockCount++;
   if(dialogScrollLockCount!==1)return;
@@ -36,6 +45,10 @@ function unlockPageScroll(){
 }
 document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.addEventListener('close',unlockPageScroll);
+  dialog.addEventListener('focusin',event=>{
+    if(!event.target.matches('input,select,textarea'))return;
+    requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
+  });
   const showModal=dialog.showModal.bind(dialog);
   dialog.showModal=()=>{lockPageScroll();showModal()};
 });
