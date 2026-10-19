@@ -28,3 +28,4 @@ Das Projekt besteht aus statischen Dateien und kann direkt mit GitHub Pages ver�
 2. Den Branch `main` und den Ordner `/(root)` auswählen und speichern.
 
 Gerichte und Pläne werden im Browser der jeweiligen Person gespeichert. Es gibt noch keine gemeinsame Synchronisierung.
+
