@@ -175,7 +175,7 @@ $('#create-household-code').addEventListener('click',async event=>{
   }catch(error){console.error(error);householdError('Der Beitrittscode konnte nicht erstellt werden. Bitte später erneut versuchen.')}
   finally{button.disabled=false}
 });
-$('#household-join-code').addEventListener('input',event=>{event.currentTarget.value=event.currentTarget.value.toUpperCase().replace(/[^A-F0-9]/g,'')});
+$('#household-join-code').addEventListener('input',event=>{event.currentTarget.value=event.currentTarget.value.toUpperCase().replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g,'')});
 $('#household-join-form').addEventListener('submit',async event=>{
   event.preventDefault();const button=event.currentTarget.querySelector('button[type="submit"]');
   const code=$('#household-join-code').value.trim();button.disabled=true;householdError('');

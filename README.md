@@ -14,7 +14,7 @@ Gerichte, Wochenpläne und Einkaufszettel werden in Supabase gespeichert und zwi
 
 ## Supabase-Datenbank
 
-Die Migrationen liegen in `supabase/migrations/`. `20261017_initial_schema.sql` erstellt Haushalte, Mitgliedschaften, Gerichte, Wochenpläne und Einkaufslisten. `20261019_restore_household.sql` stellt bei Bedarf einen fehlenden Haushalt wieder her. `20261019_household_join_codes.sql` ergänzt 12-stellige, 30 Minuten gültige, einmalige Beitrittscodes. Pro Haushalt ist jeweils nur der zuletzt erstellte Code gültig. Ein angemeldetes Haushaltsmitglied kann ihn direkt teilen; eingelöste Codes fügen das zweite Konto dem Haushalt hinzu. Der vorherige private Haushalt bleibt bestehen. Row Level Security erlaubt Zugriff auf gemeinsame Daten nur für Haushaltsmitglieder.
+Die Migrationen liegen in `supabase/migrations/`. `20261017_initial_schema.sql` erstellt Haushalte, Mitgliedschaften, Gerichte, Wochenpläne und Einkaufslisten. `20261019_restore_household.sql` stellt bei Bedarf einen fehlenden Haushalt wieder her. `20261019_household_join_codes.sql` ergänzt Beitrittscodes; `20261019_shorten_household_join_codes.sql` verkürzt sie auf 8 Stellen und begrenzt die Gültigkeit auf 10 Minuten. Codes sind einmalig nutzbar, pro Haushalt gilt jeweils nur der zuletzt erstellte. Ein angemeldetes Haushaltsmitglied kann den Code direkt teilen; eingelöste Codes fügen das zweite Konto dem Haushalt hinzu. Der vorherige private Haushalt bleibt bestehen. Row Level Security erlaubt Zugriff auf gemeinsame Daten nur für Haushaltsmitglieder.
 
 Führe alle Migrationen in zeitlicher Reihenfolge im Supabase Dashboard unter **SQL Editor** aus.
 

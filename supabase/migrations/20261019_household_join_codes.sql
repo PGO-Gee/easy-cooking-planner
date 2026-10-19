@@ -51,8 +51,8 @@ begin
     and redeemed_at is null
     and expires_at > now();
 
-  -- Twelve hexadecimal characters provide 48 bits of randomness; only a digest is stored.
-  raw_code := upper(substr(encode(extensions.gen_random_bytes(8), 'hex'), 1, 12));
+  -- Eight hexadecimal characters provide 32 bits of randomness; only a digest is stored.
+  raw_code := upper(substr(encode(extensions.gen_random_bytes(8), 'hex'), 1, 8));
   insert into public.household_join_codes (household_id, code_hash, created_by, expires_at)
   values (
     target_household_id,
@@ -79,7 +79,7 @@ begin
     raise exception 'Authentication required';
   end if;
 
-  if join_code is null or join_code !~ '^[A-F0-9]{12}$' then
+  if join_code is null or join_code !~ '^[A-F0-9]{8}$' then
     raise exception 'Invalid or expired join code';
   end if;
 
