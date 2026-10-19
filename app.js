@@ -1,23 +1,3 @@
-const seedDishes=[
-  {id:'d1',name:'Reis mit Hühnchen und Gemüse',ingredient:'Hühnchen',time:35,emoji:'🍚',ingredients:['Reis','Hühnchen','Paprika','Brokkoli','Karotten'],nutrition:{kcal:560,protein:42,fat:12,carbs:68}},
-  {id:'d2',name:'Pizza Prosciutto e funghi',ingredient:'Wurst',time:30,emoji:'🍕',ingredients:['Pizzateig','Tomatensoße','Mozzarella','Prosciutto','Champignons'],nutrition:{kcal:780,protein:38,fat:31,carbs:84}},
-  {id:'d3',name:'Spaghetti Bolognese',ingredient:'Rind',time:35,emoji:'🍝',ingredients:['Spaghetti','Hackfleisch','Passierte Tomaten','Zwiebel','Karotten'],nutrition:{kcal:650,protein:34,fat:22,carbs:78}},
-  {id:'d4',name:'Nudeln mit Fleisch und Gemüse',ingredient:'Rind',time:30,emoji:'🍝',ingredients:['Nudeln','Fleisch','Paprika','Zucchini','Karotten'],nutrition:{kcal:640,protein:35,fat:20,carbs:76}},
-  {id:'d5',name:'Nudelsuppe mit Würstchen',ingredient:'Schwein',time:30,emoji:'🍲',ingredients:['Suppennudeln','Würstchen','Karotten','Sellerie','Lauch'],nutrition:{kcal:430,protein:18,fat:19,carbs:47}},
-  {id:'d6',name:'Fisch mit Kartoffeln',ingredient:'Fisch',time:40,emoji:'🐟',ingredients:['Fischfilet','Kartoffeln','Zitrone'],nutrition:{kcal:520,protein:36,fat:16,carbs:56}},
-  {id:'d7',name:'Pommes und Chicken Nuggets',ingredient:'Hühnchen',time:25,emoji:'🍟',ingredients:['Pommes','Chicken Nuggets'],nutrition:{kcal:700,protein:24,fat:38,carbs:62}},
-  {id:'d8',name:'Hühnchen-Wraps',ingredient:'Hühnchen',time:25,emoji:'🌯',ingredients:['Wraps','Hühnchen','Salat','Tomaten','Gurke','Joghurtsoße'],nutrition:{kcal:540,protein:38,fat:17,carbs:57}},
-  {id:'d9',name:'Pelmeni (russische Teigtaschen)',ingredient:'Rind',time:45,emoji:'🥟',ingredients:['Pelmeni','Schmand'],nutrition:{kcal:620,protein:27,fat:25,carbs:70}},
-  {id:'d10',name:'Burger und Kartoffel-Pommes',ingredient:'Rind',time:40,emoji:'🍔',ingredients:['Burgerbrötchen','Rinderpatty','Käse','Salat','Tomaten','Kartoffeln'],nutrition:{kcal:820,protein:38,fat:42,carbs:72}},
-  {id:'d11',name:'Plov mit Hühnchen',ingredient:'Hühnchen',time:55,emoji:'🍛',ingredients:['Reis','Hühnchen','Karotten','Zwiebel'],nutrition:{kcal:610,protein:36,fat:18,carbs:76}},
-  {id:'d12',name:'Hühnchen mit Kartoffeln',ingredient:'Hühnchen',time:50,emoji:'🍗',ingredients:['Hühnchen','Kartoffeln','Zwiebel'],nutrition:{kcal:590,protein:42,fat:18,carbs:58}},
-  {id:'d13',name:'Reis-Bowl mit Salat',ingredient:'Vegetarisch',time:25,emoji:'🥗',ingredients:['Reis','Salat','Gurke','Tomaten','Avocado'],nutrition:{kcal:480,protein:10,fat:16,carbs:72}},
-  {id:'d14',name:'Linsensuppe',ingredient:'Vegetarisch',time:40,emoji:'🍲',ingredients:['Linsen','Karotten','Sellerie','Zwiebel'],nutrition:{kcal:390,protein:23,fat:8,carbs:55}},
-  {id:'d15',name:'Chili con Carne mit Reis',ingredient:'Rind',time:45,emoji:'🌶️',ingredients:['Hackfleisch','Kidneybohnen','Passierte Tomaten','Reis','Zwiebel'],nutrition:{kcal:670,protein:38,fat:21,carbs:78}},
-  {id:'d16',name:'Buchweizen-Eintopf',ingredient:'Vegetarisch',time:45,emoji:'🍲',ingredients:['Buchweizen','Kartoffeln','Karotten','Zwiebel'],nutrition:{kcal:420,protein:15,fat:10,carbs:70}},
-  {id:'d17',name:'Ofenkartoffel mit Quark',ingredient:'Vegetarisch',time:55,emoji:'🥔',ingredients:['Kartoffeln','Quark','Schnittlauch'],nutrition:{kcal:460,protein:25,fat:12,carbs:65}},
-  {id:'d18',name:'Thunfisch-Nudeln',ingredient:'Fisch',time:25,emoji:'🍝',ingredients:['Nudeln','Thunfisch','Sahne','Zwiebel'],nutrition:{kcal:590,protein:34,fat:17,carbs:75}}
-];
 const emojiMap={'Hühnchen':'🍗','Rind':'🥘','Fisch':'🐟','Schwein':'🥓','Wurst':'🌭','Vegetarisch':'🥦','Pasta':'🍝','Ei':'🍳'};
 const shortDays=['MO','DI','MI','DO','FR','SA','SO'];
 const timeBlocks=[15,30,45,60,90,120];
@@ -41,7 +21,7 @@ function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${
 function localStateOwnerKey(){return 'wochentisch-local-owner'}
 function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${currentUserId}`:''}
 function canUseLocalState(){const owner=localStorage.getItem(localStateOwnerKey());return !owner||owner===currentUserId}
-function starterState(){return{dishes:seedDishes.map(dish=>({...dish,ingredients:[...dish.ingredients],nutrition:{...dish.nutrition}})),plans:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}}}
+function starterState(){return{dishes:[],plans:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}}}
 function saveCloudBackup(){if(currentUserId&&canUseLocalState()&&state.dishes.length)localStorage.setItem(cloudBackupKey(),JSON.stringify(state))}
 function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(cloudBackupKey()));return backup?.dishes?.length?backup:null}catch(error){return null}}
 function cleanIngredients(ingredients){return Array.isArray(ingredients)?ingredients.filter(item=>typeof item==='string').map(normalizeIngredient).filter(Boolean):[]}
@@ -153,7 +133,9 @@ async function revealApp(){
       cloudReady=true;
       saveCloudBackup();
       if(!cloud.hasCloudData){
-        if(!canUseLocalState()||!state.dishes.length)state=readCloudBackup()||starterState();
+        // Gerichte werden zentral in Supabase verwaltet. Lokale Gerichte werden
+        // bei einem leeren Haushalt nicht automatisch wieder hochgeladen.
+        state=starterState();
         await syncStateToCloud();
         localStorage.setItem(migrationKey,'true');
       }else state=cloud.state;
@@ -198,7 +180,7 @@ if(authClient){
   showLogin();
   showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
 }
-function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){const defaults=seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}}));const isOldSeed=s.dishes.length===12&&s.dishes.every(d=>/^d(?:[1-9]|1[0-2])$/.test(d.id));if(isOldSeed){s.dishes=defaults;s.plans={}}else{const existingIds=new Set(s.dishes.map(d=>d.id));const missing=defaults.filter(d=>!existingIds.has(d.id));const missingByName=missing.filter(d=>!s.dishes.some(saved=>saved.name.trim().toLocaleLowerCase('de-DE')===d.name.toLocaleLowerCase('de-DE')));s.dishes.push(...missingByName)}s.dishes=s.dishes.map(d=>{const seeded=defaults.find(x=>x.id===d.id);if(d.id==='d2'&&['Pizza','Pizza Prosciutto','Pizza Prosciutto e funghi'].includes(d.name)){d.name=seeded.name;d.ingredient=seeded.ingredient;d.ingredients=[...seeded.ingredients];d.nutrition={...seeded.nutrition};d.emoji=seeded.emoji}return{...d,ingredients:Array.isArray(d.ingredients)?d.ingredients:seeded?.ingredients||[],nutrition:d.nutrition||seeded?.nutrition||null}});return s}}catch(e){}return{dishes:seedDishes.map(x=>({...x,ingredients:[...x.ingredients],nutrition:{...x.nutrition}})),plans:{},noteHidden:false}}
+function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans)return s}catch(e){}return{dishes:[],plans:{},noteHidden:false,shoppingChecks:{},manualShoppingItems:{}}}
 function save({sync=true}={}){localStorage.setItem('wochentisch-v1',JSON.stringify(state));if(currentUserId){localStorage.setItem(localStateOwnerKey(),currentUserId);saveCloudBackup()}updateCounts();if(sync)scheduleCloudSync()}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
 function mondayFor(offset=0){const d=new Date();d.setHours(0,0,0,0);const shift=(d.getDay()+6)%7;d.setDate(d.getDate()-shift+offset*7);return d}
