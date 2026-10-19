@@ -47,6 +47,9 @@ document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.addEventListener('close',unlockPageScroll);
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
+    // iOS Safari's scrollIntoView on this field pushes the whole pantry dialog
+    // upward; its suggestions are positioned as a popup above the field instead.
+    if(dialog.id==='pantry-dialog')return;
     requestAnimationFrame(()=>event.target.scrollIntoView({block:'center',inline:'nearest'}));
   });
   const showModal=dialog.showModal.bind(dialog);
