@@ -56,7 +56,7 @@
       </section>
       <section id="dishes-view" class="view hidden">
         <div class="page-heading"><div><div class="eyebrow">GERICHTE</div><h1>Meine Gerichte<span class="heading-period"> <span id="dish-heading-count">12</span> Ideen</span></h1><p class="subheading">Verwalte deine Gerichte für die Wochenplanung.</p></div><button id="add-dish-btn" class="primary-button"><span>＋</span> Gericht hinzufügen</button></div>
-        <div class="dish-toolbar"><div class="search-box"><span>⌕</span><input id="search-dishes" placeholder="Gericht suchen …" /></div><div class="toolbar-actions"><button id="import-btn" class="secondary-button"><span>↓</span> Importieren</button><button id="export-btn" class="secondary-button"><span>↑</span> Exportieren</button><input type="file" id="import-file" accept="application/json,.json" hidden></div></div>
+        <div class="dish-toolbar"><div class="search-box"><span>⌕</span><input id="search-dishes" placeholder="Gericht suchen …" /></div><div class="toolbar-actions"><button id="catalog-btn" class="secondary-button">Standardkatalog</button><button id="import-btn" class="secondary-button"><span>↓</span> Importieren</button><button id="export-btn" class="secondary-button"><span>↑</span> Exportieren</button><input type="file" id="import-file" accept="application/json,.json" hidden></div></div>
         <div id="dish-list" class="dish-list"></div>
         <div class="starter-tip"><span>＋</span><div><b>Gericht ergänzen</b><p>Füge weitere Gerichte zu deiner Liste hinzu.</p></div><button id="starter-add">＋ Gericht ergänzen</button></div>
       </section>
@@ -73,9 +73,11 @@
   </div>
   <dialog id="dish-dialog"><form method="dialog" id="dish-form"><div class="dialog-head"><div><div class="eyebrow">DEINE REZEPTSAMMLUNG</div><h2 id="dialog-title">Gericht hinzufügen</h2></div><button class="close-button" value="cancel" aria-label="Schließen">×</button></div><input type="hidden" id="dish-id"><label>Wie heißt das Gericht?<input id="dish-name" required maxlength="80" placeholder="z. B. Gemüse-Curry mit Reis"></label><div class="form-row"><label>Hauptzutat<select id="dish-ingredient"><option value="">Keine Angabe</option><option>Hühnchen</option><option>Rind</option><option>Fisch</option><option>Schwein</option><option>Wurst</option><option>Vegetarisch</option><option>Pasta</option><option>Ei</option></select></label><label class="time-slider-label"><span class="time-label-row"><span>Zeitaufwand</span><output id="dish-time-output" for="dish-time">30 Min.</output></span><input id="dish-time" type="range" min="0" max="5" step="1" value="1"><span class="slider-scale"><span>15</span><span>30</span><span>45</span><span>60</span><span>90</span><span>120 Min.</span></span></label></div><label class="ingredients-field">Wichtige Zutaten <small>Kommagetrennt, ohne Mengen oder Gewürze</small><textarea id="dish-ingredients" rows="3" placeholder="z. B. Reis, Hühnchen, Paprika"></textarea></label><div class="dialog-actions"><button type="button" class="text-button" id="delete-dish" hidden>Gericht löschen</button><button type="button" class="secondary-button" id="cancel-dialog">Abbrechen</button><button class="primary-button" value="save">Speichern</button></div></form></dialog>
   <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><div id="choose-dish-list" class="choose-list"></div></div></dialog>
+  <dialog id="catalog-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">STANDARDKATALOG</div><h2>Gericht hinzufügen</h2></div><button type="button" class="close-button" id="close-catalog" aria-label="Schließen">×</button></div><div id="catalog-list" class="choose-list"></div></div></dialog>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="supabase-config.js?v=20261017-2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=20261017-2"></script>
+  <script src="app.js?v=20261019-1"></script>
 </body>
 </html>
+
