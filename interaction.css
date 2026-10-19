@@ -238,3 +238,5 @@
     color: #27342b;
   }
 }
+#dish-form .form-error{margin:-10px 0 16px;padding:11px 13px;border:1px solid #e7b5aa;border-left:4px solid #b84d3b;border-radius:7px;background:#fff1ed;color:#8f3025;font-size:12px;font-weight:600;line-height:1.45}
+#dish-form .form-error[hidden]{display:none}
