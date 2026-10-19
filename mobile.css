@@ -454,7 +454,7 @@
     bottom: calc(100% + 6px);
     left: 0;
     z-index: 3;
-    max-height: min(132px, 18dvh);
+    max-height: min(264px, 36dvh);
     margin-top: 0;
     overscroll-behavior: contain;
   }
