@@ -47,6 +47,12 @@
   color: #899188;
 }
 
+.pantry-search-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
 .pantry-search > span {
   font-size: 22px;
   line-height: 1;

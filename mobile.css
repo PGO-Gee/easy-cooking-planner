@@ -444,6 +444,16 @@
     margin: 18px -20px -20px;
   }
 
+  .pantry-search-group {
+    flex-direction: column-reverse;
+  }
+
+  .pantry-suggestions {
+    max-height: min(180px, 22dvh);
+    margin-top: 0;
+    overscroll-behavior: contain;
+  }
+
   .dialog-actions .secondary-button,
   .dialog-actions .primary-button {
     min-height: 44px;
