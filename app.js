@@ -16,6 +16,29 @@ let cloudSyncTimer;
 let cloudSyncInProgress=false;
 let cloudSyncRequested=false;
 let loadingCloudState=false;
+// Native dialogs usually lock page scrolling, but iOS Safari can still move the
+// document during touch gestures. Keep the page position fixed while any dialog is open.
+let dialogScrollLockCount=0;
+let dialogScrollY=0;
+function lockPageScroll(){
+  dialogScrollLockCount++;
+  if(dialogScrollLockCount!==1)return;
+  dialogScrollY=window.scrollY;
+  document.body.classList.add('has-open-dialog');
+  document.body.style.top=`-${dialogScrollY}px`;
+}
+function unlockPageScroll(){
+  dialogScrollLockCount=Math.max(0,dialogScrollLockCount-1);
+  if(dialogScrollLockCount)return;
+  document.body.classList.remove('has-open-dialog');
+  document.body.style.removeProperty('top');
+  window.scrollTo(0,dialogScrollY);
+}
+document.querySelectorAll('dialog').forEach(dialog=>{
+  dialog.addEventListener('close',unlockPageScroll);
+  const showModal=dialog.showModal.bind(dialog);
+  dialog.showModal=()=>{lockPageScroll();showModal()};
+});
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
 function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${currentUserId}`:''}
 function localStateOwnerKey(){return 'wochentisch-local-owner'}

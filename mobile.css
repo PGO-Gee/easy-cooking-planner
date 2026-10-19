@@ -12,6 +12,14 @@
     min-width: 320px;
   }
 
+  body.has-open-dialog {
+    position: fixed;
+    right: 0;
+    left: 0;
+    width: 100%;
+    overflow: hidden;
+  }
+
   .app-shell {
     min-height: 100vh;
     min-height: 100dvh;
