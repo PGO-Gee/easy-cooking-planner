@@ -199,16 +199,26 @@
     color-scheme: dark;
   }
 
-  .pantry-search #dish-ingredient-input {
+  .pantry-search #dish-ingredient-input,
+  .pantry-search #dish-ingredient {
     border: 0;
     background: transparent;
     color: var(--ink);
     color-scheme: dark;
   }
 
+  .dish-main-ingredient-field .pantry-search {
+    border-color: #3a463c;
+    background: #151c17;
+  }
+
   #dish-ingredient-chips {
     border-color: #303a32;
     background: #151c17;
+  }
+
+  .dish-main-ingredient-field > label {
+    color: #b9c4b8;
   }
 
   .pantry-suggestions {

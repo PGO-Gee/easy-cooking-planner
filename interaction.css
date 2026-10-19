@@ -142,6 +142,80 @@
   width: 100%;
 }
 
+.dish-main-ingredient-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  margin-bottom: 15px;
+  color: #647064;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.dish-main-ingredient-field .dish-ingredient-suggest {
+  width: 100%;
+}
+
+.dish-main-ingredient-field #dish-ingredient {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 48px;
+  padding: 10px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 16px/1.4 var(--sans);
+  outline: none;
+}
+
+.dish-main-ingredient-field .pantry-search:focus-within {
+  border-color: #9caf99;
+  box-shadow: 0 0 0 3px #9caf9933;
+}
+
+.dish-ingredient-suggest .pantry-suggestions {
+  max-height: min(264px, 36dvh);
+  margin-top: 6px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.dish-ingredient-suggest .pantry-suggestion {
+  touch-action: manipulation;
+}
+
+/* Keep every dish form control in a consistent, stacked field layout. */
+#dish-form > label:not(.time-slider-label) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  width: 100%;
+  margin: 0 0 15px;
+  color: #647064;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+#dish-form > label:not(.time-slider-label) > input {
+  display: block;
+  width: 100%;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 13px;
+  border: 1px solid #e2e7de;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 14px var(--sans);
+}
+
 .pantry-search #dish-ingredient-input {
   display: block;
   width: 100%;

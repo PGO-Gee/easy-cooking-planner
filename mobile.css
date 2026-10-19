@@ -464,11 +464,27 @@
   }
 
   .dish-ingredient-suggest .pantry-suggestions {
-    position: absolute;
-    right: 0;
-    bottom: calc(100% + 6px);
-    left: 0;
-    z-index: 3;
+    position: relative;
+    inset: auto;
+    max-height: min(264px, 36dvh);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  #dish-dialog,
+  #dish-form {
+    overflow: visible;
+  }
+
+  .dish-main-ingredient-field .dish-ingredient-suggest {
+    position: relative;
+  }
+
+  .dish-main-ingredient-field .pantry-suggestions {
+    position: relative;
+    inset: auto;
   }
 
   .dialog-actions .secondary-button,
