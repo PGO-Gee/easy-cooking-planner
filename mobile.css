@@ -64,7 +64,13 @@
   }
 
   .top-actions .theme-toggle {
-    display: none;
+    display: inline-grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    font-size: 18px;
+    touch-action: manipulation;
   }
 
   .sign-out-button {
@@ -578,8 +584,120 @@
 @media (prefers-reduced-motion: reduce) {
   .day-card,
   .meal-card,
-  .shopping-tile {
+  .shopping-tile,
+  .home-tile {
     transition: none;
     animation: none;
+  }
+}
+
+.breadcrumb #home-breadcrumb {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .breadcrumb #home-breadcrumb {
+    min-height: 44px;
+    margin: 0 -7px;
+    padding: 0 7px;
+    touch-action: manipulation;
+  }
+
+  .breadcrumb #home-breadcrumb:active {
+    color: var(--green);
+  }
+
+  .home-view {
+    padding-top: clamp(38px, 11vh, 76px);
+  }
+
+  .home-heading {
+    margin-bottom: 28px;
+  }
+
+  .home-heading h1 {
+    margin-bottom: 7px;
+  }
+
+  .home-tiles {
+    display: grid;
+    gap: 13px;
+  }
+
+  .home-tile {
+    min-height: 92px;
+    width: 100%;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--paper);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    touch-action: manipulation;
+    box-shadow: 0 3px 12px rgb(35 53 39 / 4%);
+    transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+  }
+
+  .home-tile:active {
+    transform: scale(.985);
+    border-color: var(--green);
+    box-shadow: 0 5px 16px rgb(35 53 39 / 8%);
+  }
+
+  .home-tile-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: var(--mint);
+    color: var(--green);
+    font-size: 23px;
+  }
+
+  .home-tile-dishes .home-tile-icon {
+    background: #f5eee7;
+    color: #a87954;
+  }
+
+  .home-tile-shopping .home-tile-icon {
+    background: #edf1f5;
+    color: #667c98;
+  }
+
+  .home-tile-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .home-tile-copy strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -.15px;
+  }
+
+  .home-tile-copy small {
+    display: block;
+    margin-top: 5px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  .home-tile-arrow {
+    flex: 0 0 auto;
+    color: #98a398;
+    font-size: 19px;
   }
 }
