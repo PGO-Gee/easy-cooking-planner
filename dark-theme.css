@@ -477,3 +477,723 @@
 
 .dish-nutrition{color:#a8c6a8!important}
 .meal-nutrition{color:#b3c7b0}
+
+/* Preserve the layered, translucent surfaces in dark appearance. */
+body {
+  background:
+    radial-gradient(ellipse at 86% 3%, #24382e 0, transparent 36%),
+    radial-gradient(ellipse at 18% 0%, #1a251e 0, transparent 40%),
+    var(--canvas);
+}
+.sidebar {
+  background: rgb(24 33 27 / 78%);
+  border-right-color: rgb(255 255 255 / 7%);
+  box-shadow: 8px 0 34px rgb(0 0 0 / 12%);
+}
+.topbar {
+  background: rgb(17 23 19 / 76%);
+  border-bottom-color: rgb(255 255 255 / 7%);
+}
+.nav-item:hover { background: rgb(255 255 255 / 6%); }
+.nav-item.active {
+  background: linear-gradient(135deg, rgb(54 84 64 / 88%), rgb(38 60 46 / 90%));
+  color: #c5e1ca;
+  box-shadow: inset 0 0 0 1px rgb(173 213 180 / 12%), 0 4px 14px rgb(0 0 0 / 12%);
+}
+.primary-button {
+  background: linear-gradient(145deg, #588364, #3e6b4c);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%), 0 5px 14px rgb(0 0 0 / 22%);
+}
+.primary-button:hover { background: linear-gradient(145deg, #628d6e, #477655); }
+.secondary-button,
+.today-button,
+.sign-out-button,
+.icon-button,
+#menu-toggle,
+.arrow-button {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(36 47 39 / 75%);
+  color: #c3d0c4;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 3px 10px rgb(0 0 0 / 12%);
+}
+.secondary-button:hover,
+.today-button:hover { border-color: #597861; background: #293a2d; color: #d5e6d5; }
+.day-card {
+  border-color: rgb(255 255 255 / 9%);
+  background: linear-gradient(155deg, rgb(31 42 34 / 96%), rgb(24 34 27 / 90%));
+  box-shadow: 0 8px 26px rgb(0 0 0 / 17%), inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+.day-card.today {
+  border-color: #739378;
+  box-shadow: 0 0 0 2px rgb(115 147 120 / 18%), 0 10px 28px rgb(0 0 0 / 20%);
+}
+.day-head { border-bottom-color: rgb(255 255 255 / 7%); }
+.day-name { color: #9ba99d; }
+.day-num { color: #dce8dd; }
+.meal-card,
+.meal-card:nth-child(3n+2),
+.meal-card:nth-child(3n) {
+  border-color: rgb(255 255 255 / 6%);
+  background: linear-gradient(145deg, #29352c, #232f27);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+.meal-card:nth-child(3n+2) { background: linear-gradient(145deg, #29392e, #24342a); }
+.meal-card:nth-child(3n) { background: linear-gradient(145deg, #3a3329, #332d25); }
+.meal-name { color: #dce8dd; }
+.add-meal { border-color: #3a4a3d; }
+.bottom-note {
+  border-color: rgb(255 255 255 / 7%);
+  background: rgb(34 47 37 / 74%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+.search-box,
+.dish-list,
+.starter-tip,
+.shopping-tile,
+.shopping-screen .empty-state {
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(27 36 30 / 82%);
+  box-shadow: 0 7px 22px rgb(0 0 0 / 15%), inset 0 1px 0 rgb(255 255 255 / 4%);
+}
+.dish-row { border-bottom-color: #303a32; }
+.dish-icon,
+.shopping-tile-icon { background: #ffffff12; }
+.shopping-screen-tools .shopping-meal-filter { background: #151c17; }
+dialog {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(27 35 29 / 95%);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+dialog::backdrop { background: rgb(4 9 6 / 58%); }
+.auth-gate {
+  background:
+    radial-gradient(ellipse at 82% 8%, #24382e 0, transparent 38%),
+    radial-gradient(ellipse at 20% 90%, #1a251e 0, transparent 42%),
+    #111713;
+}
+.auth-card {
+  border-color: rgb(255 255 255 / 9%);
+  background: rgb(27 35 29 / 86%);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 32%), inset 0 1px 0 rgb(255 255 255 / 5%);
+}
+
+/* Slate-blue accents keep dark mode calm without the heavy green cast. */
+:root {
+  --ink: #e7edf4;
+  --muted: #a2afbd;
+  --line: #303a47;
+  --paper: #1c242e;
+  --canvas: #111820;
+  --green: #91acd0;
+  --green-dark: #7998c0;
+  --mint: #263548;
+}
+body {
+  background:
+    radial-gradient(ellipse at 86% 3%, #202d3c 0, transparent 36%),
+    radial-gradient(ellipse at 18% 0%, #18212c 0, transparent 40%),
+    var(--canvas);
+}
+.sidebar {
+  background: rgb(24 32 42 / 80%);
+  border-right-color: rgb(255 255 255 / 7%);
+}
+.topbar {
+  background: rgb(17 24 32 / 77%);
+  border-bottom-color: rgb(255 255 255 / 7%);
+}
+.brand { color: #e5edf5; }
+.brand-mark { background: linear-gradient(145deg, #7898c1, #54759f); }
+.nav-item { color: #b0bdcb; }
+.nav-item:hover { background: rgb(255 255 255 / 6%); color: #d2e0f1; }
+.nav-item.active {
+  background: linear-gradient(135deg, rgb(56 77 104 / 88%), rgb(39 56 77 / 90%));
+  color: #c7daf1;
+  box-shadow: inset 0 0 0 1px rgb(173 198 228 / 12%), 0 4px 14px rgb(0 0 0 / 12%);
+}
+.primary-button {
+  background: linear-gradient(145deg, #6c8db8, #4f709a);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 20%), 0 5px 14px rgb(0 0 0 / 22%);
+}
+.primary-button:hover { background: linear-gradient(145deg, #7899c2, #5d7ea8); }
+.secondary-button:hover,
+.today-button:hover { border-color: #627d9e; background: #29384a; color: #e0ebf8; }
+.day-card.today {
+  border-color: #7896bb;
+  box-shadow: 0 0 0 2px rgb(120 150 187 / 18%), 0 10px 28px rgb(0 0 0 / 20%);
+}
+.day-num,
+.meal-name { color: #dfe9f5; }
+.today-pill { background: #29394d; color: #bfd3ed; }
+.meal-card,
+.meal-card:nth-child(3n+2),
+.meal-card:nth-child(3n) {
+  border-color: rgb(255 255 255 / 6%);
+  background: linear-gradient(145deg, #293440, #232d39);
+}
+.meal-card:nth-child(3n+2) { background: linear-gradient(145deg, #29384a, #243246); }
+.meal-card:nth-child(3n) { background: linear-gradient(145deg, #3a342f, #332e2a); }
+.bottom-note { background: rgb(34 46 61 / 76%); }
+.dish-tag,
+.pantry-chip { background: #29394d; color: #c2d5ee; }
+.shopping-tile-icon,
+.dish-icon { background: #ffffff12; }
+.auth-card { background: rgb(27 36 47 / 88%); }
+
+/* Complete the cool slate palette across forms, dialogs and feedback states. */
+:root {
+  --ink: #e7edf4;
+  --muted: #a2afbd;
+  --line: #303a47;
+  --paper: #1c242e;
+  --canvas: #111820;
+  --green: #91acd0;
+  --green-dark: #7998c0;
+  --mint: #263548;
+}
+:focus-visible { outline-color: #91acd0; }
+
+.side-label,
+.breadcrumb,
+.subheading,
+.day-name,
+.meal-meta,
+.dish-copy small,
+.choose-copy small,
+.profile small,
+.plan-meta,
+.footer,
+.heading-period { color: #a0adbb; }
+.meal-nutrition,
+.dish-nutrition { color: #afc4df !important; }
+.plan-meta i { background: #91acd0; }
+.today-pill { background: #29394d; color: #bfd3ed; }
+.day-name { color: #9eacbc; }
+.meal-label,
+.meal-meta .dot { color: #aebbd0; }
+.bottom-note,
+.bottom-note b,
+.starter-tip b { color: #c4d0de; }
+.starter-tip p { color: #a5b1bf; }
+.dish-tag { background: #29394d; color: #c2d5ee; }
+.row-edit,
+.close-button,
+.text-button { color: #b5c4d5; }
+.starter-tip button,
+.text-button { color: #a9c2e2; }
+
+.pantry-search,
+.dish-ingredients-editor .pantry-search,
+.dish-main-ingredient-field .pantry-search,
+.pantry-selected-area,
+#dish-ingredient-chips,
+.pantry-suggestions,
+.pantry-suggestion,
+#dish-form input:not([type="hidden"]):not([type="range"]),
+#dish-form select,
+.password-sign-in input,
+.household-join-form input,
+.shopping-meal-filter,
+.shopping-add-form input,
+.search-box input {
+  border-color: #3b4b5e;
+  background-color: #151e29;
+  color: #e7edf4;
+  color-scheme: dark;
+}
+.pantry-search:focus-within,
+.dish-main-ingredient-field .pantry-search:focus-within,
+#dish-form input:focus,
+#dish-form select:focus,
+.password-sign-in input:focus,
+.household-join-form input:focus,
+.shopping-add-form input:focus,
+.shopping-meal-filter:focus {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
+.pantry-search #dish-ingredient-input,
+.pantry-search #dish-ingredient,
+#pantry-input { background: transparent; color: #e7edf4; }
+.pantry-label,
+.pantry-label small,
+.pantry-intro,
+.pantry-hint,
+.dish-main-ingredient-field > label,
+.dialog-head+input+label,
+.form-row label,
+.ingredients-field > label,
+.household-dialog-content h3,
+.household-join-form label,
+.household-invite-section p,
+.household-intro { color: #bdc9d6; }
+.pantry-chip,
+#dish-ingredient-chips .pantry-chip {
+  background: #29394d;
+  color: #c9dbf1;
+}
+.pantry-ingredient-icon { background: #34465c; }
+.pantry-chip-remove { color: #c7d8ec; }
+.pantry-chip-remove:hover,
+.pantry-chip-remove:focus-visible,
+.pantry-suggestion:hover,
+.pantry-suggestion:focus-visible { background: #31445b; }
+.pantry-selected-heading { color: #c5d0dd; }
+.pantry-selected-heading span { background: #29394d; color: #cbd9e9; }
+.pantry-empty-selection,
+#dish-ingredient-chips .pantry-empty-selection { color: #a5b1bf; }
+.pantry-suggestion { border-bottom-color: #303d4c; }
+.pantry-suggestion:last-child { border-bottom: 0; }
+.dish-ingredients-editor #dish-ingredient-chips { background: #151e29; }
+
+.shopping-overview { color: #b6cce8; }
+.shopping-filter-label { color: #bdc9d6; }
+.shopping-list { border-color: #303d4c; background: #151e29; }
+.shopping-list li { border-bottom-color: #303d4c; }
+.shopping-list label { color: #dce5ef; }
+.shopping-list input { accent-color: #91acd0; }
+.shopping-list li small,
+.shopping-list .shopping-no-ingredients { color: #a5b1bf; }
+.shopping-list .shopping-heading { background: #202c3a; color: #bdcbe0; }
+.shopping-tile-status { background: #718fb5; color: #fff; }
+.shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
+
+#sign-out { color: #bdc9d6; }
+#calendar .add-meal { color: #b2c1d2; }
+#calendar .add-meal:hover { color: #d9e6f5; }
+
+/* Final shared type and color pass across every screen in the dark theme. */
+:root {
+  --text-primary: #e7edf4;
+  --text-secondary: #bdc9d6;
+  --text-muted: #a5b1bf;
+  --text-accent: #c1d7f1;
+}
+body,
+body * { font-family: var(--sans) !important; }
+body,
+.brand,
+.profile b,
+.nav-item.active,
+.breadcrumb b,
+h1,
+.day-num,
+.meal-name,
+.dish-copy b,
+.choose-copy b,
+.shopping-section h2,
+.shopping-tile-copy strong,
+.dialog-head h2,
+.household-dialog-content h2,
+.household-dialog-content h3,
+.empty-state b,
+.starter-tip b,
+.bottom-note b,
+.pantry-selected-heading strong {
+  color: var(--text-primary);
+}
+.side-label,
+.nav-count,
+.breadcrumb,
+.heading-period,
+.subheading,
+.plan-meta,
+.day-name,
+.meal-label,
+.meal-meta,
+.dish-copy small,
+.choose-copy small,
+.profile small,
+.footer,
+.empty-state,
+.starter-tip p,
+.shopping-section h2 span,
+.shopping-tile-copy small,
+.shopping-list li small,
+.shopping-list .shopping-no-ingredients,
+.ingredients-field small,
+.pantry-intro,
+.pantry-hint,
+.pantry-empty-selection,
+.household-intro,
+.household-invite-section p,
+.household-member-row small,
+.household-loading,
+.household-code-result small,
+.auth-card .subheading,
+.auth-note {
+  color: var(--text-muted);
+}
+.eyebrow,
+.dialog-head .eyebrow,
+.ingredients-field > label,
+.pantry-label,
+#dish-form > label,
+#dish-form .form-row label,
+#pantry-dialog .pantry-label,
+.household-dialog-content label,
+.shopping-filter-label,
+.form-row label,
+.dialog-head+input+label,
+.password-sign-in label,
+.household-join-form label,
+.dish-copy,
+.shopping-list label,
+.household-member-row,
+.auth-privacy-notice {
+  color: var(--text-secondary);
+}
+.text-button,
+.starter-tip button,
+.shopping-overview,
+.auth-privacy-notice a,
+.household-code-result output { color: var(--text-accent); }
+.dish-nutrition,
+.meal-nutrition,
+.dish-ingredients-preview { color: var(--text-muted) !important; }
+.breadcrumb { font-size: 12px; }
+.breadcrumb span { color: #8797a9; }
+.breadcrumb b { font-weight: 650; }
+h1 { letter-spacing: -.035em; }
+.page-heading h1,
+.auth-card h1 { color: var(--text-primary); }
+.dish-copy b,
+.meal-name,
+.choose-copy b,
+.shopping-tile-copy strong { font-weight: 650; }
+.sign-out-button,
+.top-actions .secondary-button { color: var(--text-secondary); font-weight: 550; }
+#calendar .day-num span { color: var(--text-muted) !important; }
+input,
+select,
+textarea { color: var(--text-primary); }
+input::placeholder,
+textarea::placeholder { color: #91a0b1; opacity: 1; }
+
+/* Dark-mode counterparts for the scoped add-dish dialog palette. */
+#dish-dialog .dialog-head .eyebrow { color: #a9bfdc; }
+#dish-dialog .dialog-head h2 { color: #e7edf4; }
+#dish-dialog .close-button { color: #a5b4c6; }
+#dish-dialog #dish-form > label:not(.time-slider-label),
+#dish-dialog .dish-main-ingredient-field,
+#dish-dialog .time-slider-label,
+#dish-dialog .ingredients-field > label { color: #bdc9d6; }
+#dish-dialog .ingredients-field small { color: #a5b1bf; }
+#dish-dialog #dish-name,
+#dish-dialog .pantry-search,
+#dish-dialog select,
+#dish-dialog #dish-ingredients {
+  border-color: #3b4b5e;
+  background: rgb(21 30 41 / 88%);
+  color: #e7edf4;
+  color-scheme: dark;
+}
+#dish-dialog #dish-name::placeholder,
+#dish-dialog .pantry-search input::placeholder,
+#dish-dialog #dish-ingredients::placeholder { color: #8595a8; }
+#dish-dialog .pantry-search { color: #a5b1bf; }
+#dish-dialog .pantry-search:focus-within {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
+#dish-dialog .pantry-search input,
+#dish-dialog .pantry-search input:focus {
+  background: transparent;
+  color: #e7edf4;
+}
+#dish-dialog #dish-name:focus,
+#dish-dialog select:focus,
+#dish-dialog #dish-ingredients:focus {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
+#dish-dialog .time-label-row output {
+  background: #29394d;
+  color: #bfd3ed;
+}
+#dish-dialog .slider-scale { color: #a0adbb; }
+#dish-dialog #dish-form input[type="range"] { accent-color: #91acd0; }
+#dish-dialog #dish-form input[type="range"]::-webkit-slider-runnable-track,
+#dish-dialog #dish-form input[type="range"]::-moz-range-track { background: #3b4b5e; }
+#dish-dialog #dish-form input[type="range"]::-webkit-slider-thumb,
+#dish-dialog #dish-form input[type="range"]::-moz-range-thumb {
+  border-color: #1c242e;
+  background: #91acd0;
+}
+#dish-dialog #dish-ingredient-chips {
+  border-color: #303d4c;
+  background: #151e29;
+}
+#dish-dialog .pantry-chip {
+  background: #29394d;
+  color: #c9dbf1;
+}
+#dish-dialog .pantry-ingredient-icon { background: #34465c; }
+#dish-dialog .pantry-chip-remove { color: #c7d8ec; }
+#dish-dialog .pantry-chip-remove:hover,
+#dish-dialog .pantry-chip-remove:focus-visible { background: #31445b; }
+#dish-dialog .pantry-suggestions {
+  border-color: #3b4b5e;
+  background: #1b2430;
+}
+#dish-dialog .pantry-suggestion {
+  border-bottom-color: #303d4c;
+  background: #1b2430;
+  color: #e7edf4;
+}
+#dish-dialog .pantry-suggestion:hover,
+#dish-dialog .pantry-suggestion:focus-visible {
+  border-color: #718caf;
+  background: #31445b;
+}
+#dish-dialog .form-error {
+  border-color: #754940;
+  border-left-color: #c87969;
+  background: #382723;
+  color: #f0b0a2;
+}
+#dish-dialog .dialog-actions { border-top-color: #303d4c; }
+#dish-dialog .dialog-actions .text-button { color: #e3a397; }
+.auth-gate {
+  background:
+    radial-gradient(ellipse at 82% 8%, #202d3c 0, transparent 38%),
+    radial-gradient(ellipse at 20% 90%, #18212c 0, transparent 42%),
+    #111820;
+}
+.meal-remove,
+.bottom-note button { color: #9eafc1; }
+.meal-remove:hover { color: #c1d7f1; }
+dialog::backdrop { background: rgb(7 11 16 / 62%); }
+input::placeholder,
+textarea::placeholder { color: #8595a8; opacity: 1; }
+.search-box input {
+  border: 0;
+  background: transparent;
+  color: #e7edf4;
+  box-shadow: none;
+  font: 15px/1.4 var(--sans);
+}
+.search-box input::placeholder { color: #91a0b1; opacity: 1; }
+select option { background: #1c242e; color: #e7edf4; }
+button:disabled,
+.choose-item:disabled {
+  cursor: not-allowed;
+  opacity: .56;
+  box-shadow: none;
+}
+@media (max-width: 700px) {
+  .search-box input { font-size: 16px; }
+}
+.week-date {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(36 48 63 / 82%);
+  color: #dce6f1;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 3px 10px rgb(0 0 0 / 12%);
+}
+.week-date:hover { border-color: #718caf; background: #2d3f56; color: #e0ebf8; }
+.week-date:focus-visible { outline: 2px solid #7898c1; outline-offset: 2px; }
+.shopping-tile.is-checked .shopping-tile-icon { background: #29394d; }
+.shopping-tile.is-checked .shopping-tile-copy strong { color: #a9b9cc; }
+
+/* Refine the add-dish dialog and keep combobox focus on its rounded wrapper. */
+#dish-dialog {
+  border-color: rgb(255 255 255 / 12%);
+  background: rgb(27 36 47 / 96%);
+}
+#dish-form { color: var(--ink); }
+#dish-form > label:not(.time-slider-label),
+.dish-main-ingredient-field,
+.ingredients-field,
+.time-slider-label { color: #bdc9d6; }
+#dish-form > label:not(.time-slider-label) > input,
+#dish-form select,
+#dish-ingredients {
+  border-color: #3b4b5e;
+  background: rgb(21 30 41 / 88%);
+  color: #e7edf4;
+  color-scheme: dark;
+}
+.dish-main-ingredient-field .pantry-search,
+.dish-ingredients-editor .pantry-search {
+  border-color: #3b4b5e;
+  background: rgb(21 30 41 / 88%);
+}
+#dish-form .pantry-search input,
+#pantry-input {
+  background: transparent;
+  color: #e7edf4;
+  color-scheme: dark;
+}
+#dish-form .pantry-search input:focus,
+#pantry-input:focus {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+#dish-form input:focus,
+#dish-form select:focus,
+#dish-ingredients:focus,
+.pantry-search:focus-within,
+.dish-main-ingredient-field .pantry-search:focus-within,
+.dish-ingredients-editor .pantry-search:focus-within {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
+#dish-form .pantry-search input:focus,
+#pantry-input:focus { box-shadow: none; }
+#dish-ingredient-chips,
+.pantry-selected-area { border-radius: 16px; }
+.time-label-row output {
+  border-radius: 999px;
+  background: #29394d;
+  color: #bfd3ed;
+}
+#dish-form .dialog-actions .primary-button,
+#dish-form .dialog-actions .secondary-button { border-radius: 14px; }
+.shopping-category-title { color: #bdcbe0; border-top-color: #303d4c; }
+.shopping-tile-remove { background: #2b3746; color: #c3cfdd; }
+.shopping-tile-remove:hover,
+.shopping-tile-remove:focus-visible { background: #49332f; color: #f0b0a2; }
+
+.ingredients-field { color: #bdc9d6; }
+.ingredients-field > label { color: #bdc9d6; }
+.ingredients-field small { color: #a5b1bf; font: 400 12px/1.5 var(--sans); }
+.pantry-intro,
+.pantry-hint,
+.pantry-label small { color: #a5b1bf; }
+
+#pantry-dialog .dialog-head h2 { color: #e7edf4; }
+#pantry-dialog .dialog-head .eyebrow { color: #a9bfdc; }
+#pantry-dialog .pantry-intro { color: #bdc9d6; }
+#pantry-dialog .pantry-label { color: #bdc9d6; }
+#pantry-dialog .pantry-label small { color: #a5b1bf; }
+#pantry-dialog .pantry-search {
+  border-color: #3b4b5e;
+  background: rgb(21 30 41 / 88%);
+  color: #a5b1bf;
+}
+#pantry-dialog .pantry-search:focus-within {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
+#pantry-dialog #pantry-input { color: #e7edf4; }
+#pantry-dialog #pantry-input::placeholder { color: #8595a8; }
+#pantry-dialog .pantry-selected-area {
+  border-color: #303d4c;
+  background: #151e29;
+}
+#pantry-dialog .pantry-selected-heading { color: #c5d0dd; }
+#pantry-dialog .pantry-selected-heading span {
+  background: #29394d;
+  color: #cbd9e9;
+}
+#pantry-dialog .pantry-empty-selection,
+#pantry-dialog .pantry-hint { color: #a5b1bf; }
+#pantry-dialog .pantry-chip {
+  background: #29394d;
+  color: #c9dbf1;
+}
+#pantry-dialog .pantry-chip-remove { color: #c7d8ec; }
+#pantry-dialog .pantry-chip-remove:hover,
+#pantry-dialog .pantry-chip-remove:focus-visible { background: #31445b; }
+.slider-scale { color: #a0adbb; }
+#dish-form input[type="range"]::-webkit-slider-runnable-track { background: #3b4b5e; }
+#dish-form input[type="range"]::-webkit-slider-thumb { border-color: #1c242e; }
+#dish-form input[type="range"]::-moz-range-track { background: #3b4b5e; }
+#dish-form input[type="range"]::-moz-range-thumb { border-color: #1c242e; }
+
+.household-members-section,
+.household-invite-section,
+.household-join-form { border-color: #303d4c; }
+.household-member-row { background: #202c3a; color: #d4deea; }
+.household-member-row small,
+.household-loading { color: #a5b1bf; }
+.household-code-result { background: #29394d; }
+.household-code-result span,
+.household-code-result small { color: #bdcbe0; }
+.household-code-result output { color: #d2e2f5; }
+.password-sign-in label { color: #c2cedb; }
+.password-sign-in-button {
+  border-color: #627fa4;
+  background: linear-gradient(145deg, #6c8db8, #4f709a);
+}
+.password-sign-in-button:hover { background: linear-gradient(145deg, #7899c2, #5d7ea8); }
+.auth-brand { color: #e5edf5; }
+.auth-card .eyebrow { color: #a9bfdc; }
+.auth-card .subheading,
+.auth-note { color: #a5b1bf; }
+.auth-privacy-notice { border-color: #354253; background: #202c3a; color: #c0cbd8; }
+.auth-privacy-notice a { color: #c3d7f1; }
+.auth-error,
+.household-error { border-color: #754940; background: #382723; color: #f0b0a2; }
+#toast { background: #29394d; color: #e8f0fa; }
+#menu-backdrop:not([hidden]) { background: rgb(7 11 16 / 68%); }
+
+.topbar,
+.profile,
+.day-head,
+.dish-row,
+.household-members-section,
+.household-invite-section,
+.household-join-form,
+.dialog-actions { border-color: #303d4c; }
+.secondary-button,
+.today-button,
+.sign-out-button,
+.icon-button,
+#menu-toggle,
+.arrow-button {
+  border-color: rgb(255 255 255 / 10%);
+  background: rgb(36 48 63 / 82%);
+  color: #c8d5e4;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 3px 10px rgb(0 0 0 / 12%);
+}
+.secondary-button:hover,
+.today-button:hover { border-color: #718caf; background: #2d3f56; color: #e0ebf8; }
+.shopping-screen-top .secondary-button,
+.shopping-screen-tools .shopping-meal-filter {
+  border-color: #3b4b5e;
+  background: #202c3a;
+  color: #d4deea;
+}
+.shopping-screen-top .secondary-button:hover { border-color: #718caf; background: #2d3f56; color: #e0ebf8; }
+.sign-out-button:hover { border-color: #718caf; background: #2d3f56; color: #e0ebf8; }
+.day-card {
+  border-color: rgb(255 255 255 / 9%);
+  background: linear-gradient(155deg, rgb(31 42 55 / 96%), rgb(24 34 47 / 92%));
+}
+.day-card.today { border-color: #7896bb; }
+.day-head { border-bottom-color: rgb(255 255 255 / 7%); }
+.add-meal { border-color: #43566e; color: #b2c1d2; }
+.add-meal:hover { background: #253449; color: #d9e6f5; }
+.search-box,
+.dish-list,
+.starter-tip,
+.shopping-screen .empty-state {
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(27 36 48 / 88%);
+}
+.shopping-tile {
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(27 36 48 / 88%);
+  color: #e7edf4;
+}
+.shopping-tile:hover,
+.shopping-tile:focus-visible {
+  border-color: #718caf;
+  background: #253449;
+}
+.starter-tip > span { color: #a9bfdc; }
+.starter-tip p { color: #a5b1bf; }
+.dialog { background: #1b2430; }
+dialog { background: rgb(27 36 47 / 96%); }
+.choose-item { border-color: #3a4a5e; background: #202c3a; }
+.choose-item:hover,
+.choose-item:focus-visible { border-color: #718caf; background: #2b3b50; }
+.bottom-note { border-color: rgb(255 255 255 / 7%); }
+.household-dialog-content h2,
+.household-dialog-content h3 { color: #dce6f1; }
+.household-member-row { border: 1px solid rgb(255 255 255 / 5%); }
+.password-sign-in input { border-radius: 12px; }
+.shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }

@@ -11,3 +11,44 @@
 #auth-gate[hidden],.app-shell[hidden]{display:none!important}
 .household-open{height:32px;padding:0 11px;font-size:10px}.household-dialog-content{padding:25px}.household-dialog-content h2{font:700 21px var(--serif);margin:7px 0 0}.household-intro,.household-invite-section p{font-size:11px;line-height:1.5;color:#858f83;margin:0 0 18px}.household-dialog-content h3{font:700 12px var(--sans);margin:0 0 9px;color:#4b5d4b}.household-members-section{padding:14px 0;border-top:1px solid #edf0ea}.household-members{display:grid;gap:7px}.household-member-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 10px;background:#f7f8f5;border-radius:6px;font-size:11px;color:#596759;overflow-wrap:anywhere}.household-member-row small{font-size:9px;color:#899588;white-space:nowrap}.household-loading{font-size:10px;color:#969f94;margin:2px 0}.household-invite-section{padding:14px 0;border-top:1px solid #edf0ea}.household-invite-section p{margin:0 0 12px}.household-code-result{display:grid;gap:4px;margin-top:12px;padding:12px;background:#eef3ed;border-radius:7px}.household-code-result span{font-size:9px;color:#788776}.household-code-result output{font:800 23px var(--sans);letter-spacing:3px;color:#365b43}.household-code-result small{font-size:9px;color:#818b7e}.household-join-form{padding-top:14px;border-top:1px solid #edf0ea}.household-join-form label{display:block;font-size:11px;font-weight:600;color:#596759;margin-bottom:7px}.household-join-form>div{display:flex;gap:8px}.household-join-form input{min-width:0;flex:1;border:1px solid #e2e7de;border-radius:6px;padding:0 10px;font:600 12px var(--sans);letter-spacing:1px;color:#445146}.household-error{font-size:10px;line-height:1.5;color:#a34338;background:#fff2f0;padding:9px;border-radius:6px;margin:12px 0 0}.household-error[hidden],.household-code-result[hidden]{display:none!important}
 @media(max-width:480px){.auth-card{padding:32px 24px}.auth-card h1{font-size:26px}}
+
+.auth-card {
+  border: 1px solid rgb(255 255 255 / 90%);
+  border-radius: 28px;
+  background: rgb(255 255 255 / 76%);
+  box-shadow: 0 24px 70px rgb(35 58 46 / 11%), inset 0 1px 0 #fff;
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+}
+.password-sign-in input:focus { border-color: #91acd0; box-shadow: 0 0 0 3px rgb(111 145 184 / 16%); }
+.password-sign-in-button {
+  border-color: #58779e;
+  background: linear-gradient(145deg, #718fb5, #58779e);
+  border-radius: 13px;
+}
+.password-sign-in-button:hover { background: linear-gradient(145deg, #6685ad, #4e6d94); }
+.auth-privacy-notice { background: #f3f6fa; border-color: #e1e7ec; }
+.auth-privacy-notice a { color: #58779d; }
+.household-code-result { background: #eaf0f7; }
+.household-code-result output { color: #4e6d94; }
+
+.auth-gate { color: #26313b; }
+.auth-brand,
+.auth-card h1,
+.household-dialog-content h2,
+.household-dialog-content h3 { color: #26313b; }
+.auth-card .eyebrow,
+.password-sign-in label,
+.household-join-form label { color: #53677d; }
+.auth-card .subheading,
+.auth-note,
+.household-intro,
+.household-invite-section p,
+.household-member-row small,
+.household-loading,
+.household-code-result small { color: #8492a2; }
+.auth-privacy-notice { color: #68798b; }
+.auth-privacy-notice a { color: #58779d; }
+.household-member-row { color: #43566b; }
+.household-code-result output { color: #4e6d94; }
+.password-sign-in-button { font-family: var(--sans); }

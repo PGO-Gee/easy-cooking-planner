@@ -600,3 +600,301 @@
 }
 #dish-form .form-error{margin:-10px 0 16px;padding:11px 13px;border:1px solid #e7b5aa;border-left:4px solid #b84d3b;border-radius:7px;background:#fff1ed;color:#8f3025;font-size:12px;font-weight:600;line-height:1.45}
 #dish-form .form-error[hidden]{display:none}
+
+.pantry-chip { background: #e7eef6; color: #4e6d94; }
+.pantry-ingredient-icon { background: #f0f4f8; }
+.pantry-chip-remove { color: #58779d; }
+.pantry-chip-remove:hover,
+.pantry-chip-remove:focus-visible { background: #dce7f3; }
+.pantry-search:focus-within,
+.dish-main-ingredient-field .pantry-search:focus-within,
+.dish-ingredients-editor .pantry-search:focus-within,
+#pantry-input:focus { border-color: #91acd0; box-shadow: 0 0 0 3px rgb(111 145 184 / 16%); }
+.pantry-suggestion:hover,
+.pantry-suggestion:focus-visible,
+.choose-item:hover,
+.choose-item:focus-visible { border-color: #b8cbe1; background: #edf3f9; }
+.pantry-selected-area,
+#dish-ingredient-chips { border-color: #e1e7ec; background: #f7f9fb; }
+.pantry-selected-heading { color: #4f6277; }
+.pantry-selected-heading span { background: #e7eef6; color: #607fa8; }
+.time-label-row output { color: #58779d; }
+#dish-form input[type="range"] { accent-color: #607fa8; }
+#dish-form input[type="range"]::-webkit-slider-runnable-track { background: #dce5ef; }
+#dish-form input[type="range"]::-webkit-slider-thumb { background: #607fa8; }
+#dish-form input[type="range"]::-moz-range-track { background: #dce5ef; }
+#dish-form input[type="range"]::-moz-range-thumb { background: #607fa8; }
+#dish-form > label:not(.time-slider-label) > input:focus,
+#dish-form input:focus,
+#dish-form select:focus { border-color: #91acd0; box-shadow: 0 0 0 3px rgb(111 145 184 / 16%); }
+
+/* Keep the ingredient combobox focus ring on its rounded outer surface. */
+.pantry-search:focus-within,
+.dish-main-ingredient-field .pantry-search:focus-within,
+.dish-ingredients-editor .pantry-search:focus-within {
+  border-color: #91acd0;
+  box-shadow: 0 0 0 3px rgb(111 145 184 / 16%);
+}
+#dish-form .pantry-search input:focus,
+#pantry-input:focus {
+  border: 0;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Give the add-dish form the same calm, spacious glass language as the app. */
+#dish-dialog {
+  width: min(560px, calc(100% - 32px));
+}
+#dish-form {
+  padding: 30px;
+}
+#dish-form .dialog-head {
+  margin-bottom: 24px;
+}
+#dish-form .dialog-head h2 {
+  font-size: 24px;
+  letter-spacing: -.7px;
+}
+#dish-form > label:not(.time-slider-label) {
+  font-size: 12px;
+}
+#dish-form > label:not(.time-slider-label) > input,
+#dish-form select,
+#dish-ingredients {
+  min-height: 50px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 76%);
+  font: 16px/1.4 var(--sans);
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+#dish-form > label:not(.time-slider-label) > input:focus,
+#dish-form select:focus,
+#dish-ingredients:focus {
+  border-color: #91acd0;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(111 145 184 / 16%);
+}
+.dish-main-ingredient-field,
+#dish-form > label:not(.time-slider-label) { color: #53677d; }
+.dish-main-ingredient-field .pantry-search,
+.dish-ingredients-editor .pantry-search {
+  min-height: 50px;
+  border-radius: 14px;
+  background: rgb(255 255 255 / 76%);
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+#dish-form .pantry-search input {
+  min-height: 48px;
+  padding: 10px 0;
+}
+.dish-ingredients-editor { gap: 11px; }
+#dish-ingredient-chips,
+.pantry-selected-area {
+  border-radius: 16px;
+}
+.time-label-row output {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #e7eef6;
+}
+#dish-form .dialog-actions {
+  margin-top: 12px;
+  padding-top: 20px;
+}
+#dish-form .dialog-actions .primary-button,
+#dish-form .dialog-actions .secondary-button {
+  min-height: 44px;
+  border-radius: 14px;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  #dish-form { padding: 20px; }
+  #dish-form .dialog-head h2 { font-size: 21px; }
+}
+
+.pantry-intro,
+.pantry-hint,
+.pantry-label small,
+.ingredients-field small { color: #8492a2; }
+.pantry-label,
+.dish-main-ingredient-field > label,
+.form-row label,
+.ingredients-field > label { color: #53677d; }
+.pantry-intro,
+.pantry-hint { font: 400 13px/1.55 var(--sans); }
+
+/* Finish the pantry dialog with one readable slate hierarchy. */
+#pantry-dialog .dialog-head { margin-bottom: 20px; }
+#pantry-dialog .dialog-head .eyebrow {
+  color: #74859a;
+  font: 700 10px/1.3 var(--sans);
+  letter-spacing: .11em;
+}
+#pantry-dialog .dialog-head h2 {
+  color: #26313b;
+  font: 700 22px/1.2 var(--sans);
+  letter-spacing: -.035em;
+}
+#pantry-dialog .pantry-intro { color: #6e7f92; }
+#pantry-dialog .pantry-label {
+  color: #53677d;
+  font: 600 12px/1.4 var(--sans);
+}
+#pantry-dialog .pantry-label small {
+  color: #8492a2;
+  font: 400 12px/1.45 var(--sans);
+}
+#pantry-dialog .pantry-search {
+  border-color: #dbe4ec;
+  background: rgb(255 255 255 / 82%);
+  color: #8492a2;
+}
+#pantry-input {
+  color: #26313b;
+  font: 400 16px/1.4 var(--sans);
+}
+#pantry-input::placeholder { color: #8492a2; opacity: 1; }
+#pantry-dialog .pantry-selected-area {
+  border-color: #e1e7ec;
+  background: #f7f9fb;
+}
+#pantry-dialog .pantry-selected-heading {
+  color: #53677d;
+  font: 600 13px/1.4 var(--sans);
+}
+#pantry-dialog .pantry-selected-heading span {
+  background: #e7eef6;
+  color: #607fa8;
+  font: 600 11px/1 var(--sans);
+}
+#pantry-dialog .pantry-empty-selection,
+#pantry-dialog .pantry-hint {
+  color: #8492a2;
+  font: 400 12px/1.5 var(--sans);
+}
+#pantry-dialog .pantry-chip {
+  color: #4e6d94;
+  font: 600 12px/1.3 var(--sans);
+}
+#pantry-dialog .pantry-chip-remove { color: #58779d; }
+#pantry-dialog .dialog-actions .primary-button,
+#pantry-dialog .dialog-actions .secondary-button {
+  font-family: var(--sans);
+  font-weight: 600;
+}
+
+/* Give the complete add-dish dialog the same light slate text hierarchy. */
+#dish-dialog .dialog-head { margin-bottom: 24px; }
+#dish-dialog .dialog-head .eyebrow {
+  color: #74859a;
+  font: 700 10px/1.3 var(--sans);
+  letter-spacing: .11em;
+}
+#dish-dialog .dialog-head h2 {
+  color: #26313b;
+  font: 700 24px/1.2 var(--sans);
+  letter-spacing: -.035em;
+}
+#dish-dialog .close-button { color: #74859a; }
+#dish-dialog #dish-form > label:not(.time-slider-label),
+#dish-dialog .dish-main-ingredient-field,
+#dish-dialog .time-slider-label,
+#dish-dialog .ingredients-field > label {
+  color: #53677d;
+  font: 600 12px/1.4 var(--sans);
+}
+#dish-dialog .ingredients-field small {
+  color: #8492a2;
+  font: 400 12px/1.5 var(--sans);
+}
+#dish-dialog #dish-name,
+#dish-dialog .pantry-search,
+#dish-dialog select,
+#dish-dialog #dish-ingredients {
+  border-color: #dbe4ec;
+  background: rgb(255 255 255 / 82%);
+  color: #26313b;
+  font-family: var(--sans);
+}
+#dish-dialog #dish-name::placeholder,
+#dish-dialog .pantry-search input::placeholder,
+#dish-dialog #dish-ingredients::placeholder { color: #8492a2; opacity: 1; }
+#dish-dialog .pantry-search { color: #8492a2; }
+#dish-dialog .pantry-search:focus-within {
+  border-color: #91acd0;
+  box-shadow: 0 0 0 3px rgb(111 145 184 / 16%);
+}
+#dish-dialog .pantry-search input,
+#dish-dialog .pantry-search input:focus {
+  border: 0;
+  background: transparent;
+  color: #26313b;
+  box-shadow: none;
+}
+#dish-dialog #dish-name:focus,
+#dish-dialog select:focus,
+#dish-dialog #dish-ingredients:focus {
+  border-color: #91acd0;
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(111 145 184 / 16%);
+}
+#dish-dialog .time-label-row output {
+  background: #e7eef6;
+  color: #58779d;
+  font: 600 12px/1.2 var(--sans);
+}
+#dish-dialog .slider-scale { color: #8492a2; }
+#dish-dialog #dish-form input[type="range"] { accent-color: #607fa8; }
+#dish-dialog #dish-form input[type="range"]::-webkit-slider-runnable-track,
+#dish-dialog #dish-form input[type="range"]::-moz-range-track { background: #dce5ef; }
+#dish-dialog #dish-form input[type="range"]::-webkit-slider-thumb,
+#dish-dialog #dish-form input[type="range"]::-moz-range-thumb {
+  border-color: #fff;
+  background: #607fa8;
+}
+#dish-dialog #dish-ingredient-chips {
+  border-color: #e1e7ec;
+  background: #f7f9fb;
+}
+#dish-dialog .pantry-chip {
+  background: #e7eef6;
+  color: #4e6d94;
+  font: 600 12px/1.3 var(--sans);
+}
+#dish-dialog .pantry-ingredient-icon { background: #f0f4f8; }
+#dish-dialog .pantry-chip-remove { color: #58779d; }
+#dish-dialog .pantry-chip-remove:hover,
+#dish-dialog .pantry-chip-remove:focus-visible { background: #dce7f3; }
+#dish-dialog .pantry-suggestions {
+  border-color: #dbe4ec;
+  background: #fff;
+}
+#dish-dialog .pantry-suggestion {
+  border-bottom-color: #e9eef3;
+  background: #fff;
+  color: #34485e;
+  font: 400 14px/1.4 var(--sans);
+}
+#dish-dialog .pantry-suggestion:hover,
+#dish-dialog .pantry-suggestion:focus-visible {
+  border-color: #b8cbe1;
+  background: #edf3f9;
+}
+#dish-dialog .form-error {
+  border-color: #efc5bc;
+  background: #fff3f0;
+  color: #9b4638;
+  font: 600 12px/1.5 var(--sans);
+}
+#dish-dialog .dialog-actions { border-top-color: #e1e7ec; }
+#dish-dialog .dialog-actions .text-button {
+  color: #9b5a56;
+  font: 600 12px/1.4 var(--sans);
+}
+#dish-dialog .dialog-actions .primary-button,
+#dish-dialog .dialog-actions .secondary-button {
+  font: 600 13px/1 var(--sans);
+}
