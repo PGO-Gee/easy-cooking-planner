@@ -11,6 +11,7 @@ let appInitialized=false;
 let appInitializationPromise;
 let currentUserId='';
 let currentHouseholdId='';
+let interactiveLoginPending=false;
 const lastViewStorageKey='wochentisch-last-view';
 let cloudReady=false;
 let cloudSyncTimer;
@@ -263,21 +264,22 @@ $('#password-sign-in').addEventListener('submit',async event=>{
   const button=$('#password-sign-in-button');
   const email=$('#auth-email').value.trim();
   const password=$('#auth-password').value;
+  interactiveLoginPending=true;
   button.disabled=true;showAuthError('');
   try{
     const {error}=await authClient.auth.signInWithPassword({
       email,
       password
     });
-    if(error){showAuthError('E-Mail-Adresse oder Passwort sind nicht korrekt.');button.disabled=false}
-  }catch(error){showAuthError('Anmeldung fehlgeschlagen. Bitte prüfe deine Internetverbindung.');button.disabled=false}
+    if(error){interactiveLoginPending=false;showAuthError('E-Mail-Adresse oder Passwort sind nicht korrekt.');button.disabled=false}
+  }catch(error){interactiveLoginPending=false;showAuthError('Anmeldung fehlgeschlagen. Bitte prüfe deine Internetverbindung.');button.disabled=false}
 });
 $('#sign-out').addEventListener('click',async()=>{
   const {error}=await authClient.auth.signOut();
   if(error)showToast(`Abmelden fehlgeschlagen: ${error.message}`);
 });
 if(authClient){
-  authClient.auth.onAuthStateChange((event,session)=>{if(session){currentUserId=session.user.id;revealApp({showHome:event==='SIGNED_IN'})}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;showLogin()}});
+  authClient.auth.onAuthStateChange((event,session)=>{if(session){currentUserId=session.user.id;const showHome=event==='SIGNED_IN'&&interactiveLoginPending;interactiveLoginPending=false;revealApp({showHome})}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;interactiveLoginPending=false;showLogin()}});
   authClient.auth.getSession().then(({data,error})=>{
     if(error){showLogin();showAuthError(`Anmeldestatus konnte nicht geprüft werden: ${error.message}`)}
     else if(data.session){currentUserId=data.session.user.id;revealApp()}

@@ -1,30 +1,31 @@
 # Wochentisch
 
-Eine kleine, statische Webapp zum Planen der Mahlzeiten für die Woche.
+Eine statische Web-App zum Planen der Mahlzeiten für die Woche. Die App bietet Wochenplanung, eine eigene Gerichtesammlung und einen Einkaufszettel. Sie ist für eine geschlossene Testphase mit ausgewählten Nutzer:innen vorgesehen.
 
 ## Lokal starten
 
-`index.html` über einen lokalen HTTP-Server öffnen.
+Im Projektverzeichnis einen lokalen HTTP-Server starten, zum Beispiel:
 
-## Anmeldung und Speicherung
+```sh
+python3 -m http.server 8000
+```
 
-Die App verwendet für die geschlossene Testphase E-Mail/Passwort-Login über Supabase Auth. Neue Konten werden nur im Supabase-Dashboard angelegt; öffentliche Registrierungen bleiben deaktiviert. Projekt-URL und Publishable Key stehen in `supabase-config.js`; diese Browserwerte sind öffentlich. Niemals einen Supabase Secret Key oder `service_role`-Key in die Website oder das Repository eintragen.
+Anschließend <http://localhost:8000> im Browser öffnen.
 
-Gerichte, Wochenpläne und Einkaufszettel werden in Supabase gespeichert und zwischen Mitgliedern desselben Haushalts synchronisiert. Die lokale Speicherung dient zusätzlich als Browserzustand und Backup.
+## Anmeldung und Daten
 
-## Supabase-Datenbank
+Die Anmeldung erfolgt über Supabase Auth. Nutzerkonten werden für die geschlossene Testphase manuell angelegt; öffentliche Registrierungen sind nicht vorgesehen. Gerichte, Wochenpläne und Einkaufszettel werden in Supabase gespeichert und innerhalb eines Haushalts synchronisiert. Der Browser speichert zusätzlich einen lokalen Zustand und ein Backup.
 
-Die Migrationen liegen in `supabase/migrations/`. `20261017_initial_schema.sql` erstellt Haushalte, Mitgliedschaften, Gerichte, Wochenpläne und Einkaufslisten. `20261019_restore_household.sql` stellt bei Bedarf einen fehlenden Haushalt wieder her. `20261019_household_join_codes.sql` ergänzt Beitrittscodes; `20261019_shorten_household_join_codes.sql` verkürzt sie auf 8 Stellen und begrenzt die Gültigkeit auf 10 Minuten. Codes sind einmalig nutzbar, pro Haushalt gilt jeweils nur der zuletzt erstellte. Ein angemeldetes Haushaltsmitglied kann den Code direkt teilen; eingelöste Codes fügen das zweite Konto dem Haushalt hinzu. Der vorherige private Haushalt bleibt bestehen. Row Level Security erlaubt Zugriff auf gemeinsame Daten nur für Haushaltsmitglieder.
+`supabase-config.js` enthält die Supabase-Projekt-URL und den öffentlichen Publishable Key, den die Browser-App benötigt. Diese Werte sind keine Geheimnisse. Einen Supabase Secret Key oder `service_role`-Key niemals in die Website oder ins Repository eintragen.
 
-Führe alle Migrationen in zeitlicher Reihenfolge im Supabase Dashboard unter **SQL Editor** aus.
+Die SQL-Dateien unter `supabase/migrations/` dokumentieren die Einrichtung und Änderungen des Supabase-Datenbankschemas. Sie werden nicht als Teil des GitHub-Pages-Deployments ausgeführt.
 
-`datenschutz.html` enthält einen Entwurf der Datenschutzerklärung. Vor einer Veröffentlichung müssen Verantwortlicher, Kontaktadresse und Supabase-Projektregion ergänzt sowie der Text geprüft werden.
+## Veröffentlichung mit GitHub Pages
 
-## GitHub Pages
+Die Website besteht aus statischen Dateien und benötigt keinen Build-Schritt:
 
-Das Projekt besteht aus statischen Dateien und kann direkt mit GitHub Pages veröffentlicht werden:
+1. Im Repository **Settings → Pages** öffnen.
+2. Unter **Build and deployment** die Quelle **Deploy from a branch** wählen.
+3. Den vorgesehenen Veröffentlichungsbranch und den Ordner `/(root)` auswählen.
 
-1. Im Repository unter **Settings → Pages** bei **Build and deployment** die Quelle **Deploy from a branch** auswählen.
-2. Den Branch `main` und den Ordner `/(root)` auswählen und speichern.
-
-Gerichte, Wochenpläne und Einkaufszettel werden über Supabase zwischen den Mitgliedern eines Haushalts synchronisiert.
+Änderungen am ausgewählten Branch werden anschließend von GitHub Pages veröffentlicht. Mit GitHub Free muss das Repository für GitHub Pages öffentlich sein. GitHub Pages unterstützt auch eine eigene Domain; die Domain registriert und bezahlt man separat.
