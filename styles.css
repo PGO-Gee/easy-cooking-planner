@@ -387,3 +387,9 @@ h1,
 .footer,
 .empty-state,
 .starter-tip p { color: #8492a2; }
+
+/* The home profile opens household settings. */
+button.profile{width:100%;text-align:left;background:transparent;color:inherit;font:inherit;border-left:0;border-right:0;border-bottom:0;cursor:pointer}
+button.profile:hover .profile-copy b,button.profile:focus-visible .profile-copy b{color:var(--green)}
+button.profile:focus-visible{outline:2px solid #9caf99;outline-offset:3px;border-radius:6px}
+@media(max-width:700px){.side-bottom{display:block}.profile{justify-content:center;padding:12px 0 0}.profile-copy,.profile .dots{display:none}}
