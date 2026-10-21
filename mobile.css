@@ -546,6 +546,11 @@
   }
 }
 
+/* Keep these two late overrides aligned with the slate light-theme palette. */
+#sign-out { color: #53677d; }
+#calendar .add-meal { color: #53677d; }
+#calendar .add-meal:hover { color: #58779d; }
+
 @media (max-width: 380px) {
   .main-content {
     padding-right: max(12px, env(safe-area-inset-right));
