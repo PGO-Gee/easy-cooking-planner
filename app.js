@@ -75,7 +75,8 @@ function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${
 function localStateOwnerKey(){return 'wochentisch-local-owner'}
 function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${currentUserId}`:''}
 function canUseLocalState(){const owner=localStorage.getItem(localStateOwnerKey());return !owner||owner===currentUserId}
-function savedView(){try{const view=localStorage.getItem(lastViewStorageKey);return ['week','dishes','shopping'].includes(view)?view:'week'}catch(error){return 'week'}}
+function savedView(){try{const view=localStorage.getItem(lastViewStorageKey);return ['home','week','dishes','shopping'].includes(view)?view:'week'}catch(error){return 'week'}}
+function viewForSession(showHome=false){const mobile=window.matchMedia('(max-width: 700px)').matches;if(showHome&&mobile)return'home';const view=savedView();return view==='home'&&!mobile?'week':view}
 function starterState(){return{dishes:[],plans:{},pantryIngredients:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{}}}
 function saveCloudBackup(){if(currentUserId&&canUseLocalState()&&state.dishes.length)localStorage.setItem(cloudBackupKey(),JSON.stringify(state))}
 function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(cloudBackupKey()));return backup?.dishes?.length?backup:null}catch(error){return null}}
@@ -179,9 +180,9 @@ async function flushCloudSync(){
   catch(error){cloudError(error)}
   finally{cloudSyncInProgress=false}
 }
-async function revealApp(){
+async function revealApp({showHome=false}={}){
   $('#auth-gate').hidden=true;
-  if(!appInitialized)setView(window.matchMedia('(max-width: 700px)').matches?'home':savedView(),{render:false});
+  if(!appInitialized&&!appInitializationPromise)setView(viewForSession(showHome),{render:false});
   $('.app-shell').hidden=false;
   if(appInitializationPromise)return appInitializationPromise;
   appInitializationPromise=(async()=>{
@@ -200,7 +201,7 @@ async function revealApp(){
     }catch(error){cloudError(error);showAuthError('Die Datenbank ist gerade nicht erreichbar. Deine Änderungen werden vorübergehend nur auf diesem Gerät gespeichert.');}
     appInitialized=true;
     if(state.noteHidden)$('#bottom-note').classList.add('hidden');
-    updateCounts();renderCalendar();setView(window.matchMedia('(max-width: 700px)').matches?'home':savedView());
+    updateCounts();renderCalendar();setView(viewForSession(showHome));
   })();
   return appInitializationPromise;
 }
@@ -276,7 +277,7 @@ $('#sign-out').addEventListener('click',async()=>{
   if(error)showToast(`Abmelden fehlgeschlagen: ${error.message}`);
 });
 if(authClient){
-  authClient.auth.onAuthStateChange((_event,session)=>{if(session){currentUserId=session.user.id;revealApp()}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;showLogin()}});
+  authClient.auth.onAuthStateChange((event,session)=>{if(session){currentUserId=session.user.id;revealApp({showHome:event==='SIGNED_IN'})}else{currentUserId='';currentHouseholdId='';cloudReady=false;appInitialized=false;appInitializationPromise=undefined;showLogin()}});
   authClient.auth.getSession().then(({data,error})=>{
     if(error){showLogin();showAuthError(`Anmeldestatus konnte nicht geprüft werden: ${error.message}`)}
     else if(data.session){currentUserId=data.session.user.id;revealApp()}
