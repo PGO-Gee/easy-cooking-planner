@@ -758,6 +758,10 @@ body {
 .shopping-tile-status { background: #718fb5; color: #fff; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
+.catalog-search { border-color: #3a4a5e; background: #202c3a; color: #a5b1bf; }
+.catalog-search input { color: #e7edf4; }
+.catalog-search input::placeholder { color: #8595a8; }
+
 /* Keep the meal cards on one slate surface in dark mode as well. */
 .calendar-grid .meal-card,
 .calendar-grid .meal-card:nth-child(3n+2),
@@ -1210,3 +1214,15 @@ dialog { background: rgb(27 36 47 / 96%); }
 .household-member-row { border: 1px solid rgb(255 255 255 / 5%); }
 .password-sign-in input { border-radius: 12px; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
+
+.shopping-tile-remove {
+  border: 1px solid rgb(255 255 255 / 8%);
+  background: #253449;
+  color: #cbd7e6;
+}
+.shopping-tile-remove:hover,
+.shopping-tile-remove:focus-visible {
+  border-color: #718caf;
+  background: #2d3f56;
+  color: #e0ebf8;
+}
