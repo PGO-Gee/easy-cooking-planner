@@ -6,11 +6,11 @@
   <meta name="theme-color" content="#f1f4f7" />
   <title>Wochentisch — dein Essensplan</title>
   <link rel="stylesheet" href="styles.css?v=20261021-14" />
-  <link rel="stylesheet" href="interaction.css?v=20261021-20" />
+  <link rel="stylesheet" href="interaction.css?v=20261022-6" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261021-13" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
-  <link rel="stylesheet" href="mobile.css?v=20261021-16" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261021-12" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="mobile.css?v=20261022-3" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261022-2" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="auth-gate" class="auth-gate" aria-labelledby="auth-title">
@@ -57,7 +57,7 @@
         <div class="page-heading"><div><div class="eyebrow">ESSENSPLAN</div><h1>Dein Essensplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Plane deine Gerichte für die nächsten 7 Tage.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> 7 Tage neu mischen</button></div>
         <div class="week-toolbar"><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorherige 7 Tage">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste 7 Tage">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Kochideen geplant</span></span><button class="secondary-button" id="shopping-btn"><span>☷</span> Einkaufszettel</button></div></div>
         <div id="calendar" class="calendar-grid"></div>
-        <div id="bottom-note" class="bottom-note"><span>Beim Mischen werden Hauptzutaten an aufeinanderfolgenden Tagen möglichst variiert.</span><button id="note-close" aria-label="Hinweis schließen">×</button></div>
+        <div id="bottom-note" class="bottom-note"><span>Fixiere Gerichte mit 📌, damit sie beim Neuplanen bleiben. Hauptzutaten werden an aufeinanderfolgenden Tagen möglichst variiert.</span><button id="note-close" aria-label="Hinweis schließen">×</button></div>
       </section>
       <section id="dishes-view" class="view hidden">
         <div class="page-heading"><div><div class="eyebrow">GERICHTE</div><h1>Meine Gerichte<span class="heading-period"> <span id="dish-heading-count">12</span> Ideen</span></h1><p class="subheading">Verwalte deine Gerichte für die Wochenplanung.</p></div><button id="add-dish-btn" class="primary-button"><span>＋</span> Gericht hinzufügen</button></div>
@@ -84,7 +84,7 @@
   <script src="supabase-config.js?v=20261017-2"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261021-6"></script>
+  <script src="app.js?v=20261022-6"></script>
 </body>
 </html>
 

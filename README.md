@@ -20,6 +20,8 @@ Die Anmeldung erfolgt über Supabase Auth. Nutzerkonten werden für die geschlos
 
 Die SQL-Dateien unter `supabase/migrations/` dokumentieren die Einrichtung und Änderungen des Supabase-Datenbankschemas. Sie werden nicht als Teil des GitHub-Pages-Deployments ausgeführt.
 
+Für fixierte Gerichte muss `supabase/migrations/20261022090000_pinned_meals.sql` einmal im Supabase SQL Editor ausgeführt werden. Bestehende Gerichte bleiben dabei standardmäßig nicht fixiert.
+
 ## Veröffentlichung mit GitHub Pages
 
 Die Website besteht aus statischen Dateien und benötigt keinen Build-Schritt:

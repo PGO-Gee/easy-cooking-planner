@@ -633,6 +633,13 @@
   }
 }
 
+@media (max-width: 700px) {
+  .calendar-grid .meal-card { padding-top: 52px; }
+  .meal-actions { opacity: 1; }
+  .meal-actions .meal-pin,
+  .meal-actions .meal-remove { width: 44px; height: 44px; }
+}
+
 .breadcrumb #home-breadcrumb {
   border: 0;
   padding: 0;

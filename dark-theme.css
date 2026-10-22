@@ -758,6 +758,19 @@ body {
 .shopping-tile-status { background: #718fb5; color: #fff; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
+/* Keep the meal cards on one slate surface in dark mode as well. */
+.calendar-grid .meal-card,
+.calendar-grid .meal-card:nth-child(3n+2),
+.calendar-grid .meal-card:nth-child(3n) {
+  background: linear-gradient(145deg, #293440, #232d39);
+}
+
+.meal-actions .meal-pin,
+.meal-actions .meal-remove { color: #a5b1bf; }
+.meal-actions .meal-pin[aria-pressed="true"] { color: #c3d7f1; }
+.meal-actions .meal-pin:hover,
+.meal-actions .meal-remove:hover { background: rgb(255 255 255 / 8%); color: #e0ebf8; }
+
 #sign-out { color: #bdc9d6; }
 #calendar .add-meal { color: #b2c1d2; }
 #calendar .add-meal:hover { color: #d9e6f5; }
