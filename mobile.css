@@ -688,6 +688,14 @@
   .meal-actions .meal-remove { width: 44px; height: 44px; }
 }
 
+@media (max-width: 700px) {
+  .day-rest-action { min-height: 48px; font-size: 12px; }
+  .rest-day-tile { min-height: 84px; gap: 10px; padding: 13px 24px 13px 13px; }
+  .rest-day-copy strong { font-size: 13px; }
+  .rest-day-copy small { font-size: 12px; }
+  #toast.has-action { bottom: calc(16px + env(safe-area-inset-bottom)); }
+}
+
 .breadcrumb #home-breadcrumb {
   border: 0;
   padding: 0;

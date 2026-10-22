@@ -758,6 +758,22 @@ body {
 .shopping-tile-status { background: #718fb5; color: #fff; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
+.day-rest-action {
+  border-color: #4c4a3f;
+  background: linear-gradient(135deg, #34352f, #302d28);
+  color: #e2cda8;
+}
+.day-rest-action:hover { border-color: #766a52; background: #3d3930; }
+.rest-day-tile {
+  border-color: #51483b;
+  background: radial-gradient(circle at 8% 18%, #3b382e, transparent 55%), linear-gradient(145deg, #302e28, #292923);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 5px 15px rgb(0 0 0 / 12%);
+}
+.rest-day-icon { border-color: rgb(206 176 131 / 18%); background: rgb(255 255 255 / 5%); }
+.rest-day-copy strong { color: #e7d7bc; }
+.rest-day-copy small { color: #d0c2a9; }
+.toast-action { border-color: rgb(255 255 255 / 18%); }
+
 .catalog-search { border-color: #3a4a5e; background: #202c3a; color: #a5b1bf; }
 .catalog-search input { color: #e7edf4; }
 .catalog-search input::placeholder { color: #8595a8; }
