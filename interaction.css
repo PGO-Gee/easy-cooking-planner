@@ -1,6 +1,8 @@
 #choose-dialog {
   width: min(480px, calc(100% - 32px));
+  max-height: min(88dvh, 760px);
   padding: 0;
+  overflow: hidden;
 }
 
 #pantry-dialog {
@@ -362,15 +364,52 @@
 }
 
 .choose-dialog-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: min(88dvh, 760px);
   padding: 25px;
 }
+
+.choose-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 0 0 auto;
+  min-height: 46px;
+  margin: 0 0 12px;
+  padding: 0 12px;
+  border: 1px solid #e2e7de;
+  border-radius: 10px;
+  background: #fff;
+  color: #8492a2;
+}
+
+.choose-search > span { font-size: 20px; line-height: 1; }
+.choose-search input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font: 16px/1.4 var(--sans);
+}
+.choose-search input::placeholder { color: #8492a2; opacity: 1; }
+.choose-search[hidden] { display: none; }
+.choose-no-results { flex: 0 0 auto; }
 
 .choose-list {
   display: flex;
   flex-direction: column;
   gap: 7px;
+  flex: 1 1 auto;
+  min-height: 0;
   max-height: min(55vh, 460px);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .choose-item {

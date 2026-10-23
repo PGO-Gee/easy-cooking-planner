@@ -777,6 +777,9 @@ body {
 .catalog-search { border-color: #3a4a5e; background: #202c3a; color: #a5b1bf; }
 .catalog-search input { color: #e7edf4; }
 .catalog-search input::placeholder { color: #8595a8; }
+.choose-search { border-color: #3a4a5e; background: #202c3a; color: #a5b1bf; }
+.choose-search input { color: #e7edf4; }
+.choose-search input::placeholder { color: #8595a8; }
 
 /* Keep the meal cards on one slate surface in dark mode as well. */
 .calendar-grid .meal-card,

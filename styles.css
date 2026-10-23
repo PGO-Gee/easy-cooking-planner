@@ -470,3 +470,20 @@ button.profile:focus-visible{outline:2px solid #9caf99;outline-offset:3px;border
   .day-rest-action { transition: none; }
   .day-rest-action:active { transform: none; }
 }
+
+@page { size: landscape; margin: 10mm; }
+
+@media print {
+  body.print-week #week-view { display: block !important; }
+  body.print-week .view:not(#week-view) { display: none !important; }
+  body.print-week #bottom-note,
+  body.print-week .meal-actions,
+  body.print-week .day-rest-action { display: none !important; }
+  body.print-week .calendar-grid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+  body.print-week .day-card { min-height: 0; border-radius: 5px; }
+  body.print-week .day-head { padding: 9px 7px; }
+  body.print-week .day-content { padding: 7px 5px; gap: 5px; }
+  body.print-week .meal-card { break-inside: avoid; padding: 7px 6px; }
+  body.print-week .meal-name { font-size: 10px; }
+  body.print-week .meal-meta { font-size: 8px; flex-wrap: wrap; }
+}
