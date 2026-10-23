@@ -1245,3 +1245,4 @@ dialog { background: rgb(27 36 47 / 96%); }
   background: #2d3f56;
   color: #e0ebf8;
 }
+.shopping-quantity{border-color:#344352;background:#18232f;color:#e0e8f1}.shopping-quantity button{background:#293848;color:#e0e8f1}.shopping-quantity button:hover:not(:disabled){background:#364a5e}

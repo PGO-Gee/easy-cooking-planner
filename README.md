@@ -20,7 +20,7 @@ Die Anmeldung erfolgt über Supabase Auth. Nutzerkonten werden für die geschlos
 
 Die SQL-Dateien unter `supabase/migrations/` dokumentieren die Einrichtung und Änderungen des Supabase-Datenbankschemas. Sie werden nicht als Teil des GitHub-Pages-Deployments ausgeführt.
 
-Führe die SQL-Migrationen unter `supabase/migrations/` einmal im Supabase SQL Editor aus. Dazu gehören die Spalte für fixierte Gerichte (`20261022090000_pinned_meals.sql`) und der gespeicherte Resteabend-Status (`20261022110000_rest_days.sql`). Bestehende Gerichte bleiben standardmäßig nicht fixiert; bestehende Wochenpläne starten ohne Resteabende.
+Führe die SQL-Migrationen unter `supabase/migrations/` einmal im Supabase SQL Editor aus. Dazu gehören die Spalte für fixierte Gerichte (`20261022090000_pinned_meals.sql`), der gespeicherte Resteabend-Status (`20261022110000_rest_days.sql`) und die haushaltsweit synchronisierten Einkaufszettel-Mengen (`20261023120000_shopping_quantities.sql`). Bestehende Gerichte bleiben standardmäßig nicht fixiert; bestehende Wochenpläne starten ohne Resteabende.
 
 ## Veröffentlichung mit GitHub Pages
 
