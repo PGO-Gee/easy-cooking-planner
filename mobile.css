@@ -823,3 +823,9 @@ html {
     font-size: 19px;
   }
 }
+
+@media (max-width: 700px), (pointer: coarse) and (max-width: 1100px) {
+  .shopping-screen .shopping-tiles {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
