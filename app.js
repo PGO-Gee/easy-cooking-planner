@@ -423,8 +423,10 @@ async function syncStateToCloud({notify=false}={}){
   const afterSync=mergeHouseholdState(syncTarget,stateAtRefresh,refreshed.state);
   state=afterSync.state;cloudBaseState=refreshed.state;saveCloudBase(cloudBaseState);save({sync:false});
   if(appInitialized){
-    if(state.noteHidden)$('#bottom-note').classList.add('hidden');
-    updateCounts();renderCalendar();setView(savedView());
+    $('#bottom-note').classList.toggle('hidden',state.noteHidden);
+    updateCounts();
+    if(!sameValue(calendarStateForRange(before),calendarStateForRange(state)))renderCalendar();
+    if(!sameValue(before,state))setView(savedView());
   }
   const conflictCount=merged.conflicts.length+afterSync.conflicts.length;
   if(conflictCount&&document.visibilityState==='visible')showToast('Eine gleichzeitige Änderung wurde übernommen. Bitte prüfe den betroffenen Plan.');
@@ -438,8 +440,8 @@ async function syncStateToCloud({notify=false}={}){
 }
 function scheduleCloudSync({notify=false}={}){
   if(!cloudReady||loadingCloudState||!navigator.onLine)return;
-  cloudSyncRequested=true;cloudSyncNotificationRequested=cloudSyncNotificationRequested||notify;clearTimeout(cloudSyncTimer);
-  cloudSyncTimer=setTimeout(flushCloudSync,notify?120:350);
+  cloudSyncNotificationRequested=cloudSyncNotificationRequested||notify;clearTimeout(cloudSyncTimer);
+  cloudSyncTimer=setTimeout(()=>{cloudSyncRequested=true;flushCloudSync()},notify?500:350);
 }
 async function flushCloudSync(){
   if(cloudSyncInProgress||!cloudSyncRequested)return;
@@ -667,6 +669,19 @@ function isRestDay(date){return restDaysForWeek(keyFor(mondayFor(date))).include
 function setRestDay(date,isRest){const weekKey=keyFor(mondayFor(date)),index=dayIndex(date),days=new Set(restDaysForWeek(weekKey));if(isRest)days.add(index);else days.delete(index);if(days.size)state.restDays[weekKey]=[...days].sort((a,b)=>a-b);else delete state.restDays[weekKey]}
 function replaceDayPlan(date,{meals,pins,isRest}){const weekKey=keyFor(mondayFor(date)),index=dayIndex(date),plan=getPlanForDate(date);plan[index]=meals.slice();state.pinnedMeals??={};state.pinnedMeals[weekKey]??=Array.from({length:7},()=>[]);state.pinnedMeals[weekKey][index]=pins.slice(0,meals.length);while(state.pinnedMeals[weekKey][index].length<meals.length)state.pinnedMeals[weekKey][index].push(false);setRestDay(date,isRest)}
 function planDaysInRange(){return rangeDates().map(date=>({date,weekKey:keyFor(mondayFor(date)),day:getPlanForDate(date)[dayIndex(date)],isRest:isRestDay(date)}))}
+function calendarStateForRange(value){
+  return rangeDates().map(date=>{
+    const week=keyFor(mondayFor(date)),day=dayIndex(date),mealIds=value.plans?.[week]?.[day]||[],pins=value.pinnedMeals?.[week]?.[day]||[];
+    return{
+      date:keyFor(date),
+      isRest:(value.restDays?.[week]||[]).includes(day),
+      meals:mealIds.map((id,index)=>{
+        const dish=(value.dishes||[]).find(item=>item.id===id);
+        return{id,pinned:Boolean(pins[index]),dish:dish?{name:dish.name,ingredient:dish.ingredient,time:dish.time,emoji:dish.emoji,nutrition:dish.nutrition}:null};
+      })
+    };
+  });
+}
 function snapshotPlanDays(dates){return{days:dates.map(date=>({date:new Date(date),meals:getPlanForDate(date)[dayIndex(date)].slice(),pins:pinnedMealsForDate(date).slice(),isRest:isRestDay(date)})),restDays:structuredClone(state.restDays||{})}}
 function restorePlanDays(snapshot){snapshot.days.forEach(day=>replaceDayPlan(day.date,day));state.restDays=structuredClone(snapshot.restDays)}
 function markRestDay(dayOffset){
