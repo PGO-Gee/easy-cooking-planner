@@ -718,6 +718,12 @@ function clearMealDragVisuals(drag,{keepGhost=false}={}){
   calendar.querySelectorAll('.meal-card.drop-shifted,.add-meal.drop-shifted').forEach(meal=>meal.classList.remove('drop-shifted'));
   calendar.querySelectorAll('.day-content').forEach(content=>content.style.removeProperty('--meal-drop-shift'));
 }
+function cancelMealDrag(){
+  const drag=mealDragState;
+  if(!drag)return;
+  if(drag.pointerId!==null){try{drag.meal.releasePointerCapture(drag.pointerId)}catch(error){}}
+  clearMealDragVisuals(drag);mealDragState=null;
+}
 function createMealDragGhost(drag){
   drag.dragging=true;drag.meal.classList.add('is-dragging');drag.meal.setAttribute('aria-grabbed','true');
   const rect=drag.meal.getBoundingClientRect(),style=getComputedStyle(drag.meal);
@@ -784,7 +790,10 @@ function moveMealPointerDrag(event){
   event.preventDefault();updateMealDragPosition(drag,event.clientX,event.clientY);
 }
 function startMealTouchDrag(event){
-  if(mealDragState||event.touches.length!==1||event.target.closest?.('.meal-remove,.meal-pin'))return;
+  // iOS may suspend a home-screen app before touchend arrives. Drop an old
+  // gesture before processing the next tap so it cannot consume that tap.
+  if(mealDragState)cancelMealDrag();
+  if(event.touches.length!==1||event.target.closest?.('.meal-remove,.meal-pin,.add-meal,.day-rest-action'))return;
   const meal=event.target.closest?.('.meal-card'),content=meal?.closest('.day-content');
   if(!meal||!content)return;
   const touch=event.touches[0],drag={pointerId:null,touchGesture:true,meal,mealIndex:Number(meal.dataset.mealIndex),dishId:meal.dataset.dishId,sourceDay:Number(content.dataset.day),targetDay:null,insertIndex:0,startX:touch.clientX,startY:touch.clientY,clientX:touch.clientX,clientY:touch.clientY,dragging:false,ghost:null,scrollFrame:0,touchTimer:0};
@@ -854,7 +863,7 @@ function finishMealTouchDrag(event,cancelled=false){
 function cancelMealTouchDrag(){
   const drag=mealDragState;
   if(!drag?.touchGesture)return;
-  clearMealDragVisuals(drag);mealDragState=null;
+  cancelMealDrag();
 }
 function renderCalendar({shuffleAnimation=false,droppedMeal=null}={}){
   const start=rangeStart(),days=planDaysInRange(),planned=days.reduce((n,item)=>n+item.day.length,0);
@@ -874,11 +883,11 @@ function renderCalendar({shuffleAnimation=false,droppedMeal=null}={}){
       const isPinned=Boolean(pinned[j]),wasDropped=droppedMeal?.day===i&&droppedMeal.mealIndex===j,meal=document.createElement('div');meal.className='meal-card'+(isPinned?' is-pinned':'')+(wasDropped?' just-dropped':'');meal.dataset.mealIndex=j;meal.dataset.dishId=id;
       meal.innerHTML=`<div class="meal-actions"><button type="button" class="meal-pin" aria-label="${isPinned?'Gericht nicht mehr fixieren':'Gericht fixieren'}" aria-pressed="${isPinned}"><svg class="meal-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 2H8v2l1 1v5.17L5.59 14.6A2 2 0 0 0 7 18h4v4h2v-4h4a2 2 0 0 0 1.41-3.4L15 10.17V5l1-1V2z"/></svg></button><button type="button" class="meal-remove" aria-label="Gericht entfernen">×</button></div><div class="meal-title"><span class="meal-icon"></span><div class="meal-name"></div></div><div class="meal-meta"><span>◷ ${dish.time||25} min</span><span class="dot">·</span><span>${dish.ingredient||'Lieblingsgericht'}</span></div><div class="meal-nutrition"></div>`;
       meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;
-      meal.querySelector('.meal-pin').addEventListener('click',event=>{event.stopPropagation();pinned[j]=!pinned[j];save();renderCalendar()});
-      meal.querySelector('.meal-remove').addEventListener('click',event=>{event.stopPropagation();day.splice(j,1);pinned.splice(j,1);save();renderCalendar()});content.append(meal);
+      meal.querySelector('.meal-pin').addEventListener('click',event=>{event.stopPropagation();cancelMealDrag();pinned[j]=!pinned[j];save();renderCalendar()});
+      meal.querySelector('.meal-remove').addEventListener('click',event=>{event.stopPropagation();cancelMealDrag();day.splice(j,1);pinned.splice(j,1);save();renderCalendar()});content.append(meal);
     });
     if(!isRest){const restAction=document.createElement('button');restAction.type='button';restAction.className='day-rest-action';restAction.innerHTML='<span class="day-rest-action-icon" aria-hidden="true">🥡</span><span>Reste</span>';restAction.setAttribute('aria-label',`Resteabend für ${date.toLocaleDateString('de-DE',{weekday:'long'})} markieren${day.length?', den Plan um einen Tag verschieben':''}`);restAction.title=day.length?'Resteabend eintragen und den Folgeplan weiterschieben':'Als Resteabend markieren';restAction.addEventListener('click',()=>markRestDay(i));content.append(restAction)}
-    const add=document.createElement('button');add.className='add-meal';add.textContent=isRest?'＋ Gericht statt Reste eintragen':'＋ Gericht eintragen';add.addEventListener('click',()=>chooseDish(i));content.append(add);grid.append(card);
+    const add=document.createElement('button');add.type='button';add.className='add-meal';add.textContent=isRest?'＋ Gericht statt Reste eintragen':'＋ Gericht eintragen';add.addEventListener('click',()=>{cancelMealDrag();chooseDish(i)});content.append(add);grid.append(card);
   });
   save({sync:false});$('#bottom-note').classList.toggle('hidden',state.noteHidden);updateShoppingNavCount();
 }
@@ -891,6 +900,8 @@ mealCalendar.addEventListener('touchmove',moveMealTouchDrag,{passive:false});
 mealCalendar.addEventListener('touchend',finishMealTouchDrag);
 mealCalendar.addEventListener('touchcancel',event=>finishMealTouchDrag(event,true));
 mealCalendar.addEventListener('contextmenu',event=>{if(event.target.closest?.('.meal-card'))event.preventDefault()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)cancelMealDrag()});
+window.addEventListener('pagehide',cancelMealDrag);
 window.addEventListener('pointermove',moveMealPointerDrag,{passive:false});
 window.addEventListener('pointerup',finishMealPointerDrag);
 window.addEventListener('pointercancel',event=>finishMealPointerDrag(event,true));
