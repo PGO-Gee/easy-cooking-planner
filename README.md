@@ -20,7 +20,11 @@ Die Anmeldung erfolgt über Supabase Auth. Nutzerkonten werden für die geschlos
 
 Die SQL-Dateien unter `supabase/migrations/` dokumentieren die Einrichtung und Änderungen des Supabase-Datenbankschemas. Sie werden nicht als Teil des GitHub-Pages-Deployments ausgeführt.
 
-Führe die SQL-Migrationen unter `supabase/migrations/` einmal im Supabase SQL Editor aus. Dazu gehören die Spalte für fixierte Gerichte (`20261022090000_pinned_meals.sql`), der gespeicherte Resteabend-Status (`20261022110000_rest_days.sql`) und die haushaltsweit synchronisierten Einkaufszettel-Mengen (`20261023120000_shopping_quantities.sql`). Bestehende Gerichte bleiben standardmäßig nicht fixiert; bestehende Wochenpläne starten ohne Resteabende.
+Bei einer Neueinrichtung führe die SQL-Migrationen unter `supabase/migrations/` einmal im Supabase SQL Editor aus. Dazu gehören die Spalte für fixierte Gerichte (`20261022090000_pinned_meals.sql`), der gespeicherte Resteabend-Status (`20261022110000_rest_days.sql`) und die haushaltsweit synchronisierten Einkaufszettel-Mengen (`20261023120000_shopping_quantities.sql`). Die Realtime-Veröffentlichung samt Mengen-Merge (`20261024191810_household_realtime_and_quantity_merge.sql`) ist bereits auf dem verbundenen Supabase-Projekt angewendet. Bei einer anderen, neuen Supabase-Instanz muss sie nach den vorherigen Migrationen einmal ausgeführt werden. Bestehende Gerichte bleiben standardmäßig nicht fixiert; bestehende Wochenpläne starten ohne Resteabende.
+
+## Offline-Start und Haushalts-Sync
+
+Der Service Worker speichert die App-Dateien für den Offline-Start. Öffne die App nach einer Veröffentlichung mindestens einmal mit Internetverbindung, damit der Cache aktualisiert wird. Wochenplan und Einkaufsliste werden lokal angezeigt; Änderungen ohne Verbindung werden mit dem letzten bekannten Serverstand zusammengeführt, sobald die Verbindung zurückkehrt. Änderungen anderer Haushaltsmitglieder werden bei aktiver App live geladen und mit einem Hinweis angezeigt. System-Push-Nachrichten bei geschlossener App sind nicht eingerichtet.
 
 ## Veröffentlichung mit GitHub Pages
 
