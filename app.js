@@ -89,10 +89,11 @@ function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${curre
 function canUseLocalState(){const owner=localStorage.getItem(localStateOwnerKey());return !owner||owner===currentUserId}
 function savedView(){try{const view=localStorage.getItem(lastViewStorageKey);return ['home','week','dishes','shopping'].includes(view)?view:'week'}catch(error){return 'week'}}
 function viewForSession(showHome=false){const mobile=window.matchMedia('(max-width: 700px)').matches;if(showHome&&mobile)return'home';const view=savedView();return view==='home'&&!mobile?'week':view}
-function starterState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{},shoppingQuantities:state.shoppingQuantities||{}}}
+function starterState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:state.noteHidden,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:state.shoppingQuantities||{}}}
 function saveCloudBackup(){if(currentUserId&&canUseLocalState()&&state.dishes.length)localStorage.setItem(cloudBackupKey(),JSON.stringify(state))}
 function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(cloudBackupKey()));return backup?.dishes?.length?backup:null}catch(error){return null}}
 function cleanIngredients(ingredients){return Array.isArray(ingredients)?ingredients.filter(item=>typeof item==='string').map(normalizeIngredient).filter(Boolean):[]}
+function cleanHiddenShoppingItems(items){return [...new Set((Array.isArray(items)?items:[]).filter(item=>typeof item==='string').map(manualItemKey).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de-DE'))}
 function cleanRestDays(days){return [...new Set((Array.isArray(days)?days:[]).map(Number).filter(day=>Number.isInteger(day)&&day>=0&&day<7))].sort((a,b)=>a-b)}
 function cleanNutrition(nutrition){return nutrition&&typeof nutrition==='object'&&!Array.isArray(nutrition)?nutrition:null}
 function cloudError(message){console.error(message);updateSyncStatus('Keine Verbindung – Änderungen bleiben auf diesem Gerät gespeichert.');if(appInitialized&&document.visibilityState==='visible')showToast('Änderung wird lokal gespeichert und später synchronisiert.')}
@@ -115,7 +116,7 @@ async function getCurrentHousehold(){
 async function readStateFromCloud(){
   const [dishesResult,plansResult]=await Promise.all([
     authClient.from('dishes').select('*').eq('household_id',currentHouseholdId).order('created_at'),
-    authClient.from('weekly_plans').select('id, household_id, week_start, pantry_ingredients, rest_days, shopping_quantities, updated_at').eq('household_id',currentHouseholdId).order('week_start')
+    authClient.from('weekly_plans').select('id, household_id, week_start, pantry_ingredients, rest_days, shopping_quantities, shopping_hidden_items, updated_at').eq('household_id',currentHouseholdId).order('week_start')
   ]);
   if(dishesResult.error)throw dishesResult.error;
   if(plansResult.error)throw plansResult.error;
@@ -136,10 +137,10 @@ async function readStateFromCloud(){
   const nextState={dishes:dishRows.map(dish=>({
     id:dish.id,name:dish.name,ingredient:dish.ingredient,time:dish.cooking_time_minutes,
     emoji:dish.emoji,ingredients:cleanIngredients(dish.ingredients),nutrition:cleanNutrition(dish.nutrition)
-  })),plans:{},pinnedMeals:{},restDays:{},noteHidden:state.noteHidden,shoppingChecks:{},manualShoppingItems:{},shoppingQuantities:{}};
+  })),plans:{},pinnedMeals:{},restDays:{},noteHidden:state.noteHidden,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:{}};
   nextState.pantryIngredients={};
   const weekByPlanId=new Map();
-  plans.forEach(plan=>{nextState.plans[plan.week_start]=Array.from({length:7},()=>[]);nextState.pinnedMeals[plan.week_start]=Array.from({length:7},()=>[]);nextState.restDays[plan.week_start]=cleanRestDays(plan.rest_days);nextState.pantryIngredients[plan.week_start]=cleanIngredients(plan.pantry_ingredients);Object.assign(nextState.shoppingQuantities,plan.shopping_quantities||{});weekByPlanId.set(plan.id,plan.week_start)});
+  plans.forEach(plan=>{nextState.plans[plan.week_start]=Array.from({length:7},()=>[]);nextState.pinnedMeals[plan.week_start]=Array.from({length:7},()=>[]);nextState.restDays[plan.week_start]=cleanRestDays(plan.rest_days);nextState.pantryIngredients[plan.week_start]=cleanIngredients(plan.pantry_ingredients);nextState.hiddenShoppingItems[plan.week_start]=cleanHiddenShoppingItems(plan.shopping_hidden_items);Object.assign(nextState.shoppingQuantities,plan.shopping_quantities||{});weekByPlanId.set(plan.id,plan.week_start)});
   meals.forEach(meal=>{const week=weekByPlanId.get(meal.weekly_plan_id);if(week&&nextState.plans[week][meal.day_of_week]){nextState.plans[week][meal.day_of_week][meal.position]=meal.dish_id;nextState.pinnedMeals[week][meal.day_of_week][meal.position]=Boolean(meal.is_pinned)}});
   Object.entries(nextState.plans).forEach(([week,days])=>days.forEach((day,index)=>{const entries=day.map((id,position)=>({id,pinned:Boolean(nextState.pinnedMeals[week][index][position])})).filter(item=>item.id);days[index]=entries.map(item=>item.id);nextState.pinnedMeals[week][index]=entries.map(item=>item.pinned)}));
   shoppingItems.forEach(item=>{const week=weekByPlanId.get(item.weekly_plan_id);if(week)(nextState.manualShoppingItems[week]??=[]).push(item.name)});
@@ -210,6 +211,15 @@ function mergeShoppingChecks(baseChecks={},localChecks={},remoteChecks={},confli
   });
   return result;
 }
+function mergeHiddenShoppingItems(baseItems={},localItems={},remoteItems={},conflicts){
+  const result={},weeks=new Set([...Object.keys(baseItems||{}),...Object.keys(localItems||{}),...Object.keys(remoteItems||{})]);
+  weeks.forEach(week=>{
+    const base=new Set(cleanHiddenShoppingItems(baseItems[week])),local=new Set(cleanHiddenShoppingItems(localItems[week])),remote=new Set(cleanHiddenShoppingItems(remoteItems[week])),keys=new Set([...base,...local,...remote]),merged=[];
+    keys.forEach(key=>{if(chooseMergedValue(base.has(key),local.has(key),remote.has(key),`Einkaufseintrag:${week}:${key}`,conflicts))merged.push(key)});
+    if(merged.length)result[week]=merged.sort((a,b)=>a.localeCompare(b,'de-DE'));
+  });
+  return result;
+}
 function planDay(stateValue,week,day){
   if(!Object.prototype.hasOwnProperty.call(stateValue.plans||{},week))return undefined;
   const meals=(stateValue.plans?.[week]?.[day]||[]).slice(),pins=(stateValue.pinnedMeals?.[week]?.[day]||[]).slice(0,meals.length).map(Boolean);
@@ -242,6 +252,7 @@ function mergeHouseholdState(baseState,localState,remoteState){
       pantryIngredients:mergeKeyedObjects(base.pantryIngredients,localState.pantryIngredients,remoteState.pantryIngredients,'Vorrat',conflicts,items=>items===undefined?undefined:cleanIngredients(items)),
       restDays:mergeKeyedObjects(base.restDays,localState.restDays,remoteState.restDays,'Resteabend',conflicts,days=>days===undefined?undefined:cleanRestDays(days)),
       shoppingChecks:mergeShoppingChecks(base.shoppingChecks,localState.shoppingChecks,remoteState.shoppingChecks,conflicts),
+      hiddenShoppingItems:mergeHiddenShoppingItems(base.hiddenShoppingItems,localState.hiddenShoppingItems,remoteState.hiddenShoppingItems,conflicts),
       manualShoppingItems:mergeShoppingItems(base.manualShoppingItems,localState.manualShoppingItems,remoteState.manualShoppingItems,conflicts),
       shoppingQuantities:mergeKeyedObjects(base.shoppingQuantities,localState.shoppingQuantities,remoteState.shoppingQuantities,'Menge',conflicts),
       noteHidden:localState.noteHidden
@@ -256,6 +267,9 @@ function cloudComparable(value){
   const manualShoppingItems=Object.fromEntries(Object.entries(value.manualShoppingItems||{}).map(([week,items])=>[
     week,[...new Map((items||[]).map(name=>[manualItemKey(name),normalizeIngredient(name)])).values()].sort((a,b)=>a.localeCompare(b,'de-DE'))
   ]).filter(([,items])=>items.length));
+  const hiddenShoppingItems=Object.fromEntries(Object.entries(value.hiddenShoppingItems||{}).map(([week,items])=>[
+    week,cleanHiddenShoppingItems(items)
+  ]).filter(([,items])=>items.length));
   return {
     dishes:(value.dishes||[]).map(dish=>({
       id:dish.id,name:dish.name,ingredient:dish.ingredient||'',time:Number(dish.time)||30,
@@ -263,6 +277,7 @@ function cloudComparable(value){
     })).sort((a,b)=>String(a.id).localeCompare(String(b.id))),
     plans:value.plans||{},pinnedMeals:value.pinnedMeals||{},pantryIngredients:value.pantryIngredients||{},restDays:value.restDays||{},
     shoppingChecks,
+    hiddenShoppingItems,
     manualShoppingItems,
     shoppingQuantities:value.shoppingQuantities||{}
   };
@@ -295,15 +310,17 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
     const {error}=await authClient.from('weekly_plans').upsert({household_id:currentHouseholdId,week_start:week},{onConflict:'household_id,week_start',ignoreDuplicates:true});
     if(error)throw error;
   }
-  const {data:planRows,error:planError}=await authClient.from('weekly_plans').select('id, household_id, week_start, pantry_ingredients, rest_days, shopping_quantities, updated_at').eq('household_id',currentHouseholdId);
+  const {data:planRows,error:planError}=await authClient.from('weekly_plans').select('id, household_id, week_start, pantry_ingredients, rest_days, shopping_quantities, shopping_hidden_items, updated_at').eq('household_id',currentHouseholdId);
   if(planError)throw planError;
   const planByWeek=new Map((planRows||[]).map(plan=>[plan.week_start,plan]));
   for(const week of targetWeeks){
     const plan=planByWeek.get(week);if(!plan)continue;
     const updates={},remotePantry=remote.pantryIngredients?.[week]||[],targetPantry=target.pantryIngredients?.[week]||[];
     const remoteRest=remote.restDays?.[week]||[],targetRest=target.restDays?.[week]||[];
+    const remoteHidden=cleanHiddenShoppingItems(remote.hiddenShoppingItems?.[week]),targetHidden=cleanHiddenShoppingItems(target.hiddenShoppingItems?.[week]);
     if(!sameValue(remotePantry,cleanIngredients(targetPantry)))updates.pantry_ingredients=cleanIngredients(targetPantry);
     if(!sameValue(remoteRest,cleanRestDays(targetRest)))updates.rest_days=cleanRestDays(targetRest);
+    if(!sameValue(remoteHidden,targetHidden))updates.shopping_hidden_items=targetHidden;
     if(!Object.keys(updates).length)continue;
     const {data,error}=await authClient.from('weekly_plans').update(updates).eq('id',plan.id).eq('updated_at',plan.updated_at).select('id');
     if(error)throw error;
@@ -377,7 +394,8 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
   const checkRows=metadata.shoppingCheckRows||[];
   for(const week of targetWeeks){
     const planId=planIdByWeek.get(week);if(!planId)continue;
-    const desired=target.shoppingChecks?.[week]||{},existing=checkRows.filter(row=>weekForPlan.get(row.weekly_plan_id)===week);
+    const desired=target.shoppingChecks?.[week]||{};
+    const existing=checkRows.filter(row=>weekForPlan.get(row.weekly_plan_id)===week);
     const existingByKey=new Map(existing.map(row=>[row.item_key,row]));
     for(const [key,checked] of Object.entries(desired)){
       if(!checked||existingByKey.has(key))continue;
@@ -657,8 +675,8 @@ window.addEventListener('online',()=>{if(cloudReady)scheduleCloudSync({notify:tr
 window.addEventListener('offline',()=>{if(appInitialized)updateSyncStatus('Offline – Änderungen bleiben lokal gespeichert.')});
 window.addEventListener('pageshow',()=>{if(!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
-function emptyState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:false,shoppingChecks:{},manualShoppingItems:{},shoppingQuantities:{}}}
-function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){s.pantryIngredients??={};s.pinnedMeals??={};s.restDays??={};s.shoppingQuantities??={};s.shoppingChecks??={};s.manualShoppingItems??={};return s}}catch(e){}return emptyState()}
+function emptyState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:false,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:{}}}
+function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){s.pantryIngredients??={};s.pinnedMeals??={};s.restDays??={};s.shoppingQuantities??={};s.shoppingChecks??={};s.hiddenShoppingItems??={};s.manualShoppingItems??={};return s}}catch(e){}return emptyState()}
 function save({sync=true}={}){localStorage.setItem('wochentisch-v1',JSON.stringify(state));if(currentUserId){localStorage.setItem(localStateOwnerKey(),currentUserId);saveCloudBackup()}updateCounts();if(sync)scheduleCloudSync()}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
 function mondayFor(date=new Date()){const d=new Date(date);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d}
@@ -726,8 +744,31 @@ function addPantryIngredient(value){const name=normalizeIngredient(value);if(!na
 function openPantryPlanner(){const key=keyFor(mondayFor(rangeStart())),dialog=$('#pantry-dialog'),input=$('#pantry-input');pantryDraft=(state.pantryIngredients?.[key]||[]).slice();input.value='';try{if(!dialog.open)dialog.showModal();renderPantryEditor();requestAnimationFrame(()=>input.focus({preventScroll:true}))}catch(error){console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.')}}
 function renderPantryEditor(){const selected=$('#pantry-selected'),input=$('#pantry-input'),list=$('#pantry-suggestions'),query=ingredientKey(input.value);selected.replaceChildren();$('#pantry-selected-count').textContent=pantryDraft.length;$('#pantry-empty-selection').hidden=pantryDraft.length>0;pantryDraft.forEach(name=>{const chip=document.createElement('span');chip.className='pantry-chip';const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;const remove=document.createElement('button');remove.type='button';remove.className='pantry-chip-remove';remove.setAttribute('aria-label',`${name} entfernen`);remove.textContent='×';remove.addEventListener('click',()=>{pantryDraft=pantryDraft.filter(item=>ingredientKey(item)!==ingredientKey(name));renderPantryEditor()});chip.append(icon,label,remove);selected.append(chip)});const matches=query?availablePantryIngredients().filter(name=>ingredientKey(name).includes(query)&&!pantryDraft.some(item=>ingredientKey(item)===ingredientKey(name))).slice(0,8):[];list.replaceChildren();matches.forEach(name=>{const option=document.createElement('button');option.type='button';option.className='pantry-suggestion';option.role='option';option.setAttribute('aria-selected','false');const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;option.append(icon,label);option.addEventListener('pointerdown',event=>event.preventDefault());option.addEventListener('click',()=>addPantryIngredient(name));list.append(option)});list.hidden=!matches.length;input.setAttribute('aria-expanded',String(matches.length>0));input.removeAttribute('aria-activedescendant')}
 function makePlan(start,pantry=[],pinnedDays=new Set(),pinnedDishIds=new Set()){const dishes=state.dishes.filter(dish=>!pinnedDishIds.has(dish.id)),pool=shuffle(dishes.slice()),plan=[],prioritized=[],used=new Set();for(const item of pantry){const candidates=shuffle(pool.filter(d=>!used.has(d.id)&&(d.ingredients||[]).some(i=>ingredientMatches(item,i))));const dish=candidates[0];if(dish){prioritized.push(dish);used.add(dish.id)}}prioritized.forEach(d=>{const index=pool.findIndex(item=>item.id===d.id);if(index>=0)pool.splice(index,1)});pool.unshift(...prioritized);let last='',plannedDays=0;for(let i=0;i<7;i++){if(pinnedDays.has(i)){plan.push([]);continue}let idx=plannedDays<prioritized.length?0:pool.findIndex(d=>d.ingredient!==last);if(idx<0)idx=0;const dish=pool.splice(idx,1)[0];plan.push(dish?[dish.id]:[]);last=dish?.ingredient||'';plannedDays++;if(!pool.length)pool.push(...shuffle(dishes.slice()))}return plan}
-function pantryShoppingKeys(plan,pantry){const dishes=plan.flatMap(day=>day.map(id=>state.dishes.find(d=>d.id===id)).filter(Boolean));return [...new Set(dishes.flatMap(d=>(d.ingredients||[]).filter(i=>pantry.some(item=>ingredientMatches(item,i))).map(i=>normalizeIngredient(i).toLocaleLowerCase('de-DE'))))]}
-function replaceRangePlan(pantry){const dates=rangeDates(),plans=dates.map(date=>getPlanForDate(date)[dayIndex(date)]),pinFlags=dates.map(date=>pinnedMealsForDate(date).slice()),pinnedDays=new Set(),pinnedDishIds=new Set();pinFlags.forEach((flags,index)=>{if(flags.some(Boolean)){pinnedDays.add(index);plans[index].forEach((id,mealIndex)=>{if(flags[mealIndex])pinnedDishIds.add(id)})}});const generated=makePlan(dates[0],pantry,pinnedDays,pinnedDishIds),weekKeys=[...new Set(dates.map(date=>keyFor(mondayFor(date))))];state.shoppingChecks??={};state.pantryIngredients??={};weekKeys.forEach(weekKey=>{state.shoppingChecks[weekKey]??={};pantryShoppingKeys(state.plans[weekKey]||[],state.pantryIngredients?.[weekKey]||[]).forEach(key=>delete state.shoppingChecks[weekKey][key]);state.pantryIngredients[weekKey]=pantry.slice()});dates.forEach((date,index)=>{const weekKey=keyFor(mondayFor(date)),dayIndexValue=dayIndex(date),plan=getPlanForDate(date);if(pinnedDays.has(index)){const preserved=plans[index].filter((id,mealIndex)=>pinFlags[index][mealIndex]);plan[dayIndexValue]=preserved;state.pinnedMeals[weekKey][dayIndexValue]=preserved.map(()=>true)}else{plan[dayIndexValue]=generated[index];state.pinnedMeals[weekKey][dayIndexValue]=generated[index].map(()=>false)}setRestDay(date,false)});weekKeys.forEach(weekKey=>{const days=dates.filter(date=>keyFor(mondayFor(date))===weekKey).map(date=>getPlanForDate(date)[dayIndex(date)]);pantryShoppingKeys(days,pantry).forEach(key=>{state.shoppingChecks[weekKey][key]=true})});save()}
+function shoppingKeysForPlan(plan){const dishes=plan.flatMap(day=>day.map(id=>state.dishes.find(d=>d.id===id)).filter(Boolean));return [...new Set(dishes.flatMap(d=>(d.ingredients||[]).map(manualItemKey).filter(Boolean)))]}
+function pantryShoppingKeys(plan,pantry){const dishes=plan.flatMap(day=>day.map(id=>state.dishes.find(d=>d.id===id)).filter(Boolean));return [...new Set(dishes.flatMap(d=>(d.ingredients||[]).filter(i=>pantry.some(item=>ingredientMatches(item,i))).map(manualItemKey).filter(Boolean)))]}
+function replaceRangePlan(pantry){
+  const dates=rangeDates(),plans=dates.map(date=>getPlanForDate(date)[dayIndex(date)]),pinFlags=dates.map(date=>pinnedMealsForDate(date).slice()),pinnedDays=new Set(),pinnedDishIds=new Set();
+  pinFlags.forEach((flags,index)=>{if(flags.some(Boolean)){pinnedDays.add(index);plans[index].forEach((id,mealIndex)=>{if(flags[mealIndex])pinnedDishIds.add(id)})}});
+  const generated=makePlan(dates[0],pantry,pinnedDays,pinnedDishIds),weekKeys=[...new Set(dates.map(date=>keyFor(mondayFor(date))))],resetKeysByWeek={};
+  dates.forEach((date,index)=>{const weekKey=keyFor(mondayFor(date));resetKeysByWeek[weekKey]??=new Set();shoppingKeysForPlan([plans[index],generated[index]]).forEach(key=>resetKeysByWeek[weekKey].add(key))});
+  state.shoppingChecks??={};state.hiddenShoppingItems??={};state.pantryIngredients??={};
+  weekKeys.forEach(weekKey=>{
+    const resetKeys=resetKeysByWeek[weekKey]||new Set(),checks=state.shoppingChecks[weekKey]||{};
+    resetKeys.forEach(key=>delete checks[key]);
+    if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
+    const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>!resetKeys.has(key));
+    if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];
+    state.pantryIngredients[weekKey]=pantry.slice();
+  });
+  dates.forEach((date,index)=>{
+    const weekKey=keyFor(mondayFor(date)),dayIndexValue=dayIndex(date),plan=getPlanForDate(date);
+    if(pinnedDays.has(index)){const preserved=plans[index].filter((id,mealIndex)=>pinFlags[index][mealIndex]);plan[dayIndexValue]=preserved;state.pinnedMeals[weekKey][dayIndexValue]=preserved.map(()=>true)}
+    else{plan[dayIndexValue]=generated[index];state.pinnedMeals[weekKey][dayIndexValue]=generated[index].map(()=>false)}
+    setRestDay(date,false);
+  });
+  weekKeys.forEach(weekKey=>{const days=dates.filter(date=>keyFor(mondayFor(date))===weekKey).map(date=>getPlanForDate(date)[dayIndex(date)]);pantryShoppingKeys(days,pantry).forEach(key=>{state.shoppingChecks[weekKey]??={};state.shoppingChecks[weekKey][key]=true})});
+  save();
+}
 function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 function formatRange(start){const end=new Date(start);end.setDate(end.getDate()+6);const opts={day:'numeric',month:'short'};const monthA=start.toLocaleDateString('de-DE',{month:'long'}),monthB=end.toLocaleDateString('de-DE',{month:'long'});return monthA===monthB?`${start.getDate()}. – ${end.getDate()}. ${monthA} ${end.getFullYear()}`:`${start.toLocaleDateString('de-DE',opts)} – ${end.toLocaleDateString('de-DE',opts)} ${end.getFullYear()}`}
 function nutritionText(n){return n?`~${n.kcal} kcal · E ${n.protein} g · F ${n.fat} g · KH ${n.carbs} g / Portion`:''}
@@ -1008,16 +1049,17 @@ function ingredientIcon(name){const value=name.toLocaleLowerCase('de-DE');if(/sa
 function ingredientCategory(name){const value=name.toLocaleLowerCase('de-DE');if(/orangensaft|apfelsaft|saft|limonade|cola|wasser|sprudel|bier|wein|getränk/.test(value))return 'Getränke';if(/spülmittel|waschmittel|reiniger|shampoo|seife|putzmittel|toilettenpapier|küchenrolle|taschentuch|müllbeutel|müllsack|schwamm|zahnpasta|windel/.test(value))return 'Drogerie & Haushalt';if(/hundefutter|katzenfutter|tierfutter|katzenstreu/.test(value))return 'Tierbedarf';if(/tomatensoße|tomatensauce|passierte tomaten/.test(value))return 'Vorrat';if(/apfel|birne|banane|orange|zitrone|limette|beere|erdbeer|himbeer|blaubeer|traube|mango|obst/.test(value))return 'Obst';if(/tomat|paprika|karotte|möhre|brokkoli|zucchini|gurke|salat|gemüse|zwiebel|sellerie|lauch|kohl|spinat|pilz|champignon|kartoffel|knoblauch|avocado/.test(value))return 'Gemüse';if(/brot|brötchen|baguette|toast|wrap|pizzateig|teig/.test(value))return 'Brot & Backwaren';if(/hühnchen|hähnchen|chicken|fleisch|hackfleisch|rind|schwein|würstchen|wurst|prosciutto|speck|fisch|lachs|filet/.test(value))return 'Fleisch & Fisch';if(/milch|käse|mozzarella|joghurt|schmand|quark|sahne|butter|ei$|eier/.test(value))return 'Kühlregal';if(/pommes|tiefkühl|tk-|gefroren/.test(value))return 'Tiefkühl';if(/wasser|sprudel|saft|limonade|cola|getränk|bier|wein/.test(value))return 'Getränke';if(/spülmittel|waschmittel|reiniger|shampoo|seife|putzmittel|toilettenpapier|küchenrolle|taschentuch|müllbeutel|müllsack|schwamm|zahnpasta/.test(value))return 'Drogerie & Haushalt';if(/reis|nudel|spaghetti|pasta|mehl|öl|essig|dose|konserve|passierte tomaten|tomatensoße|tomatensauce|gewürz|salz|zucker|brühe|kaffee|tee|müsli|haferflocken|honig|schokolade/.test(value))return 'Vorrat';return 'Sonstiges'}
 function updateShoppingNavCount(){
   const days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({weekKey,day})=>day.map(id=>({dish:state.dishes.find(d=>d.id===id),weekKey})).filter(item=>item.dish)),items=new Map();
-  state.shoppingChecks??={};state.manualShoppingItems??={};
+  state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
   selected.forEach(({dish,weekKey})=>(dish.ingredients||[]).forEach(raw=>{const name=normalizeIngredient(raw);if(!name)return;const key=name.toLocaleLowerCase('de-DE');if(!items.has(key))items.set(key,{name,dishes:new Set(),weekKeys:new Set()});const item=items.get(key);item.dishes.add(dish.name);item.weekKeys.add(weekKey)}));
   [...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))].forEach(name=>{const key=name.toLocaleLowerCase('de-DE');if(!items.has(key))items.set(key,{name,dishes:new Set(),weekKeys:new Set()});const item=items.get(key);selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>normalizeIngredient(raw).toLocaleLowerCase('de-DE')===key)).forEach(({dish})=>item.dishes.add(dish.name));weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>itemName.toLocaleLowerCase('de-DE')===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
+  for(const [key,item] of items){const relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))items.delete(key)}
   const openCount=[...items.values()].filter(item=>{const key=item.name.toLocaleLowerCase('de-DE'),checkKey=item.dishes.size?key:`manual:${key}`,relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return !relevantWeeks.every(weekKey=>Boolean(state.shoppingChecks[weekKey]?.[checkKey]))}).length;
   $('#shopping-nav-count').textContent=openCount;
   $('#shopping-nav-count').parentElement.setAttribute('aria-label',`Einkaufszettel, ${openCount} offene Artikel`);
 }
 function renderShoppingListContent(){
   const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({weekKey,day})=>day.map(id=>({dish:state.dishes.find(d=>d.id===id),weekKey})).filter(item=>item.dish));
-  state.shoppingChecks??={};state.manualShoppingItems??={};
+  state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
   const filterSelect=$('#shopping-meal-filter'),previousFilter=filterSelect.value,mealNames=[...new Set(selected.map(item=>item.dish.name))].sort((a,b)=>a.localeCompare(b,'de')),manualItems=[...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))];
   $('#shopping-period').textContent=formatRange(start);filterSelect.replaceChildren(new Option('Alle Mahlzeiten',''));
   if(mealNames.length){const dishesGroup=document.createElement('optgroup');dishesGroup.label='Gerichte';mealNames.forEach(name=>dishesGroup.append(new Option(name,name)));filterSelect.append(dishesGroup)}
@@ -1027,7 +1069,9 @@ function renderShoppingListContent(){
   $('#shopping-overview').classList.toggle('hidden',!activeFilter);
   visible.forEach(({dish,weekKey})=>(dish.ingredients||[]).forEach(raw=>{const name=normalizeIngredient(raw);if(name){const key=name.toLocaleLowerCase('de-DE');if(!counts.has(key))counts.set(key,{name,dishes:new Set(),manual:false,weekKeys:new Set()});const item=counts.get(key);item.dishes.add(dish.name);item.weekKeys.add(weekKey)}}));
   if(!activeFilter||activeFilter==='__manual__')manualItems.forEach(name=>{const key=name.toLocaleLowerCase('de-DE'),relatedDishes=new Set(selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>normalizeIngredient(raw).toLocaleLowerCase('de-DE')===key)).map(({dish})=>dish.name));if(!counts.has(key))counts.set(key,{name,dishes:relatedDishes,manual:true,weekKeys:new Set()});const item=counts.get(key);item.manual=true;weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>itemName.toLocaleLowerCase('de-DE')===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
-  const open=$('#shopping-open'),done=$('#shopping-done'),empty=$('#shopping-empty');open.replaceChildren();done.replaceChildren();empty.classList.toggle('hidden',counts.size>0);empty.textContent=activeFilter==='__manual__'?'Noch keine manuellen Artikel hinzugefügt.':activeFilter?'Für dieses Gericht sind keine Zutaten eingetragen.':selected.length?'Für die geplanten Gerichte sind keine Zutaten eingetragen.':'Für diese 7 Tage sind keine Gerichte geplant. Du kannst unten eigene Artikel hinzufügen.';
+  for(const [key,item] of counts){const relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))counts.delete(key)}
+  const hasHiddenShoppingItems=selected.some(({dish,weekKey})=>(dish.ingredients||[]).some(name=>state.hiddenShoppingItems[weekKey]?.includes(manualItemKey(name))))||weekKeys.some(weekKey=>cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).length>0);
+  const open=$('#shopping-open'),done=$('#shopping-done'),empty=$('#shopping-empty');open.replaceChildren();done.replaceChildren();empty.classList.toggle('hidden',counts.size>0);empty.textContent=activeFilter==='__manual__'?'Noch keine manuellen Artikel hinzugefügt.':activeFilter?'Für dieses Gericht sind keine Zutaten eingetragen.':hasHiddenShoppingItems?'Die Einkaufsliste ist leer. Du kannst unten neue Artikel hinzufügen.':selected.length?'Für die geplanten Gerichte sind keine Zutaten eingetragen.':'Für diese 7 Tage sind keine Gerichte geplant. Du kannst unten eigene Artikel hinzufügen.';
   const categoryOrder=['Gemüse','Obst','Brot & Backwaren','Fleisch & Fisch','Kühlregal','Tiefkühl','Getränke','Vorrat','Drogerie & Haushalt','Tierbedarf','Sonstiges'],grouped=new Map();
   for(const item of counts.values()){const category=ingredientCategory(item.name);if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
   for(const category of categoryOrder){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>{const key=item.name.toLocaleLowerCase('de-DE'),checkKey=item.dishes.size?key:`manual:${key}`,relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.every(weekKey=>Boolean(state.shoppingChecks[weekKey]?.[checkKey]))===(container===done)});if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
@@ -1040,6 +1084,28 @@ function renderShoppingListContent(){
 }
 function renderShoppingList(){renderShoppingListContent();renderedShoppingSnapshot=shoppingStateForView(state)}
 function openShoppingList(){setView('shopping');renderShoppingList()}
+function clearShoppingList(){
+  const dates=rangeDates(),hiddenByWeek={},manualKeysByWeek={};
+  dates.forEach(date=>{
+    const weekKey=keyFor(mondayFor(date)),day=state.plans[weekKey]?.[dayIndex(date)]||[];
+    hiddenByWeek[weekKey]??=new Set();manualKeysByWeek[weekKey]??=new Set();
+    day.forEach(id=>{const dish=state.dishes.find(item=>item.id===id);(dish?.ingredients||[]).forEach(name=>{const key=manualItemKey(name);if(key)hiddenByWeek[weekKey].add(key)})});
+    (state.manualShoppingItems?.[weekKey]||[]).forEach(name=>{const key=manualItemKey(name);if(key){hiddenByWeek[weekKey].add(key);manualKeysByWeek[weekKey].add(key)}});
+  });
+  const hasVisibleEntries=Object.entries(hiddenByWeek).some(([weekKey,keys])=>[...keys].some(key=>!state.hiddenShoppingItems?.[weekKey]?.includes(key)));
+  if(!hasVisibleEntries){showToast('Die Einkaufsliste ist bereits leer.');return}
+  const previous={shoppingChecks:structuredClone(state.shoppingChecks||{}),hiddenShoppingItems:structuredClone(state.hiddenShoppingItems||{}),manualShoppingItems:structuredClone(state.manualShoppingItems||{})};
+  Object.entries(hiddenByWeek).forEach(([weekKey,keys])=>{
+    state.hiddenShoppingItems??={};state.hiddenShoppingItems[weekKey]=cleanHiddenShoppingItems([...(state.hiddenShoppingItems[weekKey]||[]),...keys]);
+    const checks=state.shoppingChecks[weekKey]||{};
+    keys.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
+    if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
+    const remaining=(state.manualShoppingItems[weekKey]||[]).filter(name=>!manualKeysByWeek[weekKey]?.has(manualItemKey(name)));
+    if(remaining.length)state.manualShoppingItems[weekKey]=remaining;else delete state.manualShoppingItems[weekKey];
+  });
+  $('#shopping-meal-filter').value='';save();renderShoppingList();
+  showToast('Einkaufsliste geleert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{state.shoppingChecks=previous.shoppingChecks;state.hiddenShoppingItems=previous.hiddenShoppingItems;state.manualShoppingItems=previous.manualShoppingItems;save();renderShoppingList();showToast('Einkaufsliste wiederhergestellt.')}});
+}
 function chooseDish(day){
   const targetDate=rangeDates()[day],list=$('#choose-dish-list'),search=$('#choose-dish-search');
   list.replaceChildren();search.value='';
@@ -1076,7 +1142,7 @@ const systemTheme=window.matchMedia('(prefers-color-scheme: dark)');let themeOve
 function updateThemeButton(){const button=$('#theme-toggle');const label=themeOverride?'Systemmodus verwenden':systemTheme.matches?'Hellmodus testen':'Dunkelmodus testen';button.textContent=themeOverride?'↻':systemTheme.matches?'☀':'☾';button.setAttribute('aria-label',label);button.title=label}
 function applyTheme(){const link=$('#theme-stylesheet');link.media=themeOverride?(themeOverride==='dark'?'all':'not all'):'(prefers-color-scheme: dark)';updateThemeButton()}
 function toggleTheme(){themeOverride=themeOverride?null:systemTheme.matches?'light':'dark';applyTheme()}
-$('#theme-toggle').addEventListener('click',toggleTheme);systemTheme.addEventListener('change',()=>{if(!themeOverride)updateThemeButton()});applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.homeView)));$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-print').addEventListener('click',()=>window.print());$('#week-print').addEventListener('click',()=>{document.body.classList.add('print-week');window.print()});window.addEventListener('afterprint',()=>document.body.classList.remove('print-week'));$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeIngredient($('#shopping-item-input').value);if(!name)return;const weekKey=keyFor(mondayFor(rangeStart())),visibleWeekKeys=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))];state.manualShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=visibleWeekKeys.some(key=>(state.manualShoppingItems[key]||[]).some(item=>item.toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')));if(duplicate){showToast('Dieser Artikel steht bereits auf dem Einkaufszettel.');return}state.manualShoppingItems[weekKey].push(name);save();$('#shopping-item-input').value='';$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus()});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
+$('#theme-toggle').addEventListener('click',toggleTheme);systemTheme.addEventListener('change',()=>{if(!themeOverride)updateThemeButton()});applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.homeView)));$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-clear').addEventListener('click',clearShoppingList);$('#shopping-print').addEventListener('click',()=>window.print());$('#week-print').addEventListener('click',()=>{document.body.classList.add('print-week');window.print()});window.addEventListener('afterprint',()=>document.body.classList.remove('print-week'));$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeIngredient($('#shopping-item-input').value);if(!name)return;const weekKey=keyFor(mondayFor(rangeStart())),visibleWeekKeys=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))],itemKey=manualItemKey(name);state.manualShoppingItems??={};state.hiddenShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=visibleWeekKeys.some(key=>(state.manualShoppingItems[key]||[]).some(item=>manualItemKey(item)===itemKey));if(duplicate){showToast('Dieser Artikel steht bereits auf dem Einkaufszettel.');return}state.manualShoppingItems[weekKey].push(name);const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>key!==itemKey);if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];delete state.shoppingChecks[weekKey]?.[`manual:${itemKey}`];save();$('#shopping-item-input').value='';$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus()});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
 $('#prev-week').addEventListener('click',()=>{weekOffset--;renderCalendar()});$('#next-week').addEventListener('click',()=>{weekOffset++;renderCalendar()});$('#today-btn').addEventListener('click',()=>{weekOffset=0;renderCalendar()});
 $('#dish-ingredient-input').addEventListener('input',renderDishIngredientSuggestions);$('#dish-ingredient-input').addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const value=normalizeIngredient(event.currentTarget.value);if(value)addDishIngredient(value)});
 $('#dish-ingredient').addEventListener('input',renderMainIngredientSuggestions);$('#dish-ingredient').addEventListener('keydown',event=>{if(event.key==='Enter'&& !$('#dish-main-ingredient-suggestions').hidden){event.preventDefault();$('#dish-main-ingredient-suggestions').querySelector('.pantry-suggestion')?.click()}});

@@ -17,7 +17,7 @@
   </style>
   <link rel="stylesheet" href="styles.css?v=20261023-2" />
   <link rel="stylesheet" href="interaction.css?v=20261023-2" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261023-16" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261024-17" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
   <link rel="stylesheet" href="mobile.css?v=20261023-4" />
   <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261023-2" media="(prefers-color-scheme: dark)" />
@@ -80,7 +80,7 @@
         <div class="starter-tip"><span>＋</span><div><b>Gericht ergänzen</b><p>Füge weitere Gerichte zu deiner Liste hinzu.</p></div><button id="starter-add">＋ Gericht ergänzen</button></div>
       </section>
       <section id="shopping-view" class="view shopping-screen hidden">
-        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><button type="button" id="shopping-print" class="secondary-button">Drucken</button></div>
+        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><div class="shopping-screen-actions"><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button><button type="button" id="shopping-print" class="secondary-button">Drucken</button></div></div>
         <div class="page-heading shopping-page-heading"><div><div class="eyebrow">WOCHENPLAN</div><h1>Einkaufszettel</h1><p id="shopping-period" class="subheading"></p></div></div>
         <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
         <form id="shopping-add-form" class="shopping-add-form"><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel hinzufügen … z. B. Kaffee"><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
@@ -98,7 +98,7 @@
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261024-9"></script>
+  <script src="app.js?v=20261024-10"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let refreshingForServiceWorker = false;
