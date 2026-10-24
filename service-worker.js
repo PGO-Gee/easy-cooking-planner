@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wochentisch-shell-v1';
+const CACHE_NAME = 'wochentisch-shell-v2';
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0';
 const APP_SHELL = [
   './',
@@ -48,7 +48,7 @@ self.addEventListener('fetch', event => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request, { ignoreSearch: true });
       const refresh = fetch(request).then(response => {
-        if (response.ok) cache.put(request, response.clone());
+        if (response.ok) cache.put(new Request(`${url.origin}${url.pathname}`), response.clone());
         return response;
       }).catch(() => null);
 

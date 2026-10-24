@@ -98,10 +98,16 @@
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261024-1"></script>
+  <script src="app.js?v=20261024-2"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(error => console.warn('Offline-Cache konnte nicht eingerichtet werden:', error)));
+      let refreshingForServiceWorker = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshingForServiceWorker) return;
+        refreshingForServiceWorker = true;
+        window.location.reload();
+      });
+      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).catch(error => console.warn('Offline-Cache konnte nicht eingerichtet werden:', error)));
     }
   </script>
 </body>

@@ -24,7 +24,7 @@ Bei einer Neueinrichtung führe die SQL-Migrationen unter `supabase/migrations/`
 
 ## Offline-Start und Haushalts-Sync
 
-Der Service Worker speichert die App-Dateien für den Offline-Start. Öffne die App nach einer Veröffentlichung mindestens einmal mit Internetverbindung, damit der Cache aktualisiert wird. Wochenplan und Einkaufsliste werden lokal angezeigt; Änderungen ohne Verbindung werden mit dem letzten bekannten Serverstand zusammengeführt, sobald die Verbindung zurückkehrt. Änderungen anderer Haushaltsmitglieder werden bei aktiver App live geladen und mit einem Hinweis angezeigt. System-Push-Nachrichten bei geschlossener App sind nicht eingerichtet.
+Der Service Worker speichert die App-Dateien für den Offline-Start. Öffne die App nach einer Veröffentlichung mindestens einmal mit Internetverbindung, damit der Cache aktualisiert wird; nach einem App-Update kann es helfen, die Home-Bildschirm-App zu schließen und erneut zu öffnen. Wochenplan und Einkaufsliste werden lokal angezeigt; Änderungen ohne Verbindung werden mit dem letzten bekannten Serverstand zusammengeführt, sobald die Verbindung zurückkehrt. Änderungen anderer Haushaltsmitglieder werden bei aktiver App live geladen und mit einem Hinweis angezeigt. System-Push-Nachrichten bei geschlossener App sind nicht eingerichtet.
 
 ## Veröffentlichung mit GitHub Pages
 
