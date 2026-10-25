@@ -25,6 +25,7 @@ let cloudSyncNotificationRequested=false;
 let loadingCloudState=false;
 let offlineMode=false;
 let explicitSignOutPending=false;
+let signInPromptActive=false;
 let renderedCalendarSnapshot=null;
 let renderedDishesSnapshot=null;
 let renderedShoppingSnapshot=null;
@@ -82,7 +83,7 @@ document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.showModal=()=>{lockPageScroll();showModal()};
 });
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
-function updateSyncStatus(message){const status=$('#sync-status');if(!status)return;status.textContent=message;status.hidden=!message}
+function updateSyncStatus(message,{reauthRequired=false}={}){const status=$('#sync-status');if(!status)return;$('#sync-status-message').textContent=message;$('#sync-status-login').hidden=!reauthRequired;status.hidden=!message}
 function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${currentUserId}`:''}
 function localStateOwnerKey(){return 'wochentisch-local-owner'}
 function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${currentUserId}`:''}
@@ -534,13 +535,13 @@ async function connectToCloud(){
   })().finally(()=>{cloudConnectPromise=undefined});
   return cloudConnectPromise;
 }
-function startOfflineApp(){
+function startOfflineApp({reauthRequired=false}={}){
   const rememberedUser=localStorage.getItem(offlineSessionStorageKey),owner=localStorage.getItem(localStateOwnerKey());
   if(!rememberedUser||(owner&&owner!==rememberedUser))return false;
   currentUserId=rememberedUser;currentHouseholdId='';cloudReady=false;offlineMode=true;
   if(!appInitialized)renderCachedApp();
   else{$('#startup-gate').hidden=true;$('#auth-gate').hidden=true;$('.app-shell').hidden=false}
-  updateSyncStatus(navigator.onLine?'Anmeldung wird erneuert – Änderungen bleiben lokal gespeichert.':'Offline – zuletzt gespeicherte Einkaufsliste verfügbar.');
+  updateSyncStatus(navigator.onLine?(reauthRequired?'Zum Synchronisieren ist eine erneute Anmeldung nötig.':'Anmeldestatus wird geprüft – Änderungen bleiben lokal gespeichert.'):'Offline – zuletzt gespeicherte Einkaufsliste verfügbar.',{reauthRequired:navigator.onLine&&reauthRequired});
   return true;
 }
 async function resumeCloudSession(){
@@ -551,8 +552,8 @@ async function resumeCloudSession(){
       currentUserId=data.session.user.id;localStorage.setItem(offlineSessionStorageKey,currentUserId);offlineMode=false;
       if(!appInitialized)renderCachedApp();
       await connectToCloud();
-    }else if(error)updateSyncStatus('Anmeldung wird erneuert – gespeicherte Liste ist lokal verfügbar.');
-    else updateSyncStatus('Zum Synchronisieren ist eine erneute Anmeldung nötig.');
+    }else if(error)updateSyncStatus('Anmeldestatus konnte nicht geprüft werden – Änderungen bleiben lokal gespeichert.');
+    else updateSyncStatus('Zum Synchronisieren ist eine erneute Anmeldung nötig.',{reauthRequired:true});
   }catch(error){updateSyncStatus('Keine Verbindung – Änderungen bleiben lokal gespeichert.')}
 }
 async function revealApp({showHome=false}={}){
@@ -610,12 +611,30 @@ $('#household-join-form').addEventListener('submit',async event=>{
     householdError(/Invalid or expired join code/i.test(error.message)?'Der Code ist ungültig, abgelaufen oder wurde bereits verwendet.':'Beitritt fehlgeschlagen. Bitte prüfe den Code und versuche es erneut.');
   }finally{button.disabled=false}
 });
-function showLogin(){
+function showLogin({message='',allowOfflineReturn=false}={}){
   $('#startup-gate').hidden=true;
   $('.app-shell').hidden=true;
   $('#auth-gate').hidden=false;
+  $('#auth-context').textContent=message;
+  $('#auth-context').hidden=!message;
+  $('#auth-offline-return').hidden=!allowOfflineReturn;
   updateSyncStatus('');
 }
+function openSignInForSync(){
+  if(!currentUserId)return;
+  save({sync:false});
+  signInPromptActive=true;offlineMode=false;cloudReady=false;currentHouseholdId='';
+  stopRealtimeChannel();appInitialized=false;appInitializationPromise=undefined;
+  showLogin({message:'Deine gespeicherte Liste bleibt auf diesem Gerät. Melde dich erneut an, um wieder zu synchronisieren.',allowOfflineReturn:true});
+  showAuthError('');
+}
+$('#sync-status-login').addEventListener('click',openSignInForSync);
+$('#auth-offline-return').addEventListener('click',()=>{
+  signInPromptActive=false;
+  if(!appInitialized)renderCachedApp();
+  offlineMode=true;
+  updateSyncStatus(navigator.onLine?'Zum Synchronisieren ist eine erneute Anmeldung nötig. Änderungen bleiben lokal gespeichert.':'Offline – zuletzt gespeicherte Einkaufsliste verfügbar.',{reauthRequired:navigator.onLine});
+});
 $('#password-sign-in').addEventListener('submit',async event=>{
   event.preventDefault();
   if(!authClient){showAuthError('Die Anmeldung konnte nicht geladen werden. Bitte Seite neu laden.');return}
@@ -634,7 +653,7 @@ $('#password-sign-in').addEventListener('submit',async event=>{
 });
 $('#sign-out').addEventListener('click',async()=>{
   explicitSignOutPending=true;
-  const {error}=await authClient.auth.signOut();
+  const {error}=await authClient.auth.signOut({scope:'local'});
   if(error){explicitSignOutPending=false;showToast(`Abmelden fehlgeschlagen: ${error.message}`);return}
   localStorage.removeItem(offlineSessionStorageKey);explicitSignOutPending=false;
   currentUserId='';currentHouseholdId='';cloudReady=false;cloudBaseState=null;appInitialized=false;appInitializationPromise=undefined;
@@ -643,6 +662,8 @@ $('#sign-out').addEventListener('click',async()=>{
 if(authClient){
   authClient.auth.onAuthStateChange((event,session)=>{
     if(session){
+      signInPromptActive=false;
+      $('#auth-context').hidden=true;$('#auth-offline-return').hidden=true;
       const userId=session.user.id,previousUserId=currentUserId,owner=localStorage.getItem(localStateOwnerKey());
       if((previousUserId&&previousUserId!==userId)||(owner&&owner!==userId)){
         cloudReady=false;currentHouseholdId='';cloudBaseState=null;stopRealtimeChannel();
@@ -654,7 +675,8 @@ if(authClient){
     }else{
       stopRealtimeChannel();currentHouseholdId='';cloudReady=false;cloudBaseState=null;interactiveLoginPending=false;
       if(explicitSignOutPending){currentUserId='';showLogin();return}
-      if(startOfflineApp())return;
+      if(signInPromptActive){showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});return}
+      if(startOfflineApp({reauthRequired:true}))return;
       currentUserId='';appInitialized=false;appInitializationPromise=undefined;showLogin();
     }
   });
@@ -663,10 +685,11 @@ if(authClient){
       const userId=data.session.user.id,owner=localStorage.getItem(localStateOwnerKey());
       if(owner&&owner!==userId){currentUserId=userId;state=readCloudBackup()||emptyState();appInitialized=false}
       currentUserId=userId;localStorage.setItem(offlineSessionStorageKey,userId);revealApp();
-    }else if(startOfflineApp()){}
-    else if(error){showLogin();showAuthError('Anmeldestatus konnte nicht geprüft werden. Bitte verbinde dich mit dem Internet und versuche es erneut.')}
+    }else if(signInPromptActive)showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});
+    else if(error){if(startOfflineApp())updateSyncStatus('Anmeldestatus konnte nicht geprüft werden – Änderungen bleiben lokal gespeichert.');else{showLogin();showAuthError('Anmeldestatus konnte nicht geprüft werden. Bitte verbinde dich mit dem Internet und versuche es erneut.')}}
+    else if(startOfflineApp({reauthRequired:true})){}
     else showLogin();
-  }).catch(()=>{if(!startOfflineApp()){showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')}});
+  }).catch(()=>{if(signInPromptActive)showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});else if(startOfflineApp())updateSyncStatus('Supabase ist gerade nicht erreichbar – Änderungen bleiben lokal gespeichert.');else{showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')}});
 }else{
   showLogin();
   showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
