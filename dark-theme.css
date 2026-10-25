@@ -510,6 +510,7 @@ body {
 .sign-out-button,
 .icon-button,
 #menu-toggle,
+.sidebar-toggle,
 .arrow-button {
   border-color: rgb(255 255 255 / 10%);
   background: rgb(36 47 39 / 75%);
@@ -517,7 +518,8 @@ body {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 3px 10px rgb(0 0 0 / 12%);
 }
 .secondary-button:hover,
-.today-button:hover { border-color: #597861; background: #293a2d; color: #d5e6d5; }
+.today-button:hover,
+.sidebar-toggle:hover { border-color: #597861; background: #293a2d; color: #d5e6d5; }
 .day-card {
   border-color: rgb(255 255 255 / 9%);
   background: linear-gradient(155deg, rgb(31 42 34 / 96%), rgb(24 34 27 / 90%));

@@ -17,7 +17,7 @@
     @media(prefers-color-scheme:dark){#startup-gate{background:#141b24;color:#e4edf7}.startup-copy{color:#9eabba}.sync-status{background:#312a1e;border-color:#625236;color:#e6cb92}}
   </style>
   <link rel="stylesheet" href="styles.css?v=20261023-2" />
-  <link rel="stylesheet" href="interaction.css?v=20261023-2" />
+  <link rel="stylesheet" href="interaction.css?v=20261025-5" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261025-1" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
   <link rel="stylesheet" href="mobile.css?v=20261023-4" />
@@ -49,10 +49,11 @@
   <div class="app-shell" hidden>
     <aside class="sidebar" id="sidebar">
       <a class="brand" href="#" aria-label="Wochentisch Startseite"><span class="brand-mark">w.</span><span>wochentisch</span></a>
+      <button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-label="Seitenleiste einklappen" title="Seitenleiste einklappen" aria-controls="sidebar" aria-expanded="true"><span aria-hidden="true">‹</span></button>
       <div class="side-label">DEIN BEREICH</div>
-      <button class="nav-item active" data-view="week"><span class="nav-icon">▦</span> Wochenplan <span class="nav-count" id="nav-count">7</span></button>
-      <button class="nav-item" data-view="dishes"><span class="nav-icon">♡</span> Meine Gerichte <span class="nav-count" id="dish-count">12</span></button>
-      <button class="nav-item" data-view="shopping" aria-label="Einkaufszettel"><span class="nav-icon">☷</span> Einkaufszettel <span class="nav-count" id="shopping-nav-count" aria-live="polite">0</span></button>
+      <button class="nav-item active" data-view="week" aria-label="Wochenplan" title="Wochenplan"><span class="nav-icon">▦</span> Wochenplan <span class="nav-count" id="nav-count">7</span></button>
+      <button class="nav-item" data-view="dishes" aria-label="Meine Gerichte" title="Meine Gerichte"><span class="nav-icon">♡</span> Meine Gerichte <span class="nav-count" id="dish-count">12</span></button>
+      <button class="nav-item" data-view="shopping" aria-label="Einkaufszettel" title="Einkaufszettel"><span class="nav-icon">☷</span> Einkaufszettel <span class="nav-count" id="shopping-nav-count" aria-live="polite">0</span></button>
       <div class="side-bottom">
         <button class="profile" id="household-open" type="button" aria-label="Dein Zuhause und Haushalt öffnen"><span class="avatar">P</span><span class="profile-copy"><b>Dein Zuhause</b><small>Persönlicher Plan</small></span><span class="dots" aria-hidden="true">···</span></button>
       </div>
@@ -60,7 +61,7 @@
     <button id="menu-backdrop" class="menu-backdrop" type="button" aria-label="Menü schließen" hidden></button>
 
     <main class="main-content">
-      <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb"><button type="button" id="home-breadcrumb" aria-label="Zur Übersicht">Dein Zuhause</button><span id="crumb-separator">/</span><b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Dunkelmodus testen" title="Dunkelmodus testen">☾</button><button class="sign-out-button" id="sign-out" type="button">Abmelden</button></div></header>
+      <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" title="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb"><button type="button" id="home-breadcrumb" aria-label="Zur Übersicht">Dein Zuhause</button><span id="crumb-separator">/</span><b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Dunkelmodus testen" title="Dunkelmodus testen">☾</button><button class="sign-out-button" id="sign-out" type="button">Abmelden</button></div></header>
       <div id="sync-status" class="sync-status" role="status" aria-live="polite" hidden>
         <span id="sync-status-message"></span>
         <button id="sync-status-login" class="sync-status-login" type="button" hidden>Erneut anmelden</button>
@@ -104,7 +105,7 @@
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261025-11"></script>
+  <script src="app.js?v=20261025-15"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let refreshingForServiceWorker = false;
