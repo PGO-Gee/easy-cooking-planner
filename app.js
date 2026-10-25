@@ -6,7 +6,7 @@ const supabaseConfig=window.WOCHENTISCH_SUPABASE;
 const authClient=window.supabase?.createClient&&supabaseConfig?.url&&supabaseConfig?.publishableKey
   ?window.supabase.createClient(supabaseConfig.url,supabaseConfig.publishableKey)
   :null;
-let state=loadState(); let weekOffset=0; let toastTimer;let pantryDraft=[];let dishIngredientDraft=[];let mealDragState=null;let mealActionPointerState=null;let suppressedMealActionClick=null;
+let state=loadState(); let weekOffset=0; let toastTimer;let pantryDraft=[];let dishIngredientDraft=[];let mealDragState=null;let mealActionPointerState=null;let suppressedMealActionClick=null;let pendingShoppingClearUndo=null;
 let appInitialized=false;
 let appInitializationPromise;
 let currentUserId='';
@@ -1116,7 +1116,7 @@ function clearShoppingList(){
     (state.manualShoppingItems?.[weekKey]||[]).forEach(name=>{const key=manualItemKey(name);if(key){hiddenByWeek[weekKey].add(key);manualKeysByWeek[weekKey].add(key)}});
   });
   const hasVisibleEntries=Object.entries(hiddenByWeek).some(([weekKey,keys])=>[...keys].some(key=>!state.hiddenShoppingItems?.[weekKey]?.includes(key)));
-  if(!hasVisibleEntries){showToast('Die Einkaufsliste ist bereits leer.');return}
+  if(!hasVisibleEntries){pendingShoppingClearUndo=null;showToast('Die Einkaufsliste ist bereits leer.');return}
   const previous={shoppingChecks:structuredClone(state.shoppingChecks||{}),hiddenShoppingItems:structuredClone(state.hiddenShoppingItems||{}),manualShoppingItems:structuredClone(state.manualShoppingItems||{})};
   Object.entries(hiddenByWeek).forEach(([weekKey,keys])=>{
     state.hiddenShoppingItems??={};state.hiddenShoppingItems[weekKey]=cleanHiddenShoppingItems([...(state.hiddenShoppingItems[weekKey]||[]),...keys]);
@@ -1127,7 +1127,39 @@ function clearShoppingList(){
     if(remaining.length)state.manualShoppingItems[weekKey]=remaining;else delete state.manualShoppingItems[weekKey];
   });
   $('#shopping-meal-filter').value='';save();renderShoppingList();
-  showToast('Einkaufsliste geleert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{state.shoppingChecks=previous.shoppingChecks;state.hiddenShoppingItems=previous.hiddenShoppingItems;state.manualShoppingItems=previous.manualShoppingItems;save();renderShoppingList();showToast('Einkaufsliste wiederhergestellt.')}});
+  const undoState={reopenedByWeek:{},expiresAt:Date.now()+6500};
+  pendingShoppingClearUndo=undoState;
+  setTimeout(()=>{if(pendingShoppingClearUndo===undoState)pendingShoppingClearUndo=null},6500);
+  showToast('Einkaufsliste geleert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{
+    state.shoppingChecks=previous.shoppingChecks;state.hiddenShoppingItems=previous.hiddenShoppingItems;state.manualShoppingItems=previous.manualShoppingItems;
+    Object.entries(undoState.reopenedByWeek).forEach(([weekKey,keys])=>{
+      const reopened=new Set(keys),hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>!reopened.has(key));
+      if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];
+      const checks=state.shoppingChecks[weekKey]||{};
+      reopened.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
+      if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
+    });
+    if(pendingShoppingClearUndo===undoState)pendingShoppingClearUndo=null;
+    save();renderShoppingList();showToast('Einkaufsliste wiederhergestellt.');
+  }});
+}
+function reopenShoppingIngredients(date,dish){
+  const weekKey=keyFor(mondayFor(date)),keys=[...new Set(cleanIngredients(dish?.ingredients).map(manualItemKey).filter(Boolean))];
+  if(!keys.length)return;
+  const reopened=new Set(keys);
+  state.hiddenShoppingItems??={};
+  const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>!reopened.has(key));
+  if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];
+  state.shoppingChecks??={};
+  const checks=state.shoppingChecks[weekKey]||{};
+  keys.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
+  if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
+  if(pendingShoppingClearUndo){
+    if(Date.now()<=pendingShoppingClearUndo.expiresAt){
+      pendingShoppingClearUndo.reopenedByWeek[weekKey]??=[];
+      pendingShoppingClearUndo.reopenedByWeek[weekKey]=[...new Set([...pendingShoppingClearUndo.reopenedByWeek[weekKey],...keys])];
+    }else pendingShoppingClearUndo=null;
+  }
 }
 function chooseDish(day){
   const targetDate=rangeDates()[day],list=$('#choose-dish-list'),search=$('#choose-dish-search');
@@ -1145,7 +1177,7 @@ function chooseDish(day){
       const copy=document.createElement('span');copy.className='choose-copy';const name=document.createElement('b');name.textContent=d.name;
       const details=document.createElement('small');details.textContent=`${d.time||25} Min. · ${d.ingredient||'Ohne Kategorie'}`;
       copy.append(name,details);button.append(icon,copy);
-      button.addEventListener('click',()=>{getPlanForDate(targetDate)[dayIndex(targetDate)].push(d.id);pinnedMealsForDate(targetDate).push(false);setRestDay(targetDate,false);save();$('#choose-dialog').close();renderCalendar()});
+      button.addEventListener('click',()=>{reopenShoppingIngredients(targetDate,d);getPlanForDate(targetDate)[dayIndex(targetDate)].push(d.id);pinnedMealsForDate(targetDate).push(false);setRestDay(targetDate,false);save();$('#choose-dialog').close();renderCalendar()});
       entries.push({dish:d,button});
     });
     const empty=document.createElement('p');empty.className='empty-state choose-no-results';empty.hidden=true;empty.textContent='Keine passenden Gerichte gefunden.';
