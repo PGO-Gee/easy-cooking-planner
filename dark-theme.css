@@ -435,17 +435,6 @@
     color: #e6ece5;
   }
 
-  .shopping-tile-remove {
-    background: #29332b;
-    color: #b5c2b4;
-  }
-
-  .shopping-tile-remove:hover,
-  .shopping-tile-remove:focus-visible {
-    background: #49332f;
-    color: #f0b0a2;
-  }
-
   #dish-form input[type="range"]::-webkit-slider-runnable-track {
     background: #3a463c;
   }
@@ -510,6 +499,7 @@ body {
 .sign-out-button,
 .icon-button,
 #menu-toggle,
+.sidebar-toggle,
 .arrow-button {
   border-color: rgb(255 255 255 / 10%);
   background: rgb(36 47 39 / 75%);
@@ -517,7 +507,8 @@ body {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 5%), 0 3px 10px rgb(0 0 0 / 12%);
 }
 .secondary-button:hover,
-.today-button:hover { border-color: #597861; background: #293a2d; color: #d5e6d5; }
+.today-button:hover,
+.sidebar-toggle:hover { border-color: #597861; background: #293a2d; color: #d5e6d5; }
 .day-card {
   border-color: rgb(255 255 255 / 9%);
   background: linear-gradient(155deg, rgb(31 42 34 / 96%), rgb(24 34 27 / 90%));
@@ -1088,9 +1079,6 @@ button:disabled,
 #dish-form .dialog-actions .primary-button,
 #dish-form .dialog-actions .secondary-button { border-radius: 14px; }
 .shopping-category-title { color: #bdcbe0; border-top-color: #303d4c; }
-.shopping-tile-remove { background: #2b3746; color: #c3cfdd; }
-.shopping-tile-remove:hover,
-.shopping-tile-remove:focus-visible { background: #49332f; color: #f0b0a2; }
 
 .ingredients-field { color: #bdc9d6; }
 .ingredients-field > label { color: #bdc9d6; }
@@ -1239,15 +1227,4 @@ dialog { background: rgb(27 36 47 / 96%); }
 .password-sign-in input { border-radius: 12px; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
-.shopping-tile-remove {
-  border: 1px solid rgb(255 255 255 / 8%);
-  background: #253449;
-  color: #cbd7e6;
-}
-.shopping-tile-remove:hover,
-.shopping-tile-remove:focus-visible {
-  border-color: #718caf;
-  background: #2d3f56;
-  color: #e0ebf8;
-}
 .shopping-quantity{border-color:#344352;background:#18232f;color:#e0e8f1}.shopping-quantity button{background:#293848;color:#e0e8f1}.shopping-quantity button:hover:not(:disabled){background:#364a5e}
