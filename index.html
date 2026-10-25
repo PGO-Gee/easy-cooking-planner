@@ -18,10 +18,10 @@
   </style>
   <link rel="stylesheet" href="styles.css?v=20261023-2" />
   <link rel="stylesheet" href="interaction.css?v=20261025-5" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261025-1" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261025-5" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
-  <link rel="stylesheet" href="mobile.css?v=20261023-4" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261023-2" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="mobile.css?v=20261025-2" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261025-3" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -92,7 +92,7 @@
         <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
         <form id="shopping-add-form" class="shopping-add-form"><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel hinzufügen … z. B. Kaffee"><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
         <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
-        <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section class="shopping-section"><h2>Schon eingekauft <span id="shopping-done-count"></span></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
+        <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><span>Schon eingekauft</span><span id="shopping-done-count"></span><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
       </section>
     </main>
   </div>
@@ -105,7 +105,7 @@
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261025-15"></script>
+  <script src="app.js?v=20261025-18"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let refreshingForServiceWorker = false;
