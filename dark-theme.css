@@ -1163,6 +1163,11 @@ button:disabled,
 .auth-privacy-notice a { color: #c3d7f1; }
 .auth-error,
 .household-error { border-color: #754940; background: #382723; color: #f0b0a2; }
+.auth-context { border-color: #35485f; background: #202c3a; color: #c0cbd8; }
+.auth-offline-return { border-color: #42546a; background: #202c3a; color: #d4deea; }
+.auth-offline-return:hover { background: #2d3f56; }
+.sync-status-login { border-color: #7896bb; background: linear-gradient(145deg, #7899c2, #5d7ea8); }
+.sync-status-login:hover { background: linear-gradient(145deg, #6c8cb5, #55759e); }
 #toast { background: #29394d; color: #e8f0fa; }
 #menu-backdrop:not([hidden]) { background: rgb(7 11 16 / 68%); }
 
