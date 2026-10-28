@@ -728,13 +728,13 @@ function beginPullRefresh(event){
   if(!standalonePwa()||!compactNavigationQuery.matches||!appInitialized||$('.app-shell').hidden||pullRefreshGesture||mealDragState||document.querySelector('dialog[open]'))return;
   if(event.touches.length!==1||window.scrollY>2||(document.scrollingElement?.scrollTop||0)>2)return;
   const target=event.target instanceof Element?event.target:null;
-  if(target?.closest('input,textarea,select,button,a,[contenteditable="true"],dialog,.meal-card,[data-no-pull-refresh]'))return;
+  if(target?.closest('input,textarea,select,[contenteditable="true"],dialog,[data-no-pull-refresh]'))return;
   const touch=event.touches[0];
-  if(touch.clientX<24||touch.clientX>window.innerWidth-24||touch.clientY>Math.min(180,window.innerHeight*.4))return;
   pullRefreshGesture={startX:touch.clientX,startY:touch.clientY,distance:0,dragging:false};
 }
 function movePullRefresh(event){
   const gesture=pullRefreshGesture;if(!gesture)return;
+  if(mealDragState?.touchGesture&&mealDragState.dragging){cancelPullRefresh();return}
   if(event.touches.length!==1){cancelPullRefresh();return}
   const touch=event.touches[0],deltaX=touch.clientX-gesture.startX,deltaY=touch.clientY-gesture.startY;
   if(deltaY<0||Math.abs(deltaX)>Math.max(14,deltaY*.8)){cancelPullRefresh();return}
@@ -745,16 +745,31 @@ function movePullRefresh(event){
   const offset=Math.min(88,deltaY*.9),ready=deltaY>=72;
   setPullRefreshIndicator({visible:true,offset,message:ready?'Loslassen zum Aktualisieren':'Zum Aktualisieren ziehen'});
 }
+function hasUnfinishedRefreshInput(){
+  return Boolean($('#shopping-item-input')?.value.trim()||[...document.querySelectorAll('#password-sign-in input')].some(input=>input.value.trim()));
+}
 function finishPullRefresh(){
   const gesture=pullRefreshGesture;if(!gesture)return;
   pullRefreshGesture=null;
   if(!gesture.dragging){setPullRefreshIndicator();return}
   if(gesture.distance<72){setPullRefreshIndicator();return}
+  if(hasUnfinishedRefreshInput()){
+    setPullRefreshIndicator({visible:true,offset:76,message:'Schließe zuerst die offene Eingabe'});
+    window.setTimeout(()=>setPullRefreshIndicator(),1400);
+    return;
+  }
   setPullRefreshIndicator({visible:true,refreshing:true,offset:76,message:'Wird synchronisiert …'});
-  refreshAppData().then(result=>{
+  refreshAppData().then(async result=>{
     const message=result==='success'?'Aktualisiert':result==='offline'?'Offline – lokale Daten bleiben verfügbar':result==='failed'?'Abgleich fehlgeschlagen':'Synchronisierung derzeit nicht verfügbar';
     setPullRefreshIndicator({visible:true,refreshing:result==='success',offset:76,message});
-    window.setTimeout(()=>setPullRefreshIndicator(),result==='success'?850:1400);
+    try{await offlineStoreWriteQueue}catch(error){
+      console.error('Offline-Daten konnten vor dem Neuladen nicht gesichert werden:',error);
+      updateSyncStatus('Lokale Speicherung fehlgeschlagen – die Seite wurde nicht neu geladen.',{storageError:true});
+      setPullRefreshIndicator({visible:true,offset:76,message:'Lokaler Speicher nicht verfügbar'});
+      window.setTimeout(()=>setPullRefreshIndicator(),1800);
+      return;
+    }
+    window.setTimeout(()=>window.location.reload(),180);
   });
 }
 function cancelPullRefresh(){pullRefreshGesture=null;setPullRefreshIndicator()}
