@@ -3,10 +3,14 @@ const shortDays=['MO','DI','MI','DO','FR','SA','SO'];
 const timeBlocks=[15,30,45,60,90,120];
 const $=s=>document.querySelector(s);
 const supabaseConfig=window.WOCHENTISCH_SUPABASE;
-const authClient=window.supabase?.createClient&&supabaseConfig?.url&&supabaseConfig?.publishableKey
-  ?window.supabase.createClient(supabaseConfig.url,supabaseConfig.publishableKey)
-  :null;
+const supabaseScriptUrl='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0';
+let authClient=null;
+let authClientReadyPromise=Promise.resolve(null);
 let state=loadState(); let weekOffset=0; let toastTimer;let pantryDraft=[];let dishIngredientDraft=[];let mealDragState=null;let mealActionPointerState=null;let suppressedMealActionClick=null;let pendingShoppingClearUndo=null;let shoppingDoneExpanded=false;
+let unresolvedConflicts=[];
+let pendingCatalogImports=[];
+let offlineStoreReady=false;
+let offlineStoreWriteQueue=Promise.resolve();
 let appInitialized=false;
 let appInitializationPromise;
 let currentUserId='';
@@ -24,7 +28,11 @@ let cloudSyncTimer;
 let cloudSyncInProgress=false;
 let cloudSyncRequested=false;
 let cloudSyncNotificationRequested=false;
+let cloudSyncPromise=null;
+let pullRefreshGesture=null;
 let loadingCloudState=false;
+let cloudStateOverrideInProgress=false;
+let cloudStateOverrideError='';
 let offlineMode=false;
 let explicitSignOutPending=false;
 let signInPromptActive=false;
@@ -85,16 +93,24 @@ document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.showModal=()=>{lockPageScroll();showModal()};
 });
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
-function updateSyncStatus(message,{reauthRequired=false}={}){const status=$('#sync-status');if(!status)return;$('#sync-status-message').textContent=message;$('#sync-status-login').hidden=!reauthRequired;status.hidden=!message}
+function updateSyncStatus(message,{reauthRequired=false,storageError=false}={}){const status=$('#sync-status');if(!status)return;const hasConflicts=unresolvedConflicts.length>0;$('#sync-status-message').textContent=message||(hasConflicts?`${unresolvedConflicts.length} Änderung${unresolvedConflicts.length===1?'':'en'} muss${unresolvedConflicts.length===1?'':'en'} geprüft werden.`:'');$('#sync-status-login').hidden=!reauthRequired;$('#sync-status-conflicts').hidden=!hasConflicts;status.hidden=!(message||hasConflicts);status.classList.toggle('is-storage-error',storageError)}
 function cloudMigrationKey(){return currentUserId?`wochentisch-cloud-migrated-${currentUserId}`:''}
 function localStateOwnerKey(){return 'wochentisch-local-owner'}
 function cloudBackupKey(){return currentUserId?`wochentisch-cloud-backup-${currentUserId}`:''}
-function canUseLocalState(){const owner=localStorage.getItem(localStateOwnerKey());return !owner||owner===currentUserId}
+function canUseLocalState(){let owner='';try{owner=localStorage.getItem(localStateOwnerKey())||''}catch(error){}return !owner||owner===currentUserId}
 function savedView(){try{const view=localStorage.getItem(lastViewStorageKey);return ['home','week','dishes','shopping'].includes(view)?view:'week'}catch(error){return 'week'}}
 function viewForSession(showHome=false){const mobile=window.matchMedia('(max-width: 700px)').matches;if(showHome&&mobile)return'home';const view=savedView();return view==='home'&&!mobile?'week':view}
 function starterState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:state.noteHidden,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:state.shoppingQuantities||{}}}
-function saveCloudBackup(){if(currentUserId&&canUseLocalState()&&state.dishes.length)localStorage.setItem(cloudBackupKey(),JSON.stringify(state))}
-function readCloudBackup(){try{const backup=JSON.parse(localStorage.getItem(cloudBackupKey()));return backup?.dishes?.length?backup:null}catch(error){return null}}
+function enqueueOfflineStoreWrite(store,key,value){
+  if(!window.WochentischStore)return Promise.resolve();
+  const snapshot=structuredClone(value);
+  offlineStoreWriteQueue=offlineStoreWriteQueue.catch(()=>{}).then(()=>window.WochentischStore.put(store,key,snapshot));
+  offlineStoreWriteQueue.catch(error=>{console.warn('Lokale Offline-Daten konnten nicht gespeichert werden:',error);updateSyncStatus('Lokaler Speicher ist gerade nicht verfügbar. Lass die App geöffnet und versuche es erneut.',{storageError:true})});
+  return offlineStoreWriteQueue;
+}
+function safeLocalStorageSet(key,value){try{localStorage.setItem(key,value);return true}catch(error){return false}}
+function saveCloudBackup(){if(!currentUserId||!canUseLocalState())return;const snapshot=structuredClone(state),key=cloudBackupKey();if(offlineStoreReady)enqueueOfflineStoreWrite('records',key,snapshot);else safeLocalStorageSet(key,JSON.stringify(snapshot))}
+async function readCloudBackup(userId=currentUserId){const key=userId?`wochentisch-cloud-backup-${userId}`:'';if(!key)return null;if(offlineStoreReady){try{const backup=await window.WochentischStore?.get('records',key);return backup&&typeof backup==='object'?backup:null}catch(error){return null}}try{const backup=JSON.parse(localStorage.getItem(key));return backup&&typeof backup==='object'?backup:null}catch(error){return null}}
 function cleanIngredients(ingredients){return Array.isArray(ingredients)?ingredients.filter(item=>typeof item==='string').map(normalizeIngredient).filter(Boolean):[]}
 function cleanHiddenShoppingItems(items){return [...new Set((Array.isArray(items)?items:[]).filter(item=>typeof item==='string').map(manualItemKey).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'de-DE'))}
 function cleanRestDays(days){return [...new Set((Array.isArray(days)?days:[]).map(Number).filter(day=>Number.isInteger(day)&&day>=0&&day<7))].sort((a,b)=>a-b)}
@@ -102,13 +118,23 @@ function cleanNutrition(nutrition){return nutrition&&typeof nutrition==='object'
 function cloudError(message){console.error(message);updateSyncStatus('Keine Verbindung – Änderungen bleiben auf diesem Gerät gespeichert.');if(appInitialized&&document.visibilityState==='visible')showToast('Änderung wird lokal gespeichert und später synchronisiert.')}
 function householdError(message){const error=$('#household-error');error.textContent=message;error.hidden=!message}
 function ensureUuid(value){return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)}
-function newId(){return crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`}
+function newId(){
+  if(crypto.randomUUID)return crypto.randomUUID();
+  if(crypto.getRandomValues){
+    const bytes=crypto.getRandomValues(new Uint8Array(16));
+    bytes[6]=(bytes[6]&0x0f)|0x40;bytes[8]=(bytes[8]&0x3f)|0x80;
+    const hex=[...bytes].map(value=>value.toString(16).padStart(2,'0')).join('');
+    return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,character=>{const random=Math.random()*16|0;return(character==='x'?random:(random&0x3|0x8)).toString(16)});
+}
 function prepareLocalIdsForCloud(){
   const idMap=new Map();
   state.dishes.forEach(dish=>{if(!ensureUuid(dish.id)){const id=newId();idMap.set(dish.id,id);dish.id=id}});
-  if(idMap.size)Object.values(state.plans).forEach(days=>days.forEach(day=>{
-    for(let index=0;index<day.length;index++)day[index]=idMap.get(day[index])||day[index];
-  }));
+  if(idMap.size){
+    Object.values(state.plans).forEach(days=>days.forEach(day=>{for(let index=0;index<day.length;index++)day[index]=idMap.get(day[index])||day[index]}));
+    pendingCatalogImports.forEach(item=>{const previous=item.dishId,next=idMap.get(previous);if(next){item.dishId=next;window.WochentischStore?.remove('imports',previous).catch(()=>{});enqueueOfflineStoreWrite('imports',next,item)}});
+  }
 }
 async function getCurrentHousehold(){
   const {data,error}=await authClient.rpc('ensure_my_household');
@@ -166,21 +192,25 @@ function stableValue(value){
 }
 function sameValue(first,second){return JSON.stringify(stableValue(first))===JSON.stringify(stableValue(second))}
 function mapValue(map,key){return Object.prototype.hasOwnProperty.call(map||{},key)?map[key]:undefined}
-function chooseMergedValue(baseValue,localValue,remoteValue,label,conflicts){
+function conflictRecord(kind,key,label,baseValue,localValue,remoteValue){
+  const keyParts=Array.isArray(key)?key:[key];
+  return{id:`${kind}:${keyParts.map(value=>encodeURIComponent(String(value))).join(':')}`,kind,key:keyParts,label,baseValue:structuredClone(baseValue),localValue:structuredClone(localValue),remoteValue:structuredClone(remoteValue),createdAt:Date.now()};
+}
+function chooseMergedValue(baseValue,localValue,remoteValue,descriptor,conflicts){
   const localChanged=!sameValue(localValue,baseValue),remoteChanged=!sameValue(remoteValue,baseValue);
   if(!localChanged)return remoteValue;
-  if(remoteChanged&&!sameValue(localValue,remoteValue)){conflicts.push(label);return remoteValue}
+  if(remoteChanged&&!sameValue(localValue,remoteValue)){conflicts.push(conflictRecord(descriptor.kind,descriptor.key,descriptor.label,baseValue,localValue,remoteValue));return remoteValue}
   return localValue;
 }
-function mergeKeyedArrays(baseItems=[],localItems=[],remoteItems=[],keyOf=item=>item.id,label='Eintrag',conflicts=[]){
+function mergeKeyedArrays(baseItems=[],localItems=[],remoteItems=[],keyOf=item=>item.id,label='Eintrag',conflicts=[],kind='dish'){
   const toMap=items=>new Map((items||[]).map(item=>[keyOf(item),item])),base=toMap(baseItems),local=toMap(localItems),remote=toMap(remoteItems),result=[];
   const keys=new Set([...remote.keys(),...local.keys(),...base.keys()]);
-  keys.forEach(key=>{const value=chooseMergedValue(base.get(key),local.get(key),remote.get(key),`${label}:${key}`,conflicts);if(value!==undefined)result.push(value)});
+  keys.forEach(key=>{const value=chooseMergedValue(base.get(key),local.get(key),remote.get(key),{kind,key,label:`${label}:${key}`},conflicts);if(value!==undefined)result.push(value)});
   return result;
 }
-function mergeKeyedObjects(baseObject={},localObject={},remoteObject={},label,conflicts,normalize=value=>value){
+function mergeKeyedObjects(baseObject={},localObject={},remoteObject={},label,conflicts,normalize=value=>value,kind='value'){
   const result={},keys=new Set([...Object.keys(baseObject||{}),...Object.keys(localObject||{}),...Object.keys(remoteObject||{})]);
-  keys.forEach(key=>{const value=chooseMergedValue(normalize(mapValue(baseObject,key)),normalize(mapValue(localObject,key)),normalize(mapValue(remoteObject,key)),`${label}:${key}`,conflicts);if(value!==undefined)result[key]=value});
+  keys.forEach(key=>{const value=chooseMergedValue(normalize(mapValue(baseObject,key)),normalize(mapValue(localObject,key)),normalize(mapValue(remoteObject,key)),{kind,key,label:`${label}:${key}`},conflicts);if(value!==undefined)result[key]=value});
   return result;
 }
 function mergeShoppingItems(baseItems={},localItems={},remoteItems={},conflicts){
@@ -192,7 +222,7 @@ function mergeShoppingItems(baseItems={},localItems={},remoteItems={},conflicts)
       const baseHas=base.has(key),localHas=local.has(key),remoteHas=remote.has(key);
       let keep=remoteHas;
       if(localHas!==baseHas){
-        if(remoteHas!==baseHas&&localHas!==remoteHas){conflicts.push(`Einkaufsartikel:${week}:${key}`)}
+        if(remoteHas!==baseHas&&localHas!==remoteHas)conflicts.push(conflictRecord('manual-item',[week,key],`Einkaufsartikel: ${local.get(key)||remote.get(key)||key}`,base.get(key),local.get(key),remote.get(key)));
         else keep=localHas;
       }
       if(keep)merged.push(remote.get(key)||local.get(key)||base.get(key));
@@ -207,7 +237,7 @@ function mergeShoppingChecks(baseChecks={},localChecks={},remoteChecks={},confli
     const base=baseChecks[week]||{},local=localChecks[week]||{},remote=remoteChecks[week]||{},keys=new Set([...Object.keys(base),...Object.keys(local),...Object.keys(remote)]),merged={};
     keys.forEach(key=>{
       const baseValue=Boolean(base[key]),localValue=Boolean(local[key]),remoteValue=Boolean(remote[key]);
-      const value=chooseMergedValue(baseValue,localValue,remoteValue,`Einkaufsstatus:${week}:${key}`,conflicts);
+      const value=chooseMergedValue(baseValue,localValue,remoteValue,{kind:'shopping-check',key:[week,key],label:`Einkaufsstatus: ${key}`},conflicts);
       if(value)merged[key]=true;
     });
     if(Object.keys(merged).length)result[week]=merged;
@@ -218,7 +248,7 @@ function mergeHiddenShoppingItems(baseItems={},localItems={},remoteItems={},conf
   const result={},weeks=new Set([...Object.keys(baseItems||{}),...Object.keys(localItems||{}),...Object.keys(remoteItems||{})]);
   weeks.forEach(week=>{
     const base=new Set(cleanHiddenShoppingItems(baseItems[week])),local=new Set(cleanHiddenShoppingItems(localItems[week])),remote=new Set(cleanHiddenShoppingItems(remoteItems[week])),keys=new Set([...base,...local,...remote]),merged=[];
-    keys.forEach(key=>{if(chooseMergedValue(base.has(key),local.has(key),remote.has(key),`Einkaufseintrag:${week}:${key}`,conflicts))merged.push(key)});
+    keys.forEach(key=>{if(chooseMergedValue(base.has(key),local.has(key),remote.has(key),{kind:'hidden-item',key:[week,key],label:`Ausgeblendeter Eintrag: ${key}`},conflicts))merged.push(key)});
     if(merged.length)result[week]=merged.sort((a,b)=>a.localeCompare(b,'de-DE'));
   });
   return result;
@@ -239,7 +269,7 @@ function mergePlanDays(baseState,localState,remoteState,conflicts){
     const days=Array.from({length:7},()=>[]),pins=Array.from({length:7},()=>[]);
     let hasPlan=false;
     for(let day=0;day<7;day++){
-      const merged=chooseMergedValue(planDay(baseState,week,day),planDay(localState,week,day),planDay(remoteState,week,day),`Wochenplan:${week}:${day}`,conflicts);
+      const merged=chooseMergedValue(planDay(baseState,week,day),planDay(localState,week,day),planDay(remoteState,week,day),{kind:'plan-day',key:[week,day],label:`Wochenplan ${week}, ${shortDays[day]}`},conflicts);
       if(merged!==undefined){hasPlan=true;days[day]=merged.meals;pins[day]=merged.pins}
     }
     if(hasPlan){plans[week]=days;pinnedMeals[week]=pins}
@@ -250,18 +280,204 @@ function mergeHouseholdState(baseState,localState,remoteState){
   const base=baseState||remoteState,conflicts=[],planData=mergePlanDays(base,localState,remoteState,conflicts);
   return {
     state:{
-      dishes:mergeKeyedArrays(base.dishes,localState.dishes,remoteState.dishes,item=>item.id,'Gericht',conflicts),
+      dishes:mergeKeyedArrays(base.dishes,localState.dishes,remoteState.dishes,item=>item.id,'Gericht',conflicts,'dish'),
       ...planData,
-      pantryIngredients:mergeKeyedObjects(base.pantryIngredients,localState.pantryIngredients,remoteState.pantryIngredients,'Vorrat',conflicts,items=>items===undefined?undefined:cleanIngredients(items)),
-      restDays:mergeKeyedObjects(base.restDays,localState.restDays,remoteState.restDays,'Resteabend',conflicts,days=>days===undefined?undefined:cleanRestDays(days)),
+      pantryIngredients:mergeKeyedObjects(base.pantryIngredients,localState.pantryIngredients,remoteState.pantryIngredients,'Vorrat',conflicts,items=>items===undefined?undefined:cleanIngredients(items),'pantry'),
+      restDays:mergeKeyedObjects(base.restDays,localState.restDays,remoteState.restDays,'Resteabend',conflicts,days=>days===undefined?undefined:cleanRestDays(days),'rest-days'),
       shoppingChecks:mergeShoppingChecks(base.shoppingChecks,localState.shoppingChecks,remoteState.shoppingChecks,conflicts),
       hiddenShoppingItems:mergeHiddenShoppingItems(base.hiddenShoppingItems,localState.hiddenShoppingItems,remoteState.hiddenShoppingItems,conflicts),
       manualShoppingItems:mergeShoppingItems(base.manualShoppingItems,localState.manualShoppingItems,remoteState.manualShoppingItems,conflicts),
-      shoppingQuantities:mergeKeyedObjects(base.shoppingQuantities,localState.shoppingQuantities,remoteState.shoppingQuantities,'Menge',conflicts),
+      shoppingQuantities:mergeKeyedObjects(base.shoppingQuantities,localState.shoppingQuantities,remoteState.shoppingQuantities,'Menge',conflicts,value=>value,'quantity'),
       noteHidden:localState.noteHidden
     },
     conflicts
   };
+}
+async function persistConflicts(conflicts=[]){
+  const byId=new Map(unresolvedConflicts.map(conflict=>[conflict.id,conflict]));
+  conflicts.forEach(conflict=>{
+    const existing=byId.get(conflict.id);
+    byId.set(conflict.id,existing?{...existing,remoteValue:structuredClone(conflict.remoteValue),updatedAt:Date.now()}:conflict);
+  });
+  unresolvedConflicts=[...byId.values()];
+  await Promise.all(conflicts.map(conflict=>{
+    const storageKey=`${currentUserId||'local'}:${currentHouseholdId||'unknown'}:${conflict.id}`;
+    const value={...byId.get(conflict.id),userId:currentUserId||'',householdId:currentHouseholdId||'',storageKey};
+    byId.set(conflict.id,value);
+    return enqueueOfflineStoreWrite('conflicts',storageKey,value);
+  }));
+  unresolvedConflicts=[...byId.values()];
+  updateSyncStatus('');
+}
+async function loadOfflineQueues(userId=currentUserId,householdId=''){
+  if(!window.WochentischStore)return;
+  try{
+    const [conflictRecords,importRecords]=await Promise.all([window.WochentischStore.getAll('conflicts'),window.WochentischStore.getAll('imports')]);
+    unresolvedConflicts=conflictRecords.map(record=>record.value).filter(value=>value?.id&&value?.kind&&value.userId===userId&&(!householdId||value.householdId===householdId));
+    pendingCatalogImports=importRecords.map(record=>record.value).filter(value=>value?.dishId&&value?.catalogId&&value.userId===userId);
+    updateSyncStatus('');
+  }catch(error){console.warn('Offline-Vormerkungen konnten nicht geladen werden:',error)}
+}
+function conflictEntityValue(value,conflict){
+  const [first,second]=conflict.key;
+  switch(conflict.kind){
+    case 'dish': return value.dishes?.find(dish=>dish.id===conflict.key[0]);
+    case 'plan-day': return planDay(value,first,second);
+    case 'pantry': return mapValue(value.pantryIngredients,first);
+    case 'rest-days': return mapValue(value.restDays,first);
+    case 'quantity': return mapValue(value.shoppingQuantities,first);
+    case 'shopping-check': return Boolean(value.shoppingChecks?.[first]?.[second]);
+    case 'hidden-item': return (value.hiddenShoppingItems?.[first]||[]).includes(second);
+    case 'manual-item': return (value.manualShoppingItems?.[first]||[]).find(name=>manualItemKey(name)===second);
+    default: return undefined;
+  }
+}
+async function appendFreshWriteConflict(conflicts,baseState,localState,kind,key,label){
+  let latestState;
+  try{latestState=(await readStateFromCloud()).state}catch(error){latestState=baseState}
+  const descriptor={kind,key,label},baseValue=conflictEntityValue(baseState,descriptor),localValue=conflictEntityValue(localState,descriptor),remoteValue=conflictEntityValue(latestState,descriptor);
+  const normalize=value=>{
+    if(value===undefined)return value;
+    if(kind==='pantry')return cleanIngredients(value);
+    if(kind==='rest-days')return cleanRestDays(value);
+    return value;
+  };
+  if(!sameValue(normalize(localValue),normalize(remoteValue)))conflicts.push(conflictRecord(kind,key,label,normalize(baseValue),normalize(localValue),normalize(remoteValue)));
+}
+function describeConflictValue(conflict,value){
+  if(value===undefined)return 'Eintrag wurde gelöscht';
+  switch(conflict.kind){
+    case 'dish': return `${value.name}${value.ingredient?` · ${value.ingredient}`:''}${value.time?` · ${value.time} Min.`:''}`;
+    case 'plan-day': {
+      const names=(value.meals||[]).map(id=>state.dishes.find(dish=>dish.id===id)?.name||'Gericht nicht mehr vorhanden');
+      return names.length?names.join(', '):'Kein Gericht geplant';
+    }
+    case 'pantry': return Array.isArray(value)&&value.length?value.join(', '):'Kein Vorrat ausgewählt';
+    case 'rest-days': return Array.isArray(value)&&value.length?value.map(day=>shortDays[day]||day).join(', '):'Keine Resteabende';
+    case 'quantity': return `${value} ${Number(value)===1?'Portion':'Portionen'}`;
+    case 'shopping-check': return value?'Als eingekauft markiert':'Noch offen';
+    case 'hidden-item': return value?'Ausgeblendet':'Sichtbar';
+    case 'manual-item': return value||'Nicht auf dem Einkaufszettel';
+    default: return String(value);
+  }
+}
+function assignConflictValue(conflict,value){
+  const [first,second]=conflict.key;
+  switch(conflict.kind){
+    case 'dish': {
+      const index=state.dishes.findIndex(dish=>dish.id===conflict.key[0]);
+      if(index>=0)state.dishes.splice(index,1);
+      if(value)state.dishes.push(structuredClone(value));
+      else Object.entries(state.plans||{}).forEach(([week,days])=>days.forEach((day,dayIndexValue)=>{
+        const pins=state.pinnedMeals?.[week]?.[dayIndexValue]||[];
+        for(let position=day.length-1;position>=0;position--)if(day[position]===conflict.key[0]){day.splice(position,1);pins.splice(position,1)}
+      }));
+      break;
+    }
+    case 'plan-day': {
+      state.plans[first]??=Array.from({length:7},()=>[]);
+      state.pinnedMeals[first]??=Array.from({length:7},()=>[]);
+      state.plans[first][second]=value?.meals?.slice()||[];
+      state.pinnedMeals[first][second]=value?.pins?.slice()||[];
+      break;
+    }
+    case 'pantry': if(value===undefined)delete state.pantryIngredients[first];else state.pantryIngredients[first]=structuredClone(value);break;
+    case 'rest-days': if(value===undefined)delete state.restDays[first];else state.restDays[first]=structuredClone(value);break;
+    case 'quantity': if(value===undefined)delete state.shoppingQuantities[first];else state.shoppingQuantities[first]=structuredClone(value);break;
+    case 'shopping-check': {
+      state.shoppingChecks[first]??={};
+      if(value)state.shoppingChecks[first][second]=true;else delete state.shoppingChecks[first][second];
+      if(!Object.keys(state.shoppingChecks[first]).length)delete state.shoppingChecks[first];
+      break;
+    }
+    case 'hidden-item': {
+      const items=new Set(state.hiddenShoppingItems[first]||[]);
+      if(value)items.add(second);else items.delete(second);
+      if(items.size)state.hiddenShoppingItems[first]=[...items].sort((a,b)=>a.localeCompare(b,'de-DE'));else delete state.hiddenShoppingItems[first];
+      break;
+    }
+    case 'manual-item': {
+      const items=(state.manualShoppingItems[first]||[]).filter(name=>manualItemKey(name)!==second);
+      if(value)items.push(value);
+      if(items.length)state.manualShoppingItems[first]=items;else delete state.manualShoppingItems[first];
+      break;
+    }
+  }
+}
+function updateConflictCloudAction(){
+  const cloudButton=$('#conflict-cloud-all'),cloudHint=$('#conflict-cloud-hint');
+  if(!cloudButton||!cloudHint)return;
+  cloudButton.hidden=!unresolvedConflicts.length;
+  cloudButton.disabled=!cloudReady||!navigator.onLine||cloudStateOverrideInProgress;
+  if(cloudStateOverrideError){cloudHint.textContent=cloudStateOverrideError;cloudHint.hidden=false}
+  else{
+    cloudHint.hidden=cloudReady&&navigator.onLine;
+    cloudHint.textContent=navigator.onLine?'Die Cloud ist gerade nicht verbunden.':'Zum Übernehmen brauchst du eine Internetverbindung.';
+  }
+  document.querySelectorAll('#conflict-list .conflict-choice').forEach(button=>{button.disabled=cloudStateOverrideInProgress});
+}
+function renderConflictReview(){
+  const list=$('#conflict-list');list.replaceChildren();
+  updateConflictCloudAction();
+  if(!unresolvedConflicts.length){const empty=document.createElement('p');empty.className='empty-state';empty.textContent='Alle Änderungen sind geklärt.';list.append(empty);return}
+  unresolvedConflicts.forEach(conflict=>{
+    const card=document.createElement('article');card.className='conflict-card';
+    const title=document.createElement('h3');title.textContent=conflict.label;
+    const choices=document.createElement('div');choices.className='conflict-choices';
+    [['local','Deine Fassung',conflict.localValue],['remote','Haushaltsfassung',conflict.remoteValue]].forEach(([source,label,value])=>{
+      const button=document.createElement('button');button.type='button';button.className='conflict-choice';
+      button.disabled=cloudStateOverrideInProgress;
+      const strong=document.createElement('strong');strong.textContent=label;
+      const detail=document.createElement('span');detail.textContent=describeConflictValue(conflict,value);
+      button.append(strong,detail);button.addEventListener('click',()=>resolveConflict(conflict.id,source));choices.append(button);
+    });
+    card.append(title,choices);list.append(card);
+  });
+}
+function openConflictReview(){renderConflictReview();const dialog=$('#conflict-dialog');if(!dialog.open)dialog.showModal()}
+async function resolveConflict(id,source){
+  const conflict=unresolvedConflicts.find(item=>item.id===id);if(!conflict)return;
+  let value=source==='local'?conflict.localValue:conflict.remoteValue;
+  if(source==='remote'&&cloudReady&&navigator.onLine){
+    try{const latest=await readStateFromCloud();value=conflictEntityValue(latest.state,conflict)}catch(error){console.warn('Aktuelle Haushaltsfassung konnte nicht geladen werden:',error)}
+  }
+  assignConflictValue(conflict,value);
+  save({sync:false});
+  await offlineStoreWriteQueue.catch(()=>{});
+  try{await window.WochentischStore?.remove('conflicts',conflict.storageKey||id)}catch(error){console.warn('Geklärter Konflikt konnte nicht aus dem lokalen Speicher entfernt werden:',error)}
+  unresolvedConflicts=unresolvedConflicts.filter(item=>item.id!==id);
+  updateCounts();refreshVisibleView();updateSyncStatus('');
+  if(unresolvedConflicts.length)renderConflictReview();else $('#conflict-dialog').close();
+  if(cloudReady&&hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
+}
+async function takeCloudStateForAllConflicts(){
+  if(!unresolvedConflicts.length||!cloudReady||!navigator.onLine||cloudStateOverrideInProgress)return;
+  const button=$('#conflict-cloud-all'),hint=$('#conflict-cloud-hint');
+  cloudStateOverrideError='';
+  cloudStateOverrideInProgress=true;button.disabled=true;button.textContent='Cloud-Stand wird geladen …';hint.hidden=true;updateConflictCloudAction();
+  clearTimeout(cloudSyncTimer);
+  try{
+    if(cloudSyncInProgress&&cloudSyncPromise)await cloudSyncPromise;
+    clearTimeout(cloudSyncTimer);cloudSyncRequested=false;cloudSyncNotificationRequested=false;
+    const remote=await readStateFromCloud();
+    state={...remote.state,noteHidden:state.noteHidden};
+    cloudBaseState=remote.state;
+    await saveCloudBase(cloudBaseState);
+    save({sync:false});
+    await offlineStoreWriteQueue;
+    await Promise.all(unresolvedConflicts.map(conflict=>window.WochentischStore?.remove('conflicts',conflict.storageKey||conflict.id)));
+    unresolvedConflicts=[];
+    await reconcileCatalogImports(remote.state);
+    updateCounts();refreshVisibleView();updateSyncStatus('');
+    $('#conflict-dialog').close();
+    showToast('Der aktuelle Cloud-Stand wurde übernommen.');
+  }catch(error){
+    console.error('Cloud-Stand konnte nicht vollständig übernommen werden:',error);
+    cloudStateOverrideError='Cloud-Stand konnte nicht übernommen werden. Prüfe die Verbindung und versuche es erneut.';
+  }finally{
+    cloudStateOverrideInProgress=false;
+    button.textContent='Alles aus der Cloud übernehmen';updateConflictCloudAction();
+  }
 }
 function cloudComparable(value){
   const shoppingChecks=Object.fromEntries(Object.entries(value.shoppingChecks||{}).map(([week,checks])=>[
@@ -287,8 +503,12 @@ function cloudComparable(value){
 }
 function hasCloudChanges(first,second){return !sameValue(cloudComparable(first),cloudComparable(second))}
 function cloudBaseStorageKey(){return currentUserId&&currentHouseholdId?`wochentisch-cloud-base-${currentUserId}-${currentHouseholdId}`:''}
-function readCloudBase(){try{const key=cloudBaseStorageKey(),value=key?JSON.parse(localStorage.getItem(key)):null;return value&&Array.isArray(value.dishes)&&value.plans?value:null}catch(error){return null}}
-function saveCloudBase(value){const key=cloudBaseStorageKey();if(key&&value)localStorage.setItem(key,JSON.stringify(value))}
+async function readCloudBase(){
+  const key=cloudBaseStorageKey();if(!key)return null;
+  if(offlineStoreReady){try{const value=await window.WochentischStore?.get('records',key);return value&&Array.isArray(value.dishes)&&value.plans?value:null}catch(error){return null}}
+  try{const value=JSON.parse(localStorage.getItem(key));return value&&Array.isArray(value.dishes)&&value.plans?value:null}catch(error){return null}
+}
+function saveCloudBase(value){const key=cloudBaseStorageKey();if(!key||!value)return Promise.resolve();return offlineStoreReady?enqueueOfflineStoreWrite('records',key,value):Promise.resolve(safeLocalStorageSet(key,JSON.stringify(value)))}
 function manualItemKey(name){return normalizeIngredient(name).toLocaleLowerCase('de-DE')}
 function dayEntry(day,pins,position){return position<(day||[]).length?{dish_id:day[position],is_pinned:Boolean(pins?.[position])}:null}
 function dishRow(dish){return {id:dish.id,household_id:currentHouseholdId,name:dish.name,ingredient:dish.ingredient||'',cooking_time_minutes:Number(dish.time)||30,emoji:dish.emoji||'🍽️',ingredients:cleanIngredients(dish.ingredients),nutrition:cleanNutrition(dish.nutrition)}}
@@ -300,7 +520,7 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
     if(current){
       const {data,error}=await authClient.from('dishes').update(dishRow(dish)).eq('id',id).eq('household_id',currentHouseholdId).eq('updated_at',current.updated_at).select('id');
       if(error)throw error;
-      if(!data?.length)conflicts.push(`Gericht:${dish.name}`);
+      if(!data?.length)await appendFreshWriteConflict(conflicts,remote,target,'dish',[id],`Gericht: ${dish.name}`);
     }else{
       const {error}=await authClient.from('dishes').insert(dishRow(dish));
       if(error&&error.code!=='23505')throw error;
@@ -327,7 +547,27 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
     if(!Object.keys(updates).length)continue;
     const {data,error}=await authClient.from('weekly_plans').update(updates).eq('id',plan.id).eq('updated_at',plan.updated_at).select('id');
     if(error)throw error;
-    if(!data?.length)conflicts.push(`Wochenplan:${week}`);
+    if(!data?.length){
+      const latest=(await readStateFromCloud()).state;
+      const fields=[
+        ['pantry_ingredients','pantry','Vorrat'],
+        ['rest_days','rest-days','Resteabend'],
+        ['shopping_hidden_items','hidden-item','Ausgeblendete Einträge']
+      ];
+      for(const [field,kind,label] of fields){
+        if(!Object.prototype.hasOwnProperty.call(updates,field))continue;
+        const baseValue=kind==='pantry'?remote.pantryIngredients?.[week]:kind==='rest-days'?remote.restDays?.[week]:remote.hiddenShoppingItems?.[week];
+        const localValue=kind==='pantry'?target.pantryIngredients?.[week]:kind==='rest-days'?target.restDays?.[week]:target.hiddenShoppingItems?.[week];
+        const remoteValue=kind==='pantry'?latest.pantryIngredients?.[week]:kind==='rest-days'?latest.restDays?.[week]:latest.hiddenShoppingItems?.[week];
+        if(kind==='hidden-item'){
+          const baseItems=new Set(cleanHiddenShoppingItems(baseValue)),localItems=new Set(cleanHiddenShoppingItems(localValue)),remoteItems=new Set(cleanHiddenShoppingItems(remoteValue));
+          for(const itemKey of new Set([...baseItems,...localItems,...remoteItems])){
+            const wasHidden=baseItems.has(itemKey),isHidden=localItems.has(itemKey),nowHidden=remoteItems.has(itemKey);
+            if(isHidden!==nowHidden)conflicts.push(conflictRecord(kind,[week,itemKey],`${label}: ${itemKey}`,wasHidden,isHidden,nowHidden));
+          }
+        }else if(!sameValue(localValue,remoteValue))conflicts.push(conflictRecord(kind,[week],`${label}: ${week}`,baseValue,localValue,remoteValue));
+      }
+    }
   }
 
   const quantityUpdates={},quantityRemovals=[];
@@ -362,7 +602,7 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
         let query=authClient.from('planned_meals').delete().eq('id',row.id).eq('weekly_plan_id',planId).eq('day_of_week',day).eq('position',position).eq('dish_id',row.dish_id).eq('is_pinned',Boolean(row.is_pinned));
         const {data,error}=await query.select('id');
         if(error)throw error;
-        if(data?.length)deletedPositions.add(position);else{blockedPositions.add(position);conflicts.push(`Wochenplan:${week}:${day}`)}
+        if(data?.length)deletedPositions.add(position);else{blockedPositions.add(position);await appendFreshWriteConflict(conflicts,remote,target,'plan-day',[week,day],`Wochenplan ${week}, ${shortDays[day]}`)}
       }
       const mealRows=[];
       for(const position of changedPositions){
@@ -416,12 +656,13 @@ async function writeMergedStateToCloud(remote,target,metadata,conflicts){
   for(const [id,dish] of new Map((remote.dishes||[]).map(dish=>[dish.id,dish]))){
     if(targetDishes.has(id))continue;
     const stillPlanned=Object.values(target.plans||{}).some(days=>days.some(day=>day.includes(id)));
-    if(stillPlanned){conflicts.push(`Gericht:${dish.name}`);continue;}
+    if(stillPlanned){conflicts.push(conflictRecord('dish',[id],`Gericht: ${dish.name}`,dish,undefined,dish));continue;}
     const row=remoteDishes.get(id);if(row)dishIdsToDelete.push(row);
   }
   for(const row of dishIdsToDelete){
-    const {error}=await authClient.from('dishes').delete().eq('id',row.id).eq('household_id',currentHouseholdId).eq('updated_at',row.updated_at);
+    const {data,error}=await authClient.from('dishes').delete().eq('id',row.id).eq('household_id',currentHouseholdId).eq('updated_at',row.updated_at).select('id');
     if(error)throw error;
+    if(!data?.length)await appendFreshWriteConflict(conflicts,remote,target,'dish',[row.id],`Gericht: ${dish.name}`);
   }
 }
 function localShoppingItems(value){
@@ -436,50 +677,151 @@ function localShoppingItems(value){
   });
   return items;
 }
+async function reconcileCatalogImports(remoteState){
+  if(!pendingCatalogImports.length)return;
+  const remoteIds=new Set((remoteState?.dishes||[]).map(dish=>dish.id)),localIds=new Set(state.dishes.map(dish=>dish.id));
+  const finished=pendingCatalogImports.filter(item=>remoteIds.has(item.dishId)||!localIds.has(item.dishId));
+  if(!finished.length)return;
+  await Promise.all(finished.map(item=>window.WochentischStore?.remove('imports',item.dishId).catch(error=>console.warn('Katalogimport bleibt lokal vorgemerkt:',error))));
+  const finishedIds=new Set(finished.map(item=>item.dishId));pendingCatalogImports=pendingCatalogImports.filter(item=>!finishedIds.has(item.dishId));
+}
 async function syncStateToCloud({notify=false}={}){
   if(!cloudReady||!currentHouseholdId)return;
   prepareLocalIdsForCloud();
   const before=structuredClone(state),beforeShopping=localShoppingItems(before),remote=await readStateFromCloud(),base=cloudBaseState||remote.state;
   const latestLocal=structuredClone(state);
   const merged=mergeHouseholdState(base,latestLocal,remote.state);
+  if(merged.conflicts.length)await persistConflicts(merged.conflicts);
   state=merged.state;
   const syncTarget=structuredClone(state);
-  cloudBaseState=remote.state;saveCloudBase(cloudBaseState);save({sync:false});
+  cloudBaseState=remote.state;await saveCloudBase(cloudBaseState);save({sync:false});
   await writeMergedStateToCloud(remote.state,syncTarget,remote,merged.conflicts);
   const refreshed=await readStateFromCloud(),stateAtRefresh=structuredClone(state);
+  if(merged.conflicts.length){
+    merged.conflicts.forEach(conflict=>{conflict.remoteValue=structuredClone(conflictEntityValue(refreshed.state,conflict));conflict.updatedAt=Date.now()});
+    await persistConflicts(merged.conflicts);
+  }
   const afterSync=mergeHouseholdState(syncTarget,stateAtRefresh,refreshed.state);
-  state=afterSync.state;cloudBaseState=refreshed.state;saveCloudBase(cloudBaseState);save({sync:false});
+  if(afterSync.conflicts.length)await persistConflicts(afterSync.conflicts);
+  state=afterSync.state;cloudBaseState=refreshed.state;await saveCloudBase(cloudBaseState);save({sync:false});
+  await reconcileCatalogImports(refreshed.state);
   if(appInitialized){
     $('#bottom-note').classList.toggle('hidden',state.noteHidden);
     updateCounts();refreshVisibleView();
   }
-  const conflictCount=merged.conflicts.length+afterSync.conflicts.length;
-  if(conflictCount&&document.visibilityState==='visible')showToast('Eine gleichzeitige Änderung wurde übernommen. Bitte prüfe den betroffenen Plan.');
   if(notify&&document.visibilityState==='visible'){
     const afterShopping=localShoppingItems(state),added=[...afterShopping.entries()].filter(([key])=>!beforeShopping.has(key)).map(([,name])=>name);
     if(added.length===1)showToast(`${added[0]} wurde auf den Einkaufszettel gesetzt.`);
     else if(added.length>1)showToast(`${added[0]} und ${added.length-1} weitere Artikel wurden ergänzt.`);
   }
-  updateSyncStatus('');
+  updateSyncStatus(unresolvedConflicts.length?'Synchronisierung abgeschlossen. Bitte prüfe die markierten Änderungen.':'');
   if(hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
 }
 function scheduleCloudSync({notify=false}={}){
-  if(!cloudReady||loadingCloudState||!navigator.onLine)return;
+  if(!cloudReady||loadingCloudState||cloudStateOverrideInProgress||!navigator.onLine)return;
   cloudSyncNotificationRequested=cloudSyncNotificationRequested||notify;clearTimeout(cloudSyncTimer);
   cloudSyncTimer=setTimeout(()=>{cloudSyncRequested=true;flushCloudSync()},notify?500:350);
 }
-async function flushCloudSync(){
-  if(cloudSyncInProgress||!cloudSyncRequested)return;
+function flushCloudSync(){
+  if(cloudSyncInProgress){cloudSyncRequested=true;return cloudSyncPromise||Promise.resolve(false)}
+  if(!cloudSyncRequested||cloudStateOverrideInProgress)return Promise.resolve(true);
   cloudSyncInProgress=true;
-  try{
-    while(cloudSyncRequested){
-      cloudSyncRequested=false;
-      const notify=cloudSyncNotificationRequested;cloudSyncNotificationRequested=false;
-      await syncStateToCloud({notify});
-    }
-  }catch(error){cloudError(error)}
-  finally{cloudSyncInProgress=false}
+  cloudSyncPromise=(async()=>{
+    let succeeded=true;
+    try{
+      while(cloudSyncRequested&&!cloudStateOverrideInProgress){
+        cloudSyncRequested=false;
+        const notify=cloudSyncNotificationRequested;cloudSyncNotificationRequested=false;
+        await syncStateToCloud({notify});
+      }
+    }catch(error){succeeded=false;cloudError(error)}
+    finally{cloudSyncInProgress=false;cloudSyncPromise=null}
+    return succeeded;
+  })();
+  return cloudSyncPromise;
 }
+async function checkForPwaUpdate(){
+  if(!('serviceWorker' in navigator))return;
+  try{const registration=await navigator.serviceWorker.getRegistration();await registration?.update()}catch(error){console.debug('App-Update konnte gerade nicht geprüft werden:',error)}
+}
+async function refreshAppData(){
+  if(!navigator.onLine){updateSyncStatus('Offline – deine Änderungen bleiben auf diesem Gerät gespeichert.');return'offline'}
+  void checkForPwaUpdate();
+  try{
+    if(!authClient)await authClientReadyPromise;
+    if(!authClient){updateSyncStatus('Synchronisierung ist gerade nicht verfügbar – Änderungen bleiben lokal gespeichert.');return'unavailable'}
+    if(!cloudReady&&currentUserId){if(offlineMode)await resumeCloudSession();else await connectToCloud()}
+    if(!cloudReady){
+      if(!unresolvedConflicts.length)updateSyncStatus('Zum Synchronisieren ist eine erneute Anmeldung nötig.',{reauthRequired:true});
+      return'unavailable';
+    }
+    updateSyncStatus('Synchronisierung läuft …');
+    clearTimeout(cloudSyncTimer);cloudSyncRequested=true;cloudSyncNotificationRequested=false;
+    const succeeded=await flushCloudSync();
+    if(!succeeded)return'failed';
+    return'success';
+  }catch(error){cloudError(error);return'failed'}
+}
+function standalonePwa(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function setPullRefreshIndicator({visible=false,refreshing=false,pulling=false,ready=false,progress=0,offset=0,message='Zum Aktualisieren ziehen'}={}){
+  const indicator=$('#pull-refresh-indicator');if(!indicator)return;
+  indicator.style.setProperty('--pull-refresh-offset',`${offset}px`);
+  indicator.classList.toggle('is-visible',visible);indicator.classList.toggle('is-pulling',pulling);indicator.classList.toggle('is-ready',ready);indicator.classList.toggle('is-refreshing',refreshing);
+  const ring=indicator.querySelector('.pull-refresh-progress'),normalizedProgress=Math.max(0,Math.min(1,progress));
+  if(ring)ring.style.strokeDashoffset=String(refreshing?0:100-(normalizedProgress*100));
+  indicator.setAttribute('aria-hidden',String(!visible));$('#pull-refresh-message').textContent=message;
+}
+function beginPullRefresh(event){
+  if(!standalonePwa()||!compactNavigationQuery.matches||!appInitialized||$('.app-shell').hidden||pullRefreshGesture||mealDragState||document.querySelector('dialog[open]'))return;
+  if(event.touches.length!==1||window.scrollY>2||(document.scrollingElement?.scrollTop||0)>2)return;
+  const target=event.target instanceof Element?event.target:null;
+  if(target?.closest('input,textarea,select,[contenteditable="true"],dialog,[data-no-pull-refresh]'))return;
+  const touch=event.touches[0];
+  pullRefreshGesture={startX:touch.clientX,startY:touch.clientY,distance:0,dragging:false};
+}
+function movePullRefresh(event){
+  const gesture=pullRefreshGesture;if(!gesture)return;
+  if(mealDragState?.touchGesture&&mealDragState.dragging){cancelPullRefresh();return}
+  if(event.touches.length!==1){cancelPullRefresh();return}
+  const touch=event.touches[0],deltaX=touch.clientX-gesture.startX,deltaY=touch.clientY-gesture.startY;
+  if(deltaY<0||Math.abs(deltaX)>Math.max(14,deltaY*.8)){cancelPullRefresh();return}
+  if(deltaY<10)return;
+  if(window.scrollY>2||(document.scrollingElement?.scrollTop||0)>2){cancelPullRefresh();return}
+  gesture.dragging=true;gesture.distance=deltaY;
+  if(event.cancelable)event.preventDefault();
+  const offset=Math.min(88,deltaY*.9),ready=deltaY>=72;
+  setPullRefreshIndicator({visible:true,pulling:true,ready,progress:deltaY/72,offset,message:ready?'Loslassen zum Aktualisieren':'Zum Aktualisieren ziehen'});
+}
+function hasUnfinishedRefreshInput(){
+  return Boolean($('#shopping-item-input')?.value.trim()||[...document.querySelectorAll('#password-sign-in input')].some(input=>input.value.trim()));
+}
+function finishPullRefresh(){
+  const gesture=pullRefreshGesture;if(!gesture)return;
+  pullRefreshGesture=null;
+  if(!gesture.dragging){setPullRefreshIndicator();return}
+  if(gesture.distance<72){setPullRefreshIndicator();return}
+  if(hasUnfinishedRefreshInput()){
+    setPullRefreshIndicator();showToast('Schließe zuerst die offene Eingabe.');
+    return;
+  }
+  setPullRefreshIndicator({visible:true,refreshing:true,offset:76,message:'Wird synchronisiert …'});
+  refreshAppData().then(async result=>{
+    const message=result==='success'?'Aktualisiert':result==='offline'?'Offline – lokale Daten bleiben verfügbar':result==='failed'?'Abgleich fehlgeschlagen':'Synchronisierung derzeit nicht verfügbar';
+    setPullRefreshIndicator({visible:true,refreshing:result==='success',offset:76,message});
+    try{await offlineStoreWriteQueue}catch(error){
+      console.error('Offline-Daten konnten vor dem Neuladen nicht gesichert werden:',error);
+      updateSyncStatus('Lokale Speicherung fehlgeschlagen – die Seite wurde nicht neu geladen.',{storageError:true});
+      setPullRefreshIndicator();showToast('Lokaler Speicher nicht verfügbar.');
+      return;
+    }
+    window.setTimeout(()=>window.location.reload(),180);
+  });
+}
+function cancelPullRefresh(){pullRefreshGesture=null;setPullRefreshIndicator()}
+document.addEventListener('touchstart',beginPullRefresh,{capture:true,passive:true});
+document.addEventListener('touchmove',movePullRefresh,{capture:true,passive:false});
+document.addEventListener('touchend',finishPullRefresh,{capture:true,passive:true});
+document.addEventListener('touchcancel',cancelPullRefresh,{capture:true,passive:true});
 function renderCachedApp({showHome=false}={}){
   $('#startup-gate').hidden=true;$('#auth-gate').hidden=true;$('.app-shell').hidden=false;
   if(state.noteHidden)$('#bottom-note').classList.add('hidden');
@@ -509,18 +851,24 @@ async function connectToCloud(){
   cloudConnectPromise=(async()=>{
     try{
       currentHouseholdId=await getCurrentHousehold();
-      const beforeShopping=localShoppingItems(state),cloud=await readStateFromCloud(),previousBase=readCloudBase();
+      await loadOfflineQueues(currentUserId,currentHouseholdId);
+      const beforeShopping=localShoppingItems(state),cloud=await readStateFromCloud(),previousBase=await readCloudBase();
       if(previousBase){
         const merged=mergeHouseholdState(previousBase,state,cloud.state);
+        if(merged.conflicts.length)await persistConflicts(merged.conflicts);
         state=merged.state;
-        if(merged.conflicts.length)showToast('Eine gleichzeitige Änderung wurde übernommen. Bitte prüfe den betroffenen Plan.');
+      }else if(hasCloudChanges(emptyState(),state)){
+        const merged=mergeHouseholdState(emptyState(),state,cloud.state);
+        if(merged.conflicts.length)await persistConflicts(merged.conflicts);
+        state=merged.state;
       }else if(cloud.hasCloudData)state=cloud.state;
       else state=starterState();
-      cloudBaseState=cloud.state;saveCloudBase(cloudBaseState);
+      cloudBaseState=cloud.state;await saveCloudBase(cloudBaseState);
       cloudReady=true;offlineMode=false;
+      updateConflictCloudAction();
       const migrationKey=cloudMigrationKey();if(!cloud.hasCloudData)localStorage.setItem(migrationKey,'true');
       save({sync:false});saveCloudBackup();
-      updateSyncStatus('');
+      updateSyncStatus(unresolvedConflicts.length?'Änderungen wurden synchronisiert. Bitte prüfe noch die markierten Konflikte.':'');
       if(hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
       if(appInitialized){$('#bottom-note').classList.toggle('hidden',state.noteHidden);updateCounts();refreshVisibleView()}
       if(previousBase&&document.visibilityState==='visible'){
@@ -531,6 +879,7 @@ async function connectToCloud(){
       subscribeToHouseholdChanges();
     }catch(error){
       cloudReady=false;offlineMode=true;
+      updateConflictCloudAction();
       console.warn('Cloud-Synchronisierung vorübergehend nicht verfügbar:',error);
       updateSyncStatus('Keine Verbindung – die gespeicherte Einkaufsliste bleibt verfügbar.');
     }
@@ -538,7 +887,7 @@ async function connectToCloud(){
   return cloudConnectPromise;
 }
 function startOfflineApp({reauthRequired=false}={}){
-  const rememberedUser=localStorage.getItem(offlineSessionStorageKey),owner=localStorage.getItem(localStateOwnerKey());
+  let rememberedUser='',owner='';try{rememberedUser=localStorage.getItem(offlineSessionStorageKey)||'';owner=localStorage.getItem(localStateOwnerKey())||''}catch(error){}
   if(!rememberedUser||(owner&&owner!==rememberedUser))return false;
   currentUserId=rememberedUser;currentHouseholdId='';cloudReady=false;offlineMode=true;
   if(!appInitialized)renderCachedApp();
@@ -565,6 +914,7 @@ async function revealApp({showHome=false}={}){
   return connectToCloud();
 }
 async function loadHouseholdMembers(){
+  if(!authClient||!navigator.onLine)throw new Error('Haushaltsinformationen sind offline nicht verfügbar.');
   const list=$('#household-members');list.innerHTML='<p class="household-loading">Wird geladen …</p>';
   const {data,error}=await authClient.rpc('list_my_household_members');
   if(error)throw error;
@@ -580,12 +930,13 @@ async function loadHouseholdMembers(){
 $('#household-open').addEventListener('click',async()=>{
   householdError('');$('#household-code-result').hidden=true;$('#household-code').textContent='';
   $('#household-dialog').showModal();
-  try{await loadHouseholdMembers()}catch(error){console.error(error);householdError('Mitglieder konnten gerade nicht geladen werden.')}
+  try{await loadHouseholdMembers()}catch(error){if(navigator.onLine)console.error(error);householdError(navigator.onLine?'Mitglieder konnten gerade nicht geladen werden.':'Haushaltsverwaltung ist offline nicht verfügbar.')}
 });
 $('#household-close').addEventListener('click',()=>$('#household-dialog').close());
 $('#create-household-code').addEventListener('click',async event=>{
   const button=event.currentTarget;button.disabled=true;householdError('');
   try{
+    if(!authClient||!navigator.onLine)throw new Error('Haushaltsaktionen benötigen eine Internetverbindung.');
     const {data,error}=await authClient.rpc('create_household_join_code');
     if(error)throw error;
     $('#household-code').textContent=data;$('#household-code-result').hidden=false;
@@ -597,13 +948,15 @@ $('#household-join-form').addEventListener('submit',async event=>{
   event.preventDefault();const button=event.currentTarget.querySelector('button[type="submit"]');
   const code=$('#household-join-code').value.trim();button.disabled=true;householdError('');
   try{
+    if(!authClient||!navigator.onLine)throw new Error('Haushaltsaktionen benötigen eine Internetverbindung.');
     const {data,error}=await authClient.rpc('join_household_with_code',{join_code:code});
     if(error)throw error;
     if(!data)throw new Error('Household was not returned');
     stopRealtimeChannel();currentHouseholdId=data;cloudReady=false;cloudBaseState=null;loadingCloudState=true;
+    await loadOfflineQueues(currentUserId,currentHouseholdId);
     clearTimeout(cloudSyncTimer);cloudSyncRequested=false;
     $('#household-dialog').close();
-    const cloud=await readStateFromCloud();state=cloud.state;cloudBaseState=cloud.state;saveCloudBase(cloudBaseState);cloudReady=true;
+    const cloud=await readStateFromCloud();state=cloud.state;cloudBaseState=cloud.state;await saveCloudBase(cloudBaseState);cloudReady=true;
     save({sync:false});
     loadingCloudState=false;weekOffset=0;renderCalendar();
     subscribeToHouseholdChanges();
@@ -639,13 +992,14 @@ $('#auth-offline-return').addEventListener('click',()=>{
 });
 $('#password-sign-in').addEventListener('submit',async event=>{
   event.preventDefault();
-  if(!authClient){showAuthError('Die Anmeldung konnte nicht geladen werden. Bitte Seite neu laden.');return}
   const button=$('#password-sign-in-button');
   const email=$('#auth-email').value.trim();
   const password=$('#auth-password').value;
   interactiveLoginPending=true;
   button.disabled=true;showAuthError('');
   try{
+    if(!authClient)await authClientReadyPromise;
+    if(!authClient)throw new Error('Anmeldung ist nicht verfügbar.');
     const {error}=await authClient.auth.signInWithPassword({
       email,
       password
@@ -654,55 +1008,104 @@ $('#password-sign-in').addEventListener('submit',async event=>{
   }catch(error){interactiveLoginPending=false;showAuthError('Anmeldung fehlgeschlagen. Bitte prüfe deine Internetverbindung.');button.disabled=false}
 });
 $('#sign-out').addEventListener('click',async()=>{
-  explicitSignOutPending=true;
-  const {error}=await authClient.auth.signOut({scope:'local'});
-  if(error){explicitSignOutPending=false;showToast(`Abmelden fehlgeschlagen: ${error.message}`);return}
-  localStorage.removeItem(offlineSessionStorageKey);explicitSignOutPending=false;
-  currentUserId='';currentHouseholdId='';cloudReady=false;cloudBaseState=null;appInitialized=false;appInitializationPromise=undefined;
-  stopRealtimeChannel();showLogin();
+  try{
+    if(!authClient)await authClientReadyPromise;
+    if(!authClient)throw new Error('Abmeldung ist nicht verfügbar.');
+    explicitSignOutPending=true;
+    const {error}=await authClient.auth.signOut({scope:'local'});
+    if(error)throw error;
+    try{localStorage.removeItem(offlineSessionStorageKey)}catch(error){}
+    explicitSignOutPending=false;currentUserId='';currentHouseholdId='';cloudReady=false;cloudBaseState=null;appInitialized=false;appInitializationPromise=undefined;
+    stopRealtimeChannel();showLogin();
+  }catch(error){explicitSignOutPending=false;showToast(`Abmelden fehlgeschlagen: ${error.message||'Bitte später erneut versuchen.'}`)}
 });
-if(authClient){
-  authClient.auth.onAuthStateChange((event,session)=>{
-    if(session){
-      signInPromptActive=false;
-      $('#auth-context').hidden=true;$('#auth-offline-return').hidden=true;
-      const userId=session.user.id,previousUserId=currentUserId,owner=localStorage.getItem(localStateOwnerKey());
-      if((previousUserId&&previousUserId!==userId)||(owner&&owner!==userId)){
-        cloudReady=false;currentHouseholdId='';cloudBaseState=null;stopRealtimeChannel();
-        currentUserId=userId;state=readCloudBackup()||emptyState();appInitialized=false;appInitializationPromise=undefined;
-      }else currentUserId=userId;
-      localStorage.setItem(offlineSessionStorageKey,currentUserId);offlineMode=false;
-      const showHome=event==='SIGNED_IN'&&interactiveLoginPending;interactiveLoginPending=false;
-      if(appInitialized){if(!cloudReady)connectToCloud()}else revealApp({showHome});
-    }else{
-      stopRealtimeChannel();currentHouseholdId='';cloudReady=false;cloudBaseState=null;interactiveLoginPending=false;
-      if(explicitSignOutPending){currentUserId='';showLogin();return}
-      if(signInPromptActive){showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});return}
-      if(startOfflineApp({reauthRequired:true}))return;
-      currentUserId='';appInitialized=false;appInitializationPromise=undefined;showLogin();
-    }
+function loadSupabaseScript(){
+  if(window.supabase?.createClient)return Promise.resolve(window.supabase);
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src=supabaseScriptUrl;script.async=true;
+    script.onload=()=>window.supabase?.createClient?resolve(window.supabase):reject(new Error('Supabase-Client konnte nicht initialisiert werden.'));
+    script.onerror=()=>reject(new Error('Supabase-Client konnte nicht geladen werden.'));
+    document.head.append(script);
   });
-  authClient.auth.getSession().then(({data,error})=>{
-    if(data?.session){
-      const userId=data.session.user.id,owner=localStorage.getItem(localStateOwnerKey());
-      if(owner&&owner!==userId){currentUserId=userId;state=readCloudBackup()||emptyState();appInitialized=false}
-      currentUserId=userId;localStorage.setItem(offlineSessionStorageKey,userId);revealApp();
-    }else if(signInPromptActive)showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});
-    else if(error){if(startOfflineApp())updateSyncStatus('Anmeldestatus konnte nicht geprüft werden – Änderungen bleiben lokal gespeichert.');else{showLogin();showAuthError('Anmeldestatus konnte nicht geprüft werden. Bitte verbinde dich mit dem Internet und versuche es erneut.')}}
-    else if(startOfflineApp({reauthRequired:true})){}
-    else showLogin();
-  }).catch(()=>{if(signInPromptActive)showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});else if(startOfflineApp())updateSyncStatus('Supabase ist gerade nicht erreichbar – Änderungen bleiben lokal gespeichert.');else{showLogin();showAuthError('Supabase ist gerade nicht erreichbar. Bitte später erneut versuchen.')}});
-}else{
-  showLogin();
-  showAuthError('Supabase-Konfiguration fehlt. Bitte Projekt-URL und Publishable Key prüfen.');
 }
-window.addEventListener('online',()=>{if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode)resumeCloudSession()});
-window.addEventListener('offline',()=>{if(appInitialized)updateSyncStatus('Offline – Änderungen bleiben lokal gespeichert.')});
+function handleAuthStateChange(event,session){
+  if(session){
+    signInPromptActive=false;$('#auth-context').hidden=true;$('#auth-offline-return').hidden=true;
+    const userId=session.user.id,previousUserId=currentUserId;let owner='';try{owner=localStorage.getItem(localStateOwnerKey())||''}catch(error){}
+    const accountChanged=(previousUserId&&previousUserId!==userId)||(owner&&owner!==userId);
+    stopRealtimeChannel();cloudReady=false;currentHouseholdId='';cloudBaseState=null;
+    currentUserId=userId;safeLocalStorageSet(offlineSessionStorageKey,userId);offlineMode=false;
+    const showHome=event==='SIGNED_IN'&&interactiveLoginPending;interactiveLoginPending=false;
+    if(accountChanged){
+      appInitialized=false;appInitializationPromise=undefined;$('.app-shell').hidden=true;$('#auth-gate').hidden=true;$('#startup-gate').hidden=false;
+      readCloudBackup(userId).then(async backup=>{state=normalizeState(backup||emptyState());await loadOfflineQueues(userId);return revealApp({showHome})}).catch(error=>{console.warn('Lokale Kontosicherung konnte nicht geladen werden:',error);state=emptyState();return revealApp({showHome})});
+    }else if(appInitialized){connectToCloud()}else revealApp({showHome});
+    return;
+  }
+  stopRealtimeChannel();currentHouseholdId='';cloudReady=false;cloudBaseState=null;interactiveLoginPending=false;
+  if(explicitSignOutPending){currentUserId='';showLogin();return}
+  if(signInPromptActive){showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});return}
+  if(startOfflineApp({reauthRequired:true}))return;
+  currentUserId='';appInitialized=false;appInitializationPromise=undefined;showLogin();
+}
+async function initializeAuthentication(){
+  if(!supabaseConfig?.url||!supabaseConfig?.publishableKey)throw new Error('Supabase-Konfiguration fehlt.');
+  await loadSupabaseScript();
+  authClient=window.supabase.createClient(supabaseConfig.url,supabaseConfig.publishableKey);
+  authClient.auth.onAuthStateChange(handleAuthStateChange);
+  const {data,error}=await authClient.auth.getSession();
+  if(data?.session)handleAuthStateChange('INITIAL_SESSION',data.session);
+  else if(signInPromptActive)showLogin({message:'Melde dich an, um wieder zu synchronisieren. Deine gespeicherte Liste bleibt erhalten.',allowOfflineReturn:true});
+  else if(error){if(startOfflineApp())updateSyncStatus('Anmeldestatus konnte nicht geprüft werden – Änderungen bleiben lokal gespeichert.');else{showLogin();showAuthError('Anmeldestatus konnte nicht geprüft werden. Bitte verbinde dich mit dem Internet und versuche es erneut.')}}
+  else if(startOfflineApp({reauthRequired:true})){}
+  else showLogin();
+  return authClient;
+}
+async function bootApplication(){
+  await initializeOfflineData();
+  let rememberedUser='',owner='';try{rememberedUser=localStorage.getItem(offlineSessionStorageKey)||'';owner=localStorage.getItem(localStateOwnerKey())||''}catch(error){}
+  if(rememberedUser&&(!owner||owner===rememberedUser)){
+    currentUserId=rememberedUser;offlineMode=true;renderCachedApp();
+    updateSyncStatus(navigator.onLine?'Deine gespeicherten Daten werden geöffnet und anschließend synchronisiert.':'Offline – zuletzt gespeicherte Daten sind verfügbar.');
+  }else showLogin();
+  if(unresolvedConflicts.length)updateSyncStatus('Bitte prüfe die markierten Änderungen.');
+  authClientReadyPromise=initializeAuthentication().catch(error=>{
+    console.warn('Supabase ist gerade nicht erreichbar:',error);
+    if(appInitialized)updateSyncStatus('Cloud-Synchronisierung nicht verfügbar – Änderungen bleiben lokal gespeichert.');
+    else{showLogin();showAuthError('Anmeldung nicht verfügbar. Bitte verbinde dich mit dem Internet und versuche es erneut.')}
+    return null;
+  });
+}
+void bootApplication();
+window.addEventListener('online',()=>{updateConflictCloudAction();if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode)resumeCloudSession()});
+window.addEventListener('offline',()=>{updateConflictCloudAction();if(appInitialized)updateSyncStatus('Offline – Änderungen bleiben lokal gespeichert.')});
 window.addEventListener('pageshow',()=>{if(!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
 function emptyState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:false,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:{}}}
-function loadState(){try{const s=JSON.parse(localStorage.getItem('wochentisch-v1'));if(s&&Array.isArray(s.dishes)&&s.plans){s.pantryIngredients??={};s.pinnedMeals??={};s.restDays??={};s.shoppingQuantities??={};s.shoppingChecks??={};s.hiddenShoppingItems??={};s.manualShoppingItems??={};return s}}catch(e){}return emptyState()}
-function save({sync=true}={}){localStorage.setItem('wochentisch-v1',JSON.stringify(state));if(currentUserId){localStorage.setItem(localStateOwnerKey(),currentUserId);saveCloudBackup()}updateCounts();if(sync)scheduleCloudSync()}
+function normalizeState(s){if(!s||!Array.isArray(s.dishes)||!s.plans)return emptyState();s.pantryIngredients??={};s.pinnedMeals??={};s.restDays??={};s.shoppingQuantities??={};s.shoppingChecks??={};s.hiddenShoppingItems??={};s.manualShoppingItems??={};return s}
+function loadState(){try{return normalizeState(JSON.parse(localStorage.getItem('wochentisch-v1')))}catch(e){return emptyState()}}
+async function initializeOfflineData(){
+  if(!window.WochentischStore)return;
+  try{
+    await window.WochentischStore.migrateLegacyStorage();
+    const saved=await window.WochentischStore.get('records','app-state');
+    if(saved)state=normalizeState(saved);
+    else await window.WochentischStore.put('records','app-state',structuredClone(state));
+    let rememberedUser='';try{rememberedUser=localStorage.getItem(offlineSessionStorageKey)||''}catch(error){}
+    await loadOfflineQueues(rememberedUser);
+    offlineStoreReady=true;
+  }catch(error){
+    offlineStoreReady=false;
+    console.warn('IndexedDB konnte nicht initialisiert werden; lokale Sicherung wird verwendet:',error);
+    updateSyncStatus('Der sichere Offline-Speicher konnte nicht geöffnet werden. Änderungen werden vorübergehend auf diesem Gerät gesichert.',{storageError:true});
+  }
+}
+function save({sync=true}={}){
+  const snapshot=structuredClone(state);
+  if(offlineStoreReady)enqueueOfflineStoreWrite('records','app-state',snapshot);else safeLocalStorageSet('wochentisch-v1',JSON.stringify(snapshot));
+  if(currentUserId){safeLocalStorageSet(localStateOwnerKey(),currentUserId);saveCloudBackup()}
+  updateCounts();if(sync)scheduleCloudSync()
+}
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
 function mondayFor(date=new Date()){const d=new Date(date);d.setHours(0,0,0,0);d.setDate(d.getDate()-((d.getDay()+6)%7));return d}
 function rangeStart(){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()+weekOffset*7);return d}
@@ -1058,8 +1461,8 @@ mealCalendar.addEventListener('touchmove',moveMealTouchDrag,{passive:false});
 mealCalendar.addEventListener('touchend',finishMealTouchDrag);
 mealCalendar.addEventListener('touchcancel',event=>finishMealTouchDrag(event,true));
 mealCalendar.addEventListener('contextmenu',event=>{if(event.target.closest?.('.meal-card'))event.preventDefault()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelMealDrag();mealActionPointerState=null}});
-window.addEventListener('pagehide',()=>{cancelMealDrag();mealActionPointerState=null});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()}});
+window.addEventListener('pagehide',()=>{cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()});
 window.addEventListener('blur',()=>{mealActionPointerState=null});
 window.addEventListener('pointermove',moveMealPointerDrag,{passive:false});
 window.addEventListener('pointerup',finishMealPointerDrag);
@@ -1199,9 +1602,66 @@ function chooseDish(day){
   }
   const dialog=$('#choose-dialog');if(!dialog.open)dialog.showModal();
 }
-function showCatalogFeedback(text){const feedback=$('#catalog-feedback');feedback.textContent=text;feedback.hidden=false}
-async function adoptCatalogDishes(dishes){const existingNames=new Set(state.dishes.map(d=>d.name.toLocaleLowerCase('de-DE'))),pending=dishes.filter(d=>!existingNames.has(d.name.toLocaleLowerCase('de-DE')));if(!pending.length){showCatalogFeedback('Alle Standardgerichte sind bereits übernommen.');return}const button=$('#catalog-add-all');button.disabled=true;button.textContent='Wird übernommen …';let added=0;try{for(const dish of pending){const {error}=await authClient.rpc('add_catalog_dish_to_household',{catalog_id:dish.id});if(error)throw error;added++}const cloud=await readStateFromCloud();state=cloud.state;save({sync:false});renderDishes();renderCalendar();showCatalogFeedback(`${added} ${added===1?'Gericht':'Gerichte'} übernommen.`);openCatalog()}catch(error){console.error('Standardgerichte konnten nicht vollständig übernommen werden:',error);showCatalogFeedback(`${added} übernommen, danach Fehler: ${error.message||'Unbekannter Fehler'}`);button.disabled=false;button.textContent='Alles übernehmen'}}
-async function openCatalog(){const dialog=$('#catalog-dialog'),list=$('#catalog-list'),search=$('#catalog-search');$('#catalog-feedback').hidden=true;search.value='';list.innerHTML='<p class="empty-state">Standardkatalog wird geladen …</p>';if(!dialog.open)dialog.showModal();try{if(!authClient)throw new Error('Supabase ist nicht initialisiert.');const {data,error}=await authClient.from('catalog_dishes').select('*');if(error)throw error;const dishes=(data||[]).sort((a,b)=>(a.name||'').localeCompare(b.name||'','de-DE',{sensitivity:'base'}));list.replaceChildren();const ownNames=new Set(state.dishes.map(d=>d.name.toLocaleLowerCase('de-DE'))),addAll=$('#catalog-add-all'),available=dishes.filter(d=>!ownNames.has(d.name.toLocaleLowerCase('de-DE'))).length;addAll.disabled=!available;addAll.textContent=available?'Alles übernehmen':'Alles bereits übernommen';addAll.onclick=()=>adoptCatalogDishes(dishes);const entries=[];dishes.forEach(d=>{const button=document.createElement('button');button.type='button';button.className='choose-item';const icon=document.createElement('span');icon.className='choose-icon';icon.textContent=d.emoji||emojiMap[d.ingredient]||'🍽️';const copy=document.createElement('span');copy.className='choose-copy';const name=document.createElement('b');name.textContent=d.name;const details=document.createElement('small');details.textContent=ownNames.has(d.name.toLocaleLowerCase('de-DE'))?'Bereits hinzugefügt':`${d.ingredient||'Ohne Kategorie'} · ${d.cooking_time_minutes||30} Min.`;copy.append(name,details);button.append(icon,copy);button.disabled=ownNames.has(d.name.toLocaleLowerCase('de-DE'));button.addEventListener('click',async()=>{button.disabled=true;try{const result=await authClient.rpc('add_catalog_dish_to_household',{catalog_id:d.id});if(result.error)throw result.error;const cloud=await readStateFromCloud();state=cloud.state;save({sync:false});renderDishes();renderCalendar();details.textContent='Bereits hinzugefügt';showCatalogFeedback(`${d.name} wurde hinzugefügt.`)}catch(error){console.error('Kataloggericht konnte nicht übernommen werden:',error);showCatalogFeedback(`${d.name} konnte nicht übernommen werden: ${error.message||'Unbekannter Datenbankfehler'}`);button.disabled=false}});entries.push({dish:d,button})});const empty=document.createElement('p');empty.className='empty-state catalog-no-results';empty.hidden=true;empty.textContent='Keine passenden Gerichte gefunden.';list.append(...entries.map(entry=>entry.button),empty);const filterCatalog=()=>{const query=search.value.trim().toLocaleLowerCase('de-DE');let visible=0;for(const {dish,button} of entries){const match=dish.name.toLocaleLowerCase('de-DE').includes(query);button.hidden=!match;if(match)visible++}empty.hidden=visible>0||!entries.length};filterCatalog();if(!dishes.length){list.replaceChildren();const message=document.createElement('p');message.className='empty-state';message.textContent='Der Standardkatalog ist noch leer.';list.append(message)}}catch(error){console.error('Standardkatalog konnte nicht geladen werden:',error);list.innerHTML='';const message=document.createElement('p');message.className='empty-state';message.textContent=`Standardkatalog konnte nicht geladen werden: ${error.message||'Unbekannter Fehler'}`;list.append(message)}}
+function showCatalogFeedback(text){const feedback=$('#catalog-feedback');feedback.textContent=text;feedback.hidden=!text}
+function catalogDishToLocalDish(dish){return{id:newId(),name:dish.name,ingredient:dish.ingredient||'',time:Number(dish.cooking_time_minutes)||30,emoji:dish.emoji||emojiMap[dish.ingredient]||'🍽️',ingredients:cleanIngredients(dish.ingredients),nutrition:cleanNutrition(dish.nutrition)}}
+async function removeCatalogImportForDish(dishId){pendingCatalogImports=pendingCatalogImports.filter(item=>item.dishId!==dishId);try{await window.WochentischStore?.remove('imports',dishId)}catch(error){console.warn('Vorgemerkter Katalogimport konnte nicht entfernt werden:',error)}}
+function adoptCatalogDish(catalogDish){return adoptCatalogDishes([catalogDish])>0}
+function adoptCatalogDishes(dishes){
+  const names=new Set(state.dishes.map(dish=>dish.name.trim().toLocaleLowerCase('de-DE'))),added=[],newImports=[];
+  (dishes||[]).forEach(catalogDish=>{
+    const name=catalogDish.name.trim().toLocaleLowerCase('de-DE');
+    if(names.has(name))return;
+    names.add(name);
+    const dish=catalogDishToLocalDish(catalogDish);state.dishes.push(dish);added.push(dish);
+    const queued={dishId:dish.id,catalogId:catalogDish.id,name:catalogDish.name,userId:currentUserId};pendingCatalogImports.push(queued);newImports.push(queued);
+  });
+  if(!added.length)showCatalogFeedback('Alle ausgewählten Standardgerichte sind bereits in deiner Sammlung.');
+  else{save();newImports.forEach(item=>enqueueOfflineStoreWrite('imports',item.dishId,item));renderDishes();renderCalendar();showCatalogFeedback(`${added.length} ${added.length===1?'Gericht ist':'Gerichte sind'} vorgemerkt und werden synchronisiert.`)}
+  renderCatalogDishes(dishes,{offline:!navigator.onLine});
+  return added.length;
+}
+function renderCatalogDishes(dishes,{offline=false}={}){
+  const list=$('#catalog-list'),search=$('#catalog-search'),query=search.value.trim().toLocaleLowerCase('de-DE');
+  list.replaceChildren();
+  const ownNames=new Set(state.dishes.map(dish=>dish.name.toLocaleLowerCase('de-DE'))),queuedCatalogIds=new Set(pendingCatalogImports.map(item=>item.catalogId));
+  const addAll=$('#catalog-add-all'),available=(dishes||[]).filter(dish=>!ownNames.has(dish.name.toLocaleLowerCase('de-DE'))).length;
+  addAll.disabled=!available;addAll.textContent=available?'Alles übernehmen':'Alles bereits übernommen';addAll.onclick=()=>adoptCatalogDishes(dishes);
+  const entries=[];
+  (dishes||[]).forEach(dish=>{
+    const alreadyAdded=ownNames.has(dish.name.toLocaleLowerCase('de-DE')),queued=queuedCatalogIds.has(dish.id);
+    const button=document.createElement('button');button.type='button';button.className='choose-item';button.disabled=alreadyAdded;
+    const icon=document.createElement('span');icon.className='choose-icon';icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
+    const copy=document.createElement('span');copy.className='choose-copy';const name=document.createElement('b');name.textContent=dish.name;
+    const details=document.createElement('small');details.textContent=alreadyAdded?(queued?'Vorgemerkt · wird synchronisiert':'Bereits hinzugefügt'):`${dish.ingredient||'Ohne Kategorie'} · ${dish.cooking_time_minutes||30} Min.`;
+    copy.append(name,details);button.append(icon,copy);
+    button.addEventListener('click',()=>{if(adoptCatalogDish(dish)){renderCatalogDishes(dishes,{offline:!navigator.onLine});showCatalogFeedback(`${dish.name} ist vorgemerkt und wird synchronisiert.`)}});
+    const match=dish.name.toLocaleLowerCase('de-DE').includes(query);button.hidden=!match;entries.push({dish,button});
+  });
+  const empty=document.createElement('p');empty.className='empty-state catalog-no-results';empty.hidden=true;empty.textContent='Keine passenden Gerichte gefunden.';
+  list.append(...entries.map(entry=>entry.button),empty);
+  empty.hidden=entries.some(entry=>!entry.button.hidden)||!entries.length;
+  if(!entries.length){empty.textContent='Der Standardkatalog ist noch leer.';empty.hidden=false}
+  if(offline)showCatalogFeedback('Offline: Es wird der zuletzt geladene Standardkatalog angezeigt.');
+}
+async function openCatalog(){
+  const dialog=$('#catalog-dialog'),list=$('#catalog-list'),search=$('#catalog-search');$('#catalog-feedback').hidden=true;search.value='';list.innerHTML='<p class="empty-state">Standardkatalog wird geladen …</p>';if(!dialog.open)dialog.showModal();
+  let cached=[];
+  try{cached=(await window.WochentischStore?.getAll('catalog')||[]).map(record=>record.value).filter(Boolean).sort((a,b)=>(a.name||'').localeCompare(b.name||'','de-DE',{sensitivity:'base'}))}catch(error){console.warn('Lokaler Standardkatalog konnte nicht gelesen werden:',error)}
+  if(cached.length)renderCatalogDishes(cached,{offline:!navigator.onLine});
+  if(!navigator.onLine){if(!cached.length){list.replaceChildren();const message=document.createElement('p');message.className='empty-state';message.textContent='Der Standardkatalog wird nach dem nächsten Onlinebesuch offline verfügbar sein.';list.append(message);$('#catalog-add-all').disabled=true}return}
+  if(!authClient){try{await authClientReadyPromise}catch(error){}}
+  if(!authClient){if(!cached.length){list.replaceChildren();const message=document.createElement('p');message.className='empty-state';message.textContent='Der Katalog kann gerade nicht aktualisiert werden.';list.append(message)}return}
+  try{
+    const {data,error}=await authClient.from('catalog_dishes').select('*');if(error)throw error;
+    const dishes=(data||[]).sort((a,b)=>(a.name||'').localeCompare(b.name||'','de-DE',{sensitivity:'base'}));
+    if(window.WochentischStore)await Promise.all(dishes.map(dish=>window.WochentischStore.put('catalog',dish.id,dish)));
+    renderCatalogDishes(dishes);
+  }catch(error){
+    console.warn('Online-Katalog konnte nicht geladen werden:',error);
+    if(cached.length)showCatalogFeedback('Der letzte Katalogstand wird angezeigt. Aktualisieren ist gerade nicht möglich.');
+    else{list.replaceChildren();const message=document.createElement('p');message.className='empty-state';message.textContent='Standardkatalog konnte gerade nicht geladen werden. Bitte später erneut versuchen.';list.append(message)}
+  }
+}
 function setView(view,{render=true}={}){const views={home:'#home-view',week:'#week-view',dishes:'#dishes-view',shopping:'#shopping-view'};if(!views[view]||(view==='home'&&!window.matchMedia('(max-width: 700px)').matches))view='week';try{localStorage.setItem(lastViewStorageKey,view)}catch(error){}Object.entries(views).forEach(([name,selector])=>$(selector).classList.toggle('hidden',name!==view));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const labels={week:'Wochenplan',dishes:'Meine Gerichte',shopping:'Einkaufszettel'};$('#crumb-view').textContent=labels[view]||'';$('#crumb-view').hidden=view==='home';$('#crumb-separator').hidden=view==='home';if(render&&view==='dishes')renderDishes();if(render&&view==='shopping')renderShoppingList()}
 function savedSidebarCollapsed(){try{return localStorage.getItem(sidebarCollapsedStorageKey)==='true'}catch(error){return false}}
 function updateMenuToggleState(){const compact=compactNavigationQuery.matches,open=$('#sidebar').classList.contains('mobile-open'),collapsed=$('.app-shell').classList.contains('sidebar-collapsed'),menuLabel=open?'Menü schließen':'Menü öffnen',sidebarLabel=collapsed?'Seitenleiste ausklappen':'Seitenleiste einklappen';$('#menu-toggle').setAttribute('aria-expanded',String(compact&&open));$('#menu-toggle').setAttribute('aria-label',menuLabel);$('#menu-toggle').title=menuLabel;$('#sidebar-toggle').setAttribute('aria-expanded',String(!collapsed));$('#sidebar-toggle').setAttribute('aria-label',sidebarLabel);$('#sidebar-toggle').title=sidebarLabel;$('#sidebar-toggle').firstElementChild.textContent=collapsed?'›':'‹'}
@@ -1225,8 +1685,11 @@ $('#pantry-cancel').addEventListener('click',()=>$('#pantry-dialog').close());
 $('#pantry-input').addEventListener('input',renderPantryEditor);
 $('#pantry-input').addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const value=normalizeIngredient(event.currentTarget.value);if(!value){$('#pantry-form').requestSubmit();return}const suggestion=availablePantryIngredients().find(name=>ingredientKey(name).startsWith(ingredientKey(value))&&!pantryDraft.some(item=>ingredientKey(item)===ingredientKey(name)));addPantryIngredient(suggestion||value)});
 $('#pantry-form').addEventListener('submit',event=>{event.preventDefault();const pantry=pantryDraft.slice(),unmatched=pantry.filter(item=>!state.dishes.some(d=>(d.ingredients||[]).some(i=>ingredientMatches(item,i))));replaceRangePlan(pantry);$('#pantry-dialog').close();renderCalendar({shuffleAnimation:true});showToast(unmatched.length?`7 Tage gemischt. Keine passenden Gerichte für: ${unmatched.join(', ')}`:'Deine nächsten 7 Tage wurden neu gemischt.')});
-$('#add-dish-btn').addEventListener('click',()=>openDish());$('#starter-add').addEventListener('click',()=>openDish());$('#search-dishes').addEventListener('input',renderDishes);$('#close-dish-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#delete-dish').addEventListener('click',()=>{const id=$('#dish-id').value;if(!id)return;state.dishes=state.dishes.filter(d=>d.id!==id);Object.entries(state.plans).forEach(([week,days])=>days.forEach((day,dayIndexValue)=>{const pins=state.pinnedMeals?.[week]?.[dayIndexValue]||[];for(let i=day.length-1;i>=0;i--)if(day[i]===id){day.splice(i,1);pins.splice(i,1)}}));save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Gericht gelöscht.')});$('#dish-form').addEventListener('submit',e=>{e.preventDefault();const pendingIngredient=$('#dish-ingredient-input').value.trim();if(pendingIngredient)addDishIngredient(pendingIngredient);const id=$('#dish-id').value,name=$('#dish-name').value.trim(),ingredient=$('#dish-ingredient').value.trim(),time=timeBlocks[Number($('#dish-time').value)]||30,ingredients=dishIngredientDraft.slice();if(!name)return;const duplicate=state.dishes.find(d=>d.id!==id&&(d.name.trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')||dishFingerprint(d.name,d.ingredient,d.ingredients)===dishFingerprint(name,ingredient,ingredients)));if(duplicate){const error=$('#dish-form-error');error.textContent=`Ähnliches Gericht existiert bereits: ${duplicate.name}`;error.hidden=false;return}const existing=state.dishes.find(d=>d.id===id);if(existing)Object.assign(existing,{name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});else state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}`,name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});save();$('#dish-form-error').hidden=true;$('#dish-form-error').textContent='';$('#dish-dialog').close();renderDishes();renderCalendar();showToast(existing?'Gericht aktualisiert.':'Gericht hinzugefügt.')});
+$('#add-dish-btn').addEventListener('click',()=>openDish());$('#starter-add').addEventListener('click',()=>openDish());$('#search-dishes').addEventListener('input',renderDishes);$('#close-dish-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#delete-dish').addEventListener('click',()=>{const id=$('#dish-id').value;if(!id)return;removeCatalogImportForDish(id);state.dishes=state.dishes.filter(d=>d.id!==id);Object.entries(state.plans).forEach(([week,days])=>days.forEach((day,dayIndexValue)=>{const pins=state.pinnedMeals?.[week]?.[dayIndexValue]||[];for(let i=day.length-1;i>=0;i--)if(day[i]===id){day.splice(i,1);pins.splice(i,1)}}));save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Gericht gelöscht.')});$('#dish-form').addEventListener('submit',e=>{e.preventDefault();const pendingIngredient=$('#dish-ingredient-input').value.trim();if(pendingIngredient)addDishIngredient(pendingIngredient);const id=$('#dish-id').value,name=$('#dish-name').value.trim(),ingredient=$('#dish-ingredient').value.trim(),time=timeBlocks[Number($('#dish-time').value)]||30,ingredients=dishIngredientDraft.slice();if(!name)return;const duplicate=state.dishes.find(d=>d.id!==id&&(d.name.trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')||dishFingerprint(d.name,d.ingredient,d.ingredients)===dishFingerprint(name,ingredient,ingredients)));if(duplicate){const error=$('#dish-form-error');error.textContent=`Ähnliches Gericht existiert bereits: ${duplicate.name}`;error.hidden=false;return}const existing=state.dishes.find(d=>d.id===id);if(existing)Object.assign(existing,{name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});else state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}`,name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});save();$('#dish-form-error').hidden=true;$('#dish-form-error').textContent='';$('#dish-dialog').close();renderDishes();renderCalendar();showToast(existing?'Gericht aktualisiert.':'Gericht hinzugefügt.')});
 $('#catalog-btn').addEventListener('click',openCatalog);$('#close-catalog').addEventListener('click',event=>{event.preventDefault();const dialog=$('#catalog-dialog');if(dialog.open)dialog.close()});$('#catalog-search').addEventListener('input',event=>{const query=event.currentTarget.value.trim().toLocaleLowerCase('de-DE'),list=$('#catalog-list'),buttons=[...list.querySelectorAll('.choose-item')];let visible=0;buttons.forEach(button=>{const match=button.querySelector('b').textContent.toLocaleLowerCase('de-DE').includes(query);button.hidden=!match;if(match)visible++});const empty=list.querySelector('.catalog-no-results');if(empty)empty.hidden=visible>0||buttons.length===0});$('#catalog-dialog').addEventListener('click',event=>{if(event.target===$('#catalog-dialog'))$('#catalog-dialog').close()});
+$('#sync-status-conflicts').addEventListener('click',openConflictReview);$('#close-conflicts').addEventListener('click',()=>$('#conflict-dialog').close());$('#conflict-cloud-all').addEventListener('click',takeCloudStateForAllConflicts);
+window.addEventListener('wochentisch:update-ready',event=>showToast('Ein App-Update ist bereit.',{actionLabel:'Jetzt aktualisieren',duration:12000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
+window.addEventListener('wochentisch:update-blocked',event=>showToast('Schließe zuerst die offene Eingabe. Danach kannst du das Update starten.',{actionLabel:'Jetzt aktualisieren',duration:20000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
 $('#close-chooser').addEventListener('click',()=>{const dialog=$('#choose-dialog');if(dialog.open)dialog.close()});$('#choose-dialog').addEventListener('click',event=>{if(event.target===$('#choose-dialog'))$('#choose-dialog').close()});
-if(state.noteHidden)$('#bottom-note').classList.add('hidden');updateCounts();renderCalendar();
+if(state.noteHidden)$('#bottom-note').classList.add('hidden');updateCounts();
 

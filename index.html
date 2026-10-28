@@ -2,9 +2,17 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#f1f4f7" />
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#141b24" />
+  <meta name="description" content="Plane deine Gerichte für die Woche und behalte deinen Einkaufszettel im Blick." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Wochentisch" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <title>Wochentisch — dein Essensplan</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/wochentisch.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
   <style>
     #startup-gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:#f6f4ee;color:#344436;text-align:center;font:14px -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
     #startup-gate[hidden]{display:none}
@@ -17,11 +25,11 @@
     @media(prefers-color-scheme:dark){#startup-gate{background:#141b24;color:#e4edf7}.startup-copy{color:#9eabba}.sync-status{background:#312a1e;border-color:#625236;color:#e6cb92}}
   </style>
   <link rel="stylesheet" href="styles.css?v=20261023-2" />
-  <link rel="stylesheet" href="interaction.css?v=20261025-5" />
+  <link rel="stylesheet" href="interaction.css?v=20261028-2" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261025-5" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
-  <link rel="stylesheet" href="mobile.css?v=20261025-2" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261025-3" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="mobile.css?v=20261028-2" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261028-2" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -64,6 +72,7 @@
       <header class="topbar"><div class="topbar-leading"><button id="menu-toggle" type="button" aria-label="Menü öffnen" title="Menü öffnen" aria-controls="sidebar" aria-expanded="false">☰</button><div class="breadcrumb"><button type="button" id="home-breadcrumb" aria-label="Zur Übersicht">Dein Zuhause</button><span id="crumb-separator">/</span><b id="crumb-view">Wochenplan</b></div></div><div class="top-actions"><button class="icon-button theme-toggle" id="theme-toggle" type="button" aria-label="Dunkelmodus testen" title="Dunkelmodus testen">☾</button><button class="sign-out-button" id="sign-out" type="button">Abmelden</button></div></header>
       <div id="sync-status" class="sync-status" role="status" aria-live="polite" hidden>
         <span id="sync-status-message"></span>
+        <button id="sync-status-conflicts" class="sync-status-login" type="button" hidden>Konflikte prüfen</button>
         <button id="sync-status-login" class="sync-status-login" type="button" hidden>Erneut anmelden</button>
       </div>
       <section id="home-view" class="view home-view hidden" aria-labelledby="home-title">
@@ -100,21 +109,61 @@
   <dialog id="choose-dialog"><div class="choose-dialog-content"><div class="dialog-head"><div><div class="eyebrow">WOCHENPLAN</div><h2>Gericht auswählen</h2></div><button type="button" class="close-button" id="close-chooser" aria-label="Schließen">×</button></div><label class="choose-search" for="choose-dish-search"><span aria-hidden="true">⌕</span><input id="choose-dish-search" type="search" autocomplete="off" placeholder="Gerichte suchen …"></label><div id="choose-dish-list" class="choose-list"></div></div></dialog>
   <dialog id="pantry-dialog"><form id="pantry-form" class="pantry-dialog-content"><div class="dialog-head"><div><div class="eyebrow">7 TAGE PLANEN</div><h2>Was hast du schon zu Hause?</h2></div><button type="button" class="close-button" id="pantry-close" aria-label="Schließen">×</button></div><p class="pantry-intro">Passende Gerichte kommen möglichst früh in den Plan. Diese Zutaten werden auf dem Einkaufszettel als vorhanden markiert.</p><label class="pantry-label" for="pantry-input">Zutaten suchen <small>Vorschläge stammen aus deinen Gerichten.</small></label><div class="pantry-search-group"><div class="pantry-search"><span aria-hidden="true">⌕</span><input id="pantry-input" type="text" maxlength="80" autocomplete="off" placeholder="Zum Beispiel: Kartoffeln" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pantry-suggestions"></div><div id="pantry-suggestions" class="pantry-suggestions" role="listbox" hidden></div></div><section class="pantry-selected-area" aria-labelledby="pantry-selected-title"><div class="pantry-selected-heading"><strong id="pantry-selected-title">Schon ausgewählt</strong><span id="pantry-selected-count">0</span></div><div id="pantry-selected" class="pantry-selected" aria-label="Ausgewählte Zutaten"></div><p id="pantry-empty-selection" class="pantry-empty-selection">Deine ausgewählten Zutaten erscheinen hier.</p></section><p class="pantry-hint">Eine eigene Zutat kannst du nach der Eingabe mit Enter hinzufügen.</p><div class="dialog-actions"><button type="button" class="secondary-button" id="pantry-cancel">Abbrechen</button><button type="submit" class="primary-button">7 Tage mischen</button></div></form></dialog>
   <dialog id="catalog-dialog"><section class="catalog-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GERICHTE ERWEITERN</div><h2>Standardkatalog</h2></div><button type="button" class="close-button" id="close-catalog" aria-label="Schließen">×</button></div><label class="catalog-search" for="catalog-search"><span aria-hidden="true">⌕</span><input id="catalog-search" type="search" autocomplete="off" placeholder="Gerichte suchen …"></label><p id="catalog-feedback" class="catalog-feedback" role="status" aria-live="polite" hidden></p><div id="catalog-list" class="choose-list"></div><div class="dialog-actions"><button type="button" class="secondary-button" id="catalog-add-all">Alles übernehmen</button></div></section></dialog>
+  <dialog id="conflict-dialog" aria-labelledby="conflict-title"><section class="conflict-dialog-content"><div class="dialog-head"><div><div class="eyebrow">SYNCHRONISIERUNG</div><h2 id="conflict-title">Änderungen prüfen</h2></div><button type="button" class="close-button" id="close-conflicts" aria-label="Schließen">×</button></div><p class="conflict-intro">Auf diesem Gerät und in deinem Haushalt wurde derselbe Eintrag geändert. Wähle die Fassung pro Eintrag oder übernimm den gesamten Cloud-Stand. Dabei werden die lokalen Haushaltsdaten auf diesem Gerät ersetzt.</p><div id="conflict-list" class="conflict-list"></div><div class="conflict-cloud-action"><p id="conflict-cloud-hint" class="conflict-cloud-hint" role="status" hidden></p><button id="conflict-cloud-all" class="conflict-cloud-button" type="button">Alles aus der Cloud übernehmen</button></div></section></dialog>
   <dialog id="household-dialog"><section class="household-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GEMEINSAM PLANEN</div><h2>Dein Haushalt</h2></div><button type="button" class="close-button" id="household-close" aria-label="Schließen">×</button></div><p class="household-intro">Teile Gerichte, Wochenplan und Einkaufszettel mit anderen Personen.</p><section class="household-members-section"><h3>Mitglieder</h3><div id="household-members" class="household-members"><p class="household-loading">Wird geladen …</p></div></section><section class="household-invite-section"><h3>Person einladen</h3><p>Erstelle einen Code und teile ihn direkt. Er ist 10 Minuten gültig und kann einmal verwendet werden.</p><button type="button" class="primary-button" id="create-household-code">＋ Beitrittscode erstellen</button><div id="household-code-result" class="household-code-result" hidden><span>Beitrittscode</span><output id="household-code"></output><small>Der Code wird nach dem Schließen nicht erneut angezeigt.</small></div></section><form id="household-join-form" class="household-join-form"><label for="household-join-code">Mit Beitrittscode beitreten</label><div><input id="household-join-code" maxlength="8" autocomplete="off" placeholder="8-stelliger Code" required><button type="submit" class="secondary-button">Beitreten</button></div></form><p id="household-error" class="household-error" role="alert" hidden></p></section></dialog>
+  <div id="pull-refresh-indicator" class="pull-refresh-indicator" role="status" aria-live="polite" aria-hidden="true">
+    <svg class="pull-refresh-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <circle class="pull-refresh-track" cx="16" cy="16" r="12" pathLength="100"></circle>
+      <circle class="pull-refresh-progress" cx="16" cy="16" r="12" pathLength="100"></circle>
+      <path class="pull-refresh-arrow" d="M16 10v12m0 0 5-5m-5 5-5-5"></path>
+    </svg>
+    <span id="pull-refresh-message" class="visually-hidden">Zum Aktualisieren ziehen</span>
+  </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="supabase-config.js?v=20261024-1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0"></script>
+  <script src="local-store.js?v=20261028-1"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261025-18"></script>
+  <script src="app.js?v=20261028-10"></script>
   <script>
     if ('serviceWorker' in navigator) {
+      let reloadAfterUpdate = false;
       let refreshingForServiceWorker = false;
       navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!reloadAfterUpdate) return;
         if (refreshingForServiceWorker) return;
         refreshingForServiceWorker = true;
         window.location.reload();
       });
-      window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' }).catch(error => console.warn('Offline-Cache konnte nicht eingerichtet werden:', error)));
+      window.activateWochentischUpdate = worker => {
+        if (!worker) return;
+        const unfinishedEntry = document.querySelector('#shopping-item-input')?.value.trim();
+        const unfinishedLogin = [...document.querySelectorAll('#password-sign-in input')].some(input => input.value.trim());
+        if (document.querySelector('dialog[open]') || unfinishedEntry || unfinishedLogin) {
+          window.dispatchEvent(new CustomEvent('wochentisch:update-blocked', { detail: worker }));
+          return;
+        }
+        reloadAfterUpdate = true;
+        worker.postMessage({ type: 'ACTIVATE_UPDATE' });
+      };
+      function announceWaitingUpdate(registration) {
+        if (registration.waiting && navigator.serviceWorker.controller) {
+          window.dispatchEvent(new CustomEvent('wochentisch:update-ready', { detail: registration.waiting }));
+        }
+      }
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('./service-worker.js', { updateViaCache: 'none' });
+          announceWaitingUpdate(registration);
+          registration.addEventListener('updatefound', () => {
+            const installing = registration.installing;
+            if (!installing) return;
+            installing.addEventListener('statechange', () => announceWaitingUpdate(registration));
+          });
+          registration.update().catch(() => {});
+        } catch (error) {
+          console.warn('Offline-Cache konnte nicht eingerichtet werden:', error);
+        }
+      });
     }
   </script>
 </body>

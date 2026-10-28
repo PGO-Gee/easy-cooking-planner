@@ -1260,3 +1260,40 @@
 #dish-dialog .dialog-actions .secondary-button {
   font: 600 13px/1 var(--sans);
 }
+
+#conflict-dialog {
+  width: min(600px, calc(100% - 32px));
+  max-height: min(88dvh, 760px);
+  padding: 0;
+  overflow: hidden;
+}
+.conflict-dialog-content {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88dvh, 760px);
+  padding: 25px;
+}
+.conflict-dialog-content .dialog-head { flex: 0 0 auto; margin-bottom: 10px; }
+.conflict-dialog-content .dialog-head h2 { margin: 6px 0 0; font-size: 22px; }
+.conflict-intro { flex: 0 0 auto; margin: 0 0 16px; color: #7b867b; font-size: 12px; line-height: 1.55; }
+.conflict-list { display: grid; gap: 12px; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+.conflict-card { min-width: 0; padding: 13px; border: 1px solid #e4e8e0; border-radius: 12px; background: #fbfcf9; }
+.conflict-card h3 { margin: 0 0 10px; color: #4b594b; font: 700 12px/1.4 var(--sans); overflow-wrap: anywhere; }
+.conflict-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.conflict-choice { display: flex; min-width: 0; min-height: 62px; flex-direction: column; justify-content: center; gap: 5px; padding: 10px 12px; border: 1px solid #dfe5dc; border-radius: 10px; background: #fff; color: #475648; text-align: left; cursor: pointer; }
+.conflict-choice:hover,.conflict-choice:focus-visible { border-color: #91a98e; background: #f4f8f2; outline: 0; }
+.conflict-choice:disabled { opacity: .58; cursor: wait; }
+.conflict-choice strong { font-size: 11px; }
+.conflict-choice span { color: #7c877c; font-size: 11px; line-height: 1.4; overflow-wrap: anywhere; }
+.conflict-choice:focus-visible { box-shadow: 0 0 0 3px #91a98e55; }
+.conflict-cloud-action { flex: 0 0 auto; display: grid; gap: 8px; padding-top: 12px; }
+.conflict-cloud-hint { margin: 0; color: #7b867b; font-size: 11px; line-height: 1.45; }
+.conflict-cloud-button { min-height: 46px; width: 100%; padding: 11px 14px; border: 1px solid #486e4b; border-radius: 10px; background: #486e4b; color: #fff; font: 600 12px/1.35 var(--sans); cursor: pointer; }
+.conflict-cloud-button:hover:not(:disabled) { background: #3d6040; }
+.conflict-cloud-button:focus-visible { outline: 3px solid #91a98e80; outline-offset: 2px; }
+.conflict-cloud-button:disabled { opacity: .58; cursor: not-allowed; }
+@media (max-width: 520px) {
+  .conflict-dialog-content { padding: 20px; }
+  .conflict-choices { grid-template-columns: minmax(0, 1fr); }
+  .conflict-choice { min-height: 54px; }
+}
