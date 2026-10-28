@@ -112,13 +112,18 @@
   <dialog id="conflict-dialog" aria-labelledby="conflict-title"><section class="conflict-dialog-content"><div class="dialog-head"><div><div class="eyebrow">SYNCHRONISIERUNG</div><h2 id="conflict-title">Änderungen prüfen</h2></div><button type="button" class="close-button" id="close-conflicts" aria-label="Schließen">×</button></div><p class="conflict-intro">Auf diesem Gerät und in deinem Haushalt wurde derselbe Eintrag geändert. Wähle die Fassung pro Eintrag oder übernimm den gesamten Cloud-Stand. Dabei werden die lokalen Haushaltsdaten auf diesem Gerät ersetzt.</p><div id="conflict-list" class="conflict-list"></div><div class="conflict-cloud-action"><p id="conflict-cloud-hint" class="conflict-cloud-hint" role="status" hidden></p><button id="conflict-cloud-all" class="conflict-cloud-button" type="button">Alles aus der Cloud übernehmen</button></div></section></dialog>
   <dialog id="household-dialog"><section class="household-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GEMEINSAM PLANEN</div><h2>Dein Haushalt</h2></div><button type="button" class="close-button" id="household-close" aria-label="Schließen">×</button></div><p class="household-intro">Teile Gerichte, Wochenplan und Einkaufszettel mit anderen Personen.</p><section class="household-members-section"><h3>Mitglieder</h3><div id="household-members" class="household-members"><p class="household-loading">Wird geladen …</p></div></section><section class="household-invite-section"><h3>Person einladen</h3><p>Erstelle einen Code und teile ihn direkt. Er ist 10 Minuten gültig und kann einmal verwendet werden.</p><button type="button" class="primary-button" id="create-household-code">＋ Beitrittscode erstellen</button><div id="household-code-result" class="household-code-result" hidden><span>Beitrittscode</span><output id="household-code"></output><small>Der Code wird nach dem Schließen nicht erneut angezeigt.</small></div></section><form id="household-join-form" class="household-join-form"><label for="household-join-code">Mit Beitrittscode beitreten</label><div><input id="household-join-code" maxlength="8" autocomplete="off" placeholder="8-stelliger Code" required><button type="submit" class="secondary-button">Beitreten</button></div></form><p id="household-error" class="household-error" role="alert" hidden></p></section></dialog>
   <div id="pull-refresh-indicator" class="pull-refresh-indicator" role="status" aria-live="polite" aria-hidden="true">
-    <span class="pull-refresh-icon" aria-hidden="true">↻</span><span id="pull-refresh-message">Zum Aktualisieren ziehen</span>
+    <svg class="pull-refresh-icon" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+      <circle class="pull-refresh-track" cx="16" cy="16" r="12" pathLength="100"></circle>
+      <circle class="pull-refresh-progress" cx="16" cy="16" r="12" pathLength="100"></circle>
+      <path class="pull-refresh-arrow" d="M16 10v12m0 0 5-5m-5 5-5-5"></path>
+    </svg>
+    <span id="pull-refresh-message" class="visually-hidden">Zum Aktualisieren ziehen</span>
   </div>
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="local-store.js?v=20261028-1"></script>
   <script src="ingredient-catalog.js?v=20261019-1"></script>
-  <script src="app.js?v=20261028-9"></script>
+  <script src="app.js?v=20261028-10"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

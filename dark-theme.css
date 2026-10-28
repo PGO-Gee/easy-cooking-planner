@@ -148,8 +148,13 @@
 
   .pull-refresh-indicator {
     border-color: #38443a;
-    background: #1b231d;
+    background: rgb(27 35 29 / 94%);
     color: #c7d9c6;
+  }
+
+  .pull-refresh-indicator.is-ready {
+    border-color: #617b61;
+    background: #29382c;
   }
 
   .bottom-note b,

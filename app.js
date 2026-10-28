@@ -763,10 +763,12 @@ async function refreshAppData(){
   }catch(error){cloudError(error);return'failed'}
 }
 function standalonePwa(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
-function setPullRefreshIndicator({visible=false,refreshing=false,offset=0,message='Zum Aktualisieren ziehen'}={}){
+function setPullRefreshIndicator({visible=false,refreshing=false,pulling=false,ready=false,progress=0,offset=0,message='Zum Aktualisieren ziehen'}={}){
   const indicator=$('#pull-refresh-indicator');if(!indicator)return;
   indicator.style.setProperty('--pull-refresh-offset',`${offset}px`);
-  indicator.classList.toggle('is-visible',visible);indicator.classList.toggle('is-refreshing',refreshing);
+  indicator.classList.toggle('is-visible',visible);indicator.classList.toggle('is-pulling',pulling);indicator.classList.toggle('is-ready',ready);indicator.classList.toggle('is-refreshing',refreshing);
+  const ring=indicator.querySelector('.pull-refresh-progress'),normalizedProgress=Math.max(0,Math.min(1,progress));
+  if(ring)ring.style.strokeDashoffset=String(refreshing?0:100-(normalizedProgress*100));
   indicator.setAttribute('aria-hidden',String(!visible));$('#pull-refresh-message').textContent=message;
 }
 function beginPullRefresh(event){
@@ -788,7 +790,7 @@ function movePullRefresh(event){
   gesture.dragging=true;gesture.distance=deltaY;
   if(event.cancelable)event.preventDefault();
   const offset=Math.min(88,deltaY*.9),ready=deltaY>=72;
-  setPullRefreshIndicator({visible:true,offset,message:ready?'Loslassen zum Aktualisieren':'Zum Aktualisieren ziehen'});
+  setPullRefreshIndicator({visible:true,pulling:true,ready,progress:deltaY/72,offset,message:ready?'Loslassen zum Aktualisieren':'Zum Aktualisieren ziehen'});
 }
 function hasUnfinishedRefreshInput(){
   return Boolean($('#shopping-item-input')?.value.trim()||[...document.querySelectorAll('#password-sign-in input')].some(input=>input.value.trim()));
@@ -799,8 +801,7 @@ function finishPullRefresh(){
   if(!gesture.dragging){setPullRefreshIndicator();return}
   if(gesture.distance<72){setPullRefreshIndicator();return}
   if(hasUnfinishedRefreshInput()){
-    setPullRefreshIndicator({visible:true,offset:76,message:'Schließe zuerst die offene Eingabe'});
-    window.setTimeout(()=>setPullRefreshIndicator(),1400);
+    setPullRefreshIndicator();showToast('Schließe zuerst die offene Eingabe.');
     return;
   }
   setPullRefreshIndicator({visible:true,refreshing:true,offset:76,message:'Wird synchronisiert …'});
@@ -810,8 +811,7 @@ function finishPullRefresh(){
     try{await offlineStoreWriteQueue}catch(error){
       console.error('Offline-Daten konnten vor dem Neuladen nicht gesichert werden:',error);
       updateSyncStatus('Lokale Speicherung fehlgeschlagen – die Seite wurde nicht neu geladen.',{storageError:true});
-      setPullRefreshIndicator({visible:true,offset:76,message:'Lokaler Speicher nicht verfügbar'});
-      window.setTimeout(()=>setPullRefreshIndicator(),1800);
+      setPullRefreshIndicator();showToast('Lokaler Speicher nicht verfügbar.');
       return;
     }
     window.setTimeout(()=>window.location.reload(),180);
