@@ -958,6 +958,7 @@ async function loadHouseholdMembers(){
   if(!data?.length)list.innerHTML='<p class="household-loading">Noch keine Mitglieder gefunden.</p>';
 }
 $('#household-open').addEventListener('click',async()=>{
+  closeProfileActionsMenu({restoreFocus:true});if(compactNavigationQuery.matches)closeMobileMenu();
   householdError('');$('#household-code-result').hidden=true;$('#household-code').textContent='';
   $('#household-dialog').showModal();
   try{await loadHouseholdMembers()}catch(error){if(navigator.onLine)console.error(error);householdError(navigator.onLine?'Mitglieder konnten gerade nicht geladen werden.':'Haushaltsverwaltung ist offline nicht verfügbar.')}
@@ -1038,6 +1039,7 @@ $('#password-sign-in').addEventListener('submit',async event=>{
   }catch(error){interactiveLoginPending=false;showAuthError('Anmeldung fehlgeschlagen. Bitte prüfe deine Internetverbindung.');button.disabled=false}
 });
 $('#sign-out').addEventListener('click',async()=>{
+  closeProfileActionsMenu();closeMobileMenu();
   try{
     if(!authClient)await authClientReadyPromise;
     if(!authClient)throw new Error('Abmeldung ist nicht verfügbar.');
@@ -1560,13 +1562,42 @@ function syncShoppingDoneDisclosure(){
   section.classList.toggle('has-items',hasItems);
   toggle.setAttribute('aria-expanded',String(expanded));
 }
+function openShoppingIngredientCountForDish(dishName,selected,weekKeys){
+  const ingredients=new Map();
+  selected.filter(({dish})=>dish.name===dishName).forEach(({dish,weekKey})=>(dish.ingredients||[]).forEach(raw=>{
+    const name=normalizeIngredient(raw);if(!name)return;
+    const key=manualItemKey(name);if(!ingredients.has(key))ingredients.set(key,new Set());ingredients.get(key).add(weekKey);
+  }));
+  let openCount=0;
+  for(const [key,itemWeekKeys] of ingredients){
+    const relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys;
+    if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))continue;
+    if(!relevantWeeks.every(weekKey=>Boolean(state.shoppingChecks[weekKey]?.[key])))openCount++;
+  }
+  return openCount;
+}
+function openManualShoppingItemCount(manualItems,weekKeys){
+  const items=new Map();
+  manualItems.forEach(rawName=>{
+    const name=normalizeIngredient(rawName);if(!name)return;
+    const key=manualItemKey(name);if(!items.has(key))items.set(key,new Set());
+    weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>manualItemKey(itemName)===key)).forEach(weekKey=>items.get(key).add(weekKey));
+  });
+  let openCount=0;
+  for(const [key,itemWeekKeys] of items){
+    const relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys;
+    if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))continue;
+    if(!relevantWeeks.every(weekKey=>Boolean(state.shoppingChecks[weekKey]?.[key])))openCount++;
+  }
+  return openCount;
+}
 function renderShoppingListContent(){
   const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({weekKey,day})=>day.map(id=>({dish:state.dishes.find(d=>d.id===id),weekKey})).filter(item=>item.dish));
   state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
   const filterSelect=$('#shopping-meal-filter'),previousFilter=filterSelect.value,mealNames=[...new Set(selected.map(item=>item.dish.name))].sort((a,b)=>a.localeCompare(b,'de')),manualItems=[...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))];
   $('#shopping-period').textContent=formatRange(start);filterSelect.replaceChildren(new Option('Alle Mahlzeiten',''));
-  if(mealNames.length){const dishesGroup=document.createElement('optgroup');dishesGroup.label='Gerichte';mealNames.forEach(name=>dishesGroup.append(new Option(name,name)));filterSelect.append(dishesGroup)}
-  if(manualItems.length){const manualGroup=document.createElement('optgroup');manualGroup.label='Manuelle Eingaben';manualGroup.append(new Option('Keinem Gericht zugeordnet','__manual__'));filterSelect.append(manualGroup)}
+  if(mealNames.length){const dishesGroup=document.createElement('optgroup');dishesGroup.label='Gerichte';mealNames.forEach(name=>{const dish=selected.find(item=>item.dish.name===name)?.dish,icon=dish?.emoji||emojiMap[dish?.ingredient]||'🍽️',openCount=openShoppingIngredientCountForDish(name,selected,weekKeys);dishesGroup.append(new Option(`${icon} ${name} (${openCount})`,name))});filterSelect.append(dishesGroup)}
+  if(manualItems.length){const manualGroup=document.createElement('optgroup');manualGroup.label='Manuelle Eingaben';manualGroup.append(new Option(`Keinem Gericht zugeordnet (${openManualShoppingItemCount(manualItems,weekKeys)})`,'__manual__'));filterSelect.append(manualGroup)}
   filterSelect.value=mealNames.includes(previousFilter)||previousFilter==='__manual__'&&manualItems.length?previousFilter:'';
   const activeFilter=filterSelect.value,visible=activeFilter==='__manual__'?[]:activeFilter?selected.filter(({dish})=>dish.name===activeFilter):selected,counts=new Map();
   $('#shopping-overview').classList.toggle('hidden',!activeFilter);
@@ -1728,19 +1759,25 @@ async function openCatalog(){
     else{list.replaceChildren();const message=document.createElement('p');message.className='empty-state';message.textContent='Standardkatalog konnte gerade nicht geladen werden. Bitte später erneut versuchen.';list.append(message)}
   }
 }
-function setView(view,{render=true}={}){const views={home:'#home-view',week:'#week-view',dishes:'#dishes-view',shopping:'#shopping-view'};if(!views[view]||(view==='home'&&!window.matchMedia('(max-width: 700px)').matches))view='week';try{localStorage.setItem(lastViewStorageKey,view)}catch(error){}Object.entries(views).forEach(([name,selector])=>$(selector).classList.toggle('hidden',name!==view));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const labels={week:'Wochenplan',dishes:'Meine Gerichte',shopping:'Einkaufszettel'};$('#crumb-view').textContent=labels[view]||'';$('#crumb-view').hidden=view==='home';$('#crumb-separator').hidden=view==='home';if(render&&view==='dishes')renderDishes();if(render&&view==='shopping')renderShoppingList()}
+function setView(view,{render=true}={}){closeProfileActionsMenu();const views={home:'#home-view',week:'#week-view',dishes:'#dishes-view',shopping:'#shopping-view'};if(!views[view]||(view==='home'&&!window.matchMedia('(max-width: 700px)').matches))view='week';try{localStorage.setItem(lastViewStorageKey,view)}catch(error){}Object.entries(views).forEach(([name,selector])=>$(selector).classList.toggle('hidden',name!==view));document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.view===view));const labels={week:'Wochenplan',dishes:'Meine Gerichte',shopping:'Einkaufszettel'};$('#crumb-view').textContent=labels[view]||'';$('#crumb-view').hidden=view==='home';$('#crumb-separator').hidden=view==='home';if(render&&view==='dishes')renderDishes();if(render&&view==='shopping')renderShoppingList()}
 function savedSidebarCollapsed(){try{return localStorage.getItem(sidebarCollapsedStorageKey)==='true'}catch(error){return false}}
 function updateMenuToggleState(){const compact=compactNavigationQuery.matches,open=$('#sidebar').classList.contains('mobile-open'),collapsed=$('.app-shell').classList.contains('sidebar-collapsed'),menuLabel=open?'Menü schließen':'Menü öffnen',sidebarLabel=collapsed?'Seitenleiste ausklappen':'Seitenleiste einklappen';$('#menu-toggle').setAttribute('aria-expanded',String(compact&&open));$('#menu-toggle').setAttribute('aria-label',menuLabel);$('#menu-toggle').title=menuLabel;$('#sidebar-toggle').setAttribute('aria-expanded',String(!collapsed));$('#sidebar-toggle').setAttribute('aria-label',sidebarLabel);$('#sidebar-toggle').title=sidebarLabel;$('#sidebar-toggle').firstElementChild.textContent=collapsed?'›':'‹'}
-function closeMobileMenu(){$('#sidebar').classList.remove('mobile-open');$('#menu-backdrop').hidden=true;updateMenuToggleState()}
-function toggleMobileMenu(){const open=$('#sidebar').classList.toggle('mobile-open');$('#menu-backdrop').hidden=!open;updateMenuToggleState()}
+function openProfileActionsMenu({focusFirst=false}={}){const menu=$('#profile-actions-menu'),toggle=$('#profile-menu-toggle');menu.hidden=false;toggle.setAttribute('aria-expanded','true');toggle.setAttribute('aria-label','Kontomenü schließen');toggle.title='Kontomenü schließen';if(focusFirst)menu.querySelector('button')?.focus()}
+function closeProfileActionsMenu({restoreFocus=false}={}){const menu=$('#profile-actions-menu'),toggle=$('#profile-menu-toggle');if(menu.hidden)return;menu.hidden=true;toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Kontomenü öffnen');toggle.title='Kontomenü öffnen';if(restoreFocus)toggle.focus()}
+function closeMobileMenu(){$('#sidebar').classList.remove('mobile-open');$('#menu-backdrop').hidden=true;closeProfileActionsMenu();updateMenuToggleState()}
+function toggleMobileMenu(){const open=$('#sidebar').classList.toggle('mobile-open');if(!open)closeProfileActionsMenu();$('#menu-backdrop').hidden=!open;updateMenuToggleState()}
 function setSidebarCollapsed(collapsed){const shouldCollapse=Boolean(collapsed)&&!compactNavigationQuery.matches;$('.app-shell').classList.toggle('sidebar-collapsed',shouldCollapse);try{localStorage.setItem(sidebarCollapsedStorageKey,String(Boolean(collapsed)))}catch(error){}updateMenuToggleState()}
-function applyResponsiveNavigation(){const compact=compactNavigationQuery.matches;$('#sidebar').classList.remove('mobile-open');$('#menu-backdrop').hidden=true;$('.app-shell').classList.toggle('sidebar-collapsed',!compact&&savedSidebarCollapsed());updateMenuToggleState()}
+function applyResponsiveNavigation(){const compact=compactNavigationQuery.matches;$('#sidebar').classList.remove('mobile-open');$('#menu-backdrop').hidden=true;closeProfileActionsMenu();$('.app-shell').classList.toggle('sidebar-collapsed',!compact&&savedSidebarCollapsed());updateMenuToggleState()}
 $('#shopping-done-toggle').addEventListener('click',()=>{shoppingDoneExpanded=!shoppingDoneExpanded;syncShoppingDoneDisclosure()});
 const systemTheme=window.matchMedia('(prefers-color-scheme: dark)');let themeOverride=null;
-function updateThemeButton(){const button=$('#theme-toggle');const label=themeOverride?'Systemmodus verwenden':systemTheme.matches?'Hellmodus testen':'Dunkelmodus testen';button.textContent=themeOverride?'↻':systemTheme.matches?'☀':'☾';button.setAttribute('aria-label',label);button.title=label}
+function updateThemeButton(){const button=$('#theme-toggle'),icon=button.querySelector('.sidebar-action-icon'),label=themeOverride?(systemTheme.matches?'Dark Mode':'Light Mode'):(systemTheme.matches?'Light Mode':'Dark Mode');icon.textContent=label==='Dark Mode'?'☾':'☀';button.querySelector('.theme-toggle-label').textContent=label;button.setAttribute('aria-label',`${label} aktivieren`);button.title=`${label} aktivieren`}
 function applyTheme(){const link=$('#theme-stylesheet');link.media=themeOverride?(themeOverride==='dark'?'all':'not all'):'(prefers-color-scheme: dark)';updateThemeButton()}
 function toggleTheme(){themeOverride=themeOverride?null:systemTheme.matches?'light':'dark';applyTheme()}
-$('#theme-toggle').addEventListener('click',toggleTheme);systemTheme.addEventListener('change',()=>{if(!themeOverride)updateThemeButton()});applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#sidebar-toggle').addEventListener('click',()=>setSidebarCollapsed(!$('.app-shell').classList.contains('sidebar-collapsed')));compactNavigationQuery.addEventListener('change',applyResponsiveNavigation);applyResponsiveNavigation();$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.homeView)));$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-clear').addEventListener('click',clearShoppingList);$('#shopping-print').addEventListener('click',()=>window.print());$('#week-print').addEventListener('click',()=>{document.body.classList.add('print-week');window.print()});window.addEventListener('afterprint',()=>document.body.classList.remove('print-week'));$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeIngredient($('#shopping-item-input').value);if(!name)return;const weekKey=keyFor(mondayFor(rangeStart())),visibleWeekKeys=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))],itemKey=manualItemKey(name);state.manualShoppingItems??={};state.hiddenShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=visibleWeekKeys.some(key=>(state.manualShoppingItems[key]||[]).some(item=>manualItemKey(item)===itemKey));if(duplicate){showToast('Dieser Artikel steht bereits auf dem Einkaufszettel.');return}state.manualShoppingItems[weekKey].push(name);const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>key!==itemKey);if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];delete state.shoppingChecks[weekKey]?.[itemKey];delete state.shoppingChecks[weekKey]?.[`manual:${itemKey}`];save();$('#shopping-item-input').value='';$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus()});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
+$('#profile-menu-toggle').addEventListener('click',()=>{$('#profile-actions-menu').hidden?openProfileActionsMenu():closeProfileActionsMenu()});
+$('#profile-menu-toggle').addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();openProfileActionsMenu({focusFirst:true})}});
+document.addEventListener('click',event=>{if(!event.target.closest('.profile-menu-anchor'))closeProfileActionsMenu()});
+document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!$('#profile-actions-menu').hidden){event.preventDefault();closeProfileActionsMenu({restoreFocus:true})}});
+$('#theme-toggle').addEventListener('click',()=>{toggleTheme();closeProfileActionsMenu({restoreFocus:true})});systemTheme.addEventListener('change',updateThemeButton);applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#sidebar-toggle').addEventListener('click',()=>setSidebarCollapsed(!$('.app-shell').classList.contains('sidebar-collapsed')));compactNavigationQuery.addEventListener('change',applyResponsiveNavigation);applyResponsiveNavigation();$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.homeView)));$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-clear').addEventListener('click',clearShoppingList);$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeIngredient($('#shopping-item-input').value);if(!name)return;const weekKey=keyFor(mondayFor(rangeStart())),visibleWeekKeys=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))],itemKey=manualItemKey(name);state.manualShoppingItems??={};state.hiddenShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=visibleWeekKeys.some(key=>(state.manualShoppingItems[key]||[]).some(item=>manualItemKey(item)===itemKey));if(duplicate){showToast('Dieser Artikel steht bereits auf dem Einkaufszettel.');return}state.manualShoppingItems[weekKey].push(name);const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>key!==itemKey);if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];delete state.shoppingChecks[weekKey]?.[itemKey];delete state.shoppingChecks[weekKey]?.[`manual:${itemKey}`];save();$('#shopping-item-input').value='';$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus()});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
 $('#prev-week').addEventListener('click',()=>{weekOffset--;renderCalendar()});$('#next-week').addEventListener('click',()=>{weekOffset++;renderCalendar()});$('#today-btn').addEventListener('click',()=>{weekOffset=0;renderCalendar()});
 $('#dish-ingredient-input').addEventListener('input',renderDishIngredientSuggestions);$('#dish-ingredient-input').addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const value=normalizeIngredient(event.currentTarget.value);if(value)addDishIngredient(value)});
 $('#dish-ingredient').addEventListener('input',renderMainIngredientSuggestions);$('#dish-ingredient').addEventListener('keydown',event=>{if(event.key==='Enter'&& !$('#dish-main-ingredient-suggestions').hidden){event.preventDefault();$('#dish-main-ingredient-suggestions').querySelector('.pantry-suggestion')?.click()}});
