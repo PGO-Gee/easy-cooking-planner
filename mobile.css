@@ -3,6 +3,41 @@ html {
   touch-action: manipulation;
 }
 
+.pull-refresh-indicator {
+  position: fixed;
+  z-index: 120;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--green);
+  font: 600 12px/1.2 var(--sans);
+  white-space: nowrap;
+  box-shadow: 0 6px 22px rgb(25 42 29 / 16%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, calc(-110% + var(--pull-refresh-offset, 0px)));
+  transition: opacity .14s ease, transform .14s ease;
+  will-change: opacity, transform;
+}
+
+.pull-refresh-indicator.is-visible { opacity: 1; }
+.pull-refresh-icon { display: inline-block; font-size: 17px; line-height: 1; }
+.pull-refresh-indicator.is-refreshing .pull-refresh-icon { animation: pull-refresh-spin .8s linear infinite; }
+
+@keyframes pull-refresh-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pull-refresh-indicator { transition: none; }
+  .pull-refresh-indicator.is-refreshing .pull-refresh-icon { animation-duration: 1.8s; }
+}
+
 @media (max-width: 920px) and (min-width: 701px) {
   .week-toolbar {
     height: auto;

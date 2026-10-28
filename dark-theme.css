@@ -146,6 +146,12 @@
     color: #b0bbae;
   }
 
+  .pull-refresh-indicator {
+    border-color: #38443a;
+    background: #1b231d;
+    color: #c7d9c6;
+  }
+
   .bottom-note b,
   .starter-tip b {
     color: #d2dfd0;

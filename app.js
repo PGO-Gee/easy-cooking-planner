@@ -28,6 +28,8 @@ let cloudSyncTimer;
 let cloudSyncInProgress=false;
 let cloudSyncRequested=false;
 let cloudSyncNotificationRequested=false;
+let cloudSyncPromise=null;
+let pullRefreshGesture=null;
 let loadingCloudState=false;
 let offlineMode=false;
 let explicitSignOutPending=false;
@@ -675,18 +677,91 @@ function scheduleCloudSync({notify=false}={}){
   cloudSyncNotificationRequested=cloudSyncNotificationRequested||notify;clearTimeout(cloudSyncTimer);
   cloudSyncTimer=setTimeout(()=>{cloudSyncRequested=true;flushCloudSync()},notify?500:350);
 }
-async function flushCloudSync(){
-  if(cloudSyncInProgress||!cloudSyncRequested)return;
+function flushCloudSync(){
+  if(cloudSyncInProgress){cloudSyncRequested=true;return cloudSyncPromise||Promise.resolve(false)}
+  if(!cloudSyncRequested)return Promise.resolve(true);
   cloudSyncInProgress=true;
-  try{
-    while(cloudSyncRequested){
-      cloudSyncRequested=false;
-      const notify=cloudSyncNotificationRequested;cloudSyncNotificationRequested=false;
-      await syncStateToCloud({notify});
-    }
-  }catch(error){cloudError(error)}
-  finally{cloudSyncInProgress=false}
+  cloudSyncPromise=(async()=>{
+    let succeeded=true;
+    try{
+      while(cloudSyncRequested){
+        cloudSyncRequested=false;
+        const notify=cloudSyncNotificationRequested;cloudSyncNotificationRequested=false;
+        await syncStateToCloud({notify});
+      }
+    }catch(error){succeeded=false;cloudError(error)}
+    finally{cloudSyncInProgress=false;cloudSyncPromise=null}
+    return succeeded;
+  })();
+  return cloudSyncPromise;
 }
+async function checkForPwaUpdate(){
+  if(!('serviceWorker' in navigator))return;
+  try{const registration=await navigator.serviceWorker.getRegistration();await registration?.update()}catch(error){console.debug('App-Update konnte gerade nicht geprüft werden:',error)}
+}
+async function refreshAppData(){
+  if(!navigator.onLine){updateSyncStatus('Offline – deine Änderungen bleiben auf diesem Gerät gespeichert.');return'offline'}
+  void checkForPwaUpdate();
+  try{
+    if(!authClient)await authClientReadyPromise;
+    if(!authClient){updateSyncStatus('Synchronisierung ist gerade nicht verfügbar – Änderungen bleiben lokal gespeichert.');return'unavailable'}
+    if(!cloudReady&&currentUserId){if(offlineMode)await resumeCloudSession();else await connectToCloud()}
+    if(!cloudReady){
+      if(!unresolvedConflicts.length)updateSyncStatus('Zum Synchronisieren ist eine erneute Anmeldung nötig.',{reauthRequired:true});
+      return'unavailable';
+    }
+    updateSyncStatus('Synchronisierung läuft …');
+    clearTimeout(cloudSyncTimer);cloudSyncRequested=true;cloudSyncNotificationRequested=false;
+    const succeeded=await flushCloudSync();
+    if(!succeeded)return'failed';
+    return'success';
+  }catch(error){cloudError(error);return'failed'}
+}
+function standalonePwa(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true}
+function setPullRefreshIndicator({visible=false,refreshing=false,offset=0,message='Zum Aktualisieren ziehen'}={}){
+  const indicator=$('#pull-refresh-indicator');if(!indicator)return;
+  indicator.style.setProperty('--pull-refresh-offset',`${offset}px`);
+  indicator.classList.toggle('is-visible',visible);indicator.classList.toggle('is-refreshing',refreshing);
+  indicator.setAttribute('aria-hidden',String(!visible));$('#pull-refresh-message').textContent=message;
+}
+function beginPullRefresh(event){
+  if(!standalonePwa()||!compactNavigationQuery.matches||!appInitialized||$('.app-shell').hidden||pullRefreshGesture||mealDragState||document.querySelector('dialog[open]'))return;
+  if(event.touches.length!==1||window.scrollY>2||(document.scrollingElement?.scrollTop||0)>2)return;
+  const target=event.target instanceof Element?event.target:null;
+  if(target?.closest('input,textarea,select,button,a,[contenteditable="true"],dialog,.meal-card,[data-no-pull-refresh]'))return;
+  const touch=event.touches[0];
+  if(touch.clientX<24||touch.clientX>window.innerWidth-24||touch.clientY>Math.min(180,window.innerHeight*.4))return;
+  pullRefreshGesture={startX:touch.clientX,startY:touch.clientY,distance:0,dragging:false};
+}
+function movePullRefresh(event){
+  const gesture=pullRefreshGesture;if(!gesture)return;
+  if(event.touches.length!==1){cancelPullRefresh();return}
+  const touch=event.touches[0],deltaX=touch.clientX-gesture.startX,deltaY=touch.clientY-gesture.startY;
+  if(deltaY<0||Math.abs(deltaX)>Math.max(14,deltaY*.8)){cancelPullRefresh();return}
+  if(deltaY<10)return;
+  if(window.scrollY>2||(document.scrollingElement?.scrollTop||0)>2){cancelPullRefresh();return}
+  gesture.dragging=true;gesture.distance=deltaY;
+  if(event.cancelable)event.preventDefault();
+  const offset=Math.min(88,deltaY*.9),ready=deltaY>=72;
+  setPullRefreshIndicator({visible:true,offset,message:ready?'Loslassen zum Aktualisieren':'Zum Aktualisieren ziehen'});
+}
+function finishPullRefresh(){
+  const gesture=pullRefreshGesture;if(!gesture)return;
+  pullRefreshGesture=null;
+  if(!gesture.dragging){setPullRefreshIndicator();return}
+  if(gesture.distance<72){setPullRefreshIndicator();return}
+  setPullRefreshIndicator({visible:true,refreshing:true,offset:76,message:'Wird synchronisiert …'});
+  refreshAppData().then(result=>{
+    const message=result==='success'?'Aktualisiert':result==='offline'?'Offline – lokale Daten bleiben verfügbar':result==='failed'?'Abgleich fehlgeschlagen':'Synchronisierung derzeit nicht verfügbar';
+    setPullRefreshIndicator({visible:true,refreshing:result==='success',offset:76,message});
+    window.setTimeout(()=>setPullRefreshIndicator(),result==='success'?850:1400);
+  });
+}
+function cancelPullRefresh(){pullRefreshGesture=null;setPullRefreshIndicator()}
+document.addEventListener('touchstart',beginPullRefresh,{capture:true,passive:true});
+document.addEventListener('touchmove',movePullRefresh,{capture:true,passive:false});
+document.addEventListener('touchend',finishPullRefresh,{capture:true,passive:true});
+document.addEventListener('touchcancel',cancelPullRefresh,{capture:true,passive:true});
 function renderCachedApp({showHome=false}={}){
   $('#startup-gate').hidden=true;$('#auth-gate').hidden=true;$('.app-shell').hidden=false;
   if(state.noteHidden)$('#bottom-note').classList.add('hidden');
@@ -1324,8 +1399,8 @@ mealCalendar.addEventListener('touchmove',moveMealTouchDrag,{passive:false});
 mealCalendar.addEventListener('touchend',finishMealTouchDrag);
 mealCalendar.addEventListener('touchcancel',event=>finishMealTouchDrag(event,true));
 mealCalendar.addEventListener('contextmenu',event=>{if(event.target.closest?.('.meal-card'))event.preventDefault()});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelMealDrag();mealActionPointerState=null}});
-window.addEventListener('pagehide',()=>{cancelMealDrag();mealActionPointerState=null});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()}});
+window.addEventListener('pagehide',()=>{cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()});
 window.addEventListener('blur',()=>{mealActionPointerState=null});
 window.addEventListener('pointermove',moveMealPointerDrag,{passive:false});
 window.addEventListener('pointerup',finishMealPointerDrag);
