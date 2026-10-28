@@ -993,26 +993,22 @@ html {
   }
 
   .shopping-disclosure-toggle {
-    display: grid;
-    place-items: center;
-    flex: 0 0 44px;
-    width: 44px;
-    height: 44px;
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
-    margin-left: auto;
+    margin: 0;
     padding: 0;
-    border: 0;
-    border-radius: 8px;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
   }
 
   .shopping-disclosure-toggle .shopping-disclosure-icon {
     display: grid;
     place-items: center;
+    flex: 0 0 44px;
+    width: 44px;
     font: 600 18px/1 var(--sans);
-    transition: transform .18s ease;
   }
 
   .shopping-disclosure-toggle[aria-expanded="true"] .shopping-disclosure-icon {

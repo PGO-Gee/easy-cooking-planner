@@ -1004,6 +1004,20 @@ textarea::placeholder { color: #91a0b1; opacity: 1; }
 }
 #dish-dialog .dialog-actions { border-top-color: #303d4c; }
 #dish-dialog .dialog-actions .text-button { color: #e3a397; }
+#dish-dialog .dish-nutrition-fieldset { border-top-color: #303d4c; }
+#dish-dialog .dish-nutrition-fieldset legend,
+#dish-dialog .dish-nutrition-grid label { color: #bdc9d6; }
+#dish-dialog .dish-nutrition-fieldset legend span { color: #a5b1bf; }
+#dish-dialog .dish-nutrition-grid input {
+  border-color: #3b4b5e;
+  background: rgb(21 30 41 / 88%);
+  color: #e7edf4;
+  color-scheme: dark;
+}
+#dish-dialog .dish-nutrition-grid input:focus {
+  border-color: #7898c1;
+  box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
+}
 .auth-gate {
   background:
     radial-gradient(ellipse at 82% 8%, #202d3c 0, transparent 38%),
