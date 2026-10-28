@@ -749,6 +749,13 @@ body {
 .shopping-tile-status { background: #718fb5; color: #fff; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
+.conflict-intro { color: #a5b1bf; }
+.conflict-card { border-color: #354253; background: #202c3a; }
+.conflict-card h3 { color: #dce6f1; }
+.conflict-choice { border-color: #3a4a5e; background: #1b2430; color: #e7edf4; }
+.conflict-choice:hover,.conflict-choice:focus-visible { border-color: #718caf; background: #2b3b50; }
+.conflict-choice span { color: #a5b1bf; }
+
 .day-rest-action {
   border-color: #4c4a3f;
   background: linear-gradient(135deg, #34352f, #302d28);

@@ -1,8 +1,9 @@
-const CACHE_NAME = 'wochentisch-shell-v21';
+const CACHE_NAME = 'wochentisch-shell-v25';
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0';
 const APP_SHELL = [
   './',
   './index.html',
+  './manifest.webmanifest',
   './styles.css',
   './interaction.css',
   './recipes-shopping.css',
@@ -10,8 +11,14 @@ const APP_SHELL = [
   './mobile.css',
   './dark-theme.css',
   './supabase-config.js',
+  './local-store.js',
   './ingredient-catalog.js',
   './app.js',
+  './icons/wochentisch.svg',
+  './icons/wochentisch-192.png',
+  './icons/wochentisch-512.png',
+  './icons/wochentisch-maskable-512.png',
+  './icons/apple-touch-icon.png',
   './datenschutz.html',
   './datenschutz.css'
 ];
@@ -19,14 +26,27 @@ const APP_SHELL = [
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    await cache.addAll(APP_SHELL);
+    await Promise.all(APP_SHELL.map(async path => {
+      const request = new Request(new URL(path, self.registration.scope), { cache: 'reload' });
+      const response = await fetch(request);
+      if (!response.ok) throw new Error(`App-Datei konnte nicht vorgeladen werden: ${path}`);
+      await cache.put(request, response);
+    }));
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
     try {
-      await cache.add(SUPABASE_SCRIPT);
+      const response = await fetch(SUPABASE_SCRIPT, { cache: 'no-store', signal: controller.signal });
+      if (response.ok) await cache.put(SUPABASE_SCRIPT, response);
     } catch (error) {
-      // The page can still finish installing; the script will be cached on a later online visit.
+      // Offline app features remain usable without loading the cloud client.
+    } finally {
+      clearTimeout(timeout);
     }
-    await self.skipWaiting();
   })());
+});
+
+self.addEventListener('message', event => {
+  if (event.data?.type === 'ACTIVATE_UPDATE') self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
@@ -42,13 +62,17 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   const url = new URL(request.url);
-  const base = new URL('./', self.registration.scope);
-  if (url.origin === self.location.origin && url.pathname.startsWith(base.pathname)) {
+  if (url.origin === self.location.origin) {
+    const base = new URL('./', self.registration.scope);
+    if (!url.pathname.startsWith(base.pathname)) return;
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
       const cached = await cache.match(request, { ignoreSearch: true });
       const refresh = fetch(request).then(response => {
-        if (response.ok) cache.put(new Request(`${url.origin}${url.pathname}`), response.clone());
+        if (response.ok) {
+          const cacheKey = new Request(`${url.origin}${url.pathname}`);
+          cache.put(cacheKey, response.clone());
+        }
         return response;
       }).catch(() => null);
 
@@ -67,14 +91,14 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  if (url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('/npm/@supabase/supabase-js@')) {
+  if (url.hostname === 'cdn.jsdelivr.net' && url.href === SUPABASE_SCRIPT) {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE_NAME);
-      const cached = await cache.match(request);
+      const cached = await cache.match(SUPABASE_SCRIPT);
       if (cached) return cached;
       try {
         const response = await fetch(request);
-        if (response.ok) await cache.put(request, response.clone());
+        if (response.ok) await cache.put(SUPABASE_SCRIPT, response.clone());
         return response;
       } catch (error) {
         return Response.error();

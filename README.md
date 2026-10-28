@@ -24,7 +24,9 @@ Bei einer Neueinrichtung führe die SQL-Migrationen unter `supabase/migrations/`
 
 ## Offline-Start und Haushalts-Sync
 
-Der Service Worker speichert die App-Dateien für den Offline-Start. Öffne die App nach einer Veröffentlichung mindestens einmal mit Internetverbindung, damit der Cache aktualisiert wird; nach einem App-Update kann es helfen, die Home-Bildschirm-App zu schließen und erneut zu öffnen. Wochenplan und Einkaufsliste werden lokal angezeigt; Änderungen ohne Verbindung werden mit dem letzten bekannten Serverstand zusammengeführt, sobald die Verbindung zurückkehrt. Änderungen anderer Haushaltsmitglieder werden bei aktiver App live geladen und mit einem Hinweis angezeigt. System-Push-Nachrichten bei geschlossener App sind nicht eingerichtet.
+Wochentisch enthält ein Web-App-Manifest, Icons für den Home-Bildschirm und einen Service Worker für den Offline-Start. Öffne die App nach der Veröffentlichung einmal mit Internetverbindung und melde dich an. Danach stehen Wochenplan, eigene Gerichte und Einkaufsliste offline zur Verfügung. Der Standardkatalog wird beim ersten Onlineabruf lokal zwischengespeichert; offline übernommene Gerichte werden mit stabiler lokaler ID vorgemerkt und beim nächsten Abgleich synchronisiert.
+
+App-Zustand, letzter Cloud-Stand, Katalog und ungelöste Konflikte liegen in IndexedDB. Vorhandene App-Daten aus `localStorage` werden beim ersten Start übernommen. Änderungen werden beim Wiederherstellen der Verbindung sowie beim Öffnen oder Zurückkehren zur App abgeglichen. Treffen Änderungen aufeinander, bleiben beide Fassungen zur Auswahl erhalten. Anmeldung, Haushaltseinladungen und Beitritt benötigen weiterhin Internet. Ein Abgleich bei geschlossener App wird nicht zugesichert. Ein bereitgestelltes App-Update erscheint als Hinweis und wird erst nach Antippen aktiviert.
 
 ## Veröffentlichung mit GitHub Pages
 

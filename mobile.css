@@ -3,6 +3,20 @@ html {
   touch-action: manipulation;
 }
 
+@media (max-width: 920px) and (min-width: 701px) {
+  .week-toolbar {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .week-toolbar .toolbar-actions {
+    flex: 1 1 100%;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}
+
 #catalog-dialog {
   width: min(440px, calc(100% - 32px));
   max-height: min(88dvh, 760px);
