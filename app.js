@@ -31,6 +31,8 @@ let cloudSyncNotificationRequested=false;
 let cloudSyncPromise=null;
 let pullRefreshGesture=null;
 let loadingCloudState=false;
+let cloudStateOverrideInProgress=false;
+let cloudStateOverrideError='';
 let offlineMode=false;
 let explicitSignOutPending=false;
 let signInPromptActive=false;
@@ -402,8 +404,21 @@ function assignConflictValue(conflict,value){
     }
   }
 }
+function updateConflictCloudAction(){
+  const cloudButton=$('#conflict-cloud-all'),cloudHint=$('#conflict-cloud-hint');
+  if(!cloudButton||!cloudHint)return;
+  cloudButton.hidden=!unresolvedConflicts.length;
+  cloudButton.disabled=!cloudReady||!navigator.onLine||cloudStateOverrideInProgress;
+  if(cloudStateOverrideError){cloudHint.textContent=cloudStateOverrideError;cloudHint.hidden=false}
+  else{
+    cloudHint.hidden=cloudReady&&navigator.onLine;
+    cloudHint.textContent=navigator.onLine?'Die Cloud ist gerade nicht verbunden.':'Zum Übernehmen brauchst du eine Internetverbindung.';
+  }
+  document.querySelectorAll('#conflict-list .conflict-choice').forEach(button=>{button.disabled=cloudStateOverrideInProgress});
+}
 function renderConflictReview(){
   const list=$('#conflict-list');list.replaceChildren();
+  updateConflictCloudAction();
   if(!unresolvedConflicts.length){const empty=document.createElement('p');empty.className='empty-state';empty.textContent='Alle Änderungen sind geklärt.';list.append(empty);return}
   unresolvedConflicts.forEach(conflict=>{
     const card=document.createElement('article');card.className='conflict-card';
@@ -411,6 +426,7 @@ function renderConflictReview(){
     const choices=document.createElement('div');choices.className='conflict-choices';
     [['local','Deine Fassung',conflict.localValue],['remote','Haushaltsfassung',conflict.remoteValue]].forEach(([source,label,value])=>{
       const button=document.createElement('button');button.type='button';button.className='conflict-choice';
+      button.disabled=cloudStateOverrideInProgress;
       const strong=document.createElement('strong');strong.textContent=label;
       const detail=document.createElement('span');detail.textContent=describeConflictValue(conflict,value);
       button.append(strong,detail);button.addEventListener('click',()=>resolveConflict(conflict.id,source));choices.append(button);
@@ -433,6 +449,35 @@ async function resolveConflict(id,source){
   updateCounts();refreshVisibleView();updateSyncStatus('');
   if(unresolvedConflicts.length)renderConflictReview();else $('#conflict-dialog').close();
   if(cloudReady&&hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
+}
+async function takeCloudStateForAllConflicts(){
+  if(!unresolvedConflicts.length||!cloudReady||!navigator.onLine||cloudStateOverrideInProgress)return;
+  const button=$('#conflict-cloud-all'),hint=$('#conflict-cloud-hint');
+  cloudStateOverrideError='';
+  cloudStateOverrideInProgress=true;button.disabled=true;button.textContent='Cloud-Stand wird geladen …';hint.hidden=true;updateConflictCloudAction();
+  clearTimeout(cloudSyncTimer);
+  try{
+    if(cloudSyncInProgress&&cloudSyncPromise)await cloudSyncPromise;
+    clearTimeout(cloudSyncTimer);cloudSyncRequested=false;cloudSyncNotificationRequested=false;
+    const remote=await readStateFromCloud();
+    state={...remote.state,noteHidden:state.noteHidden};
+    cloudBaseState=remote.state;
+    await saveCloudBase(cloudBaseState);
+    save({sync:false});
+    await offlineStoreWriteQueue;
+    await Promise.all(unresolvedConflicts.map(conflict=>window.WochentischStore?.remove('conflicts',conflict.storageKey||conflict.id)));
+    unresolvedConflicts=[];
+    await reconcileCatalogImports(remote.state);
+    updateCounts();refreshVisibleView();updateSyncStatus('');
+    $('#conflict-dialog').close();
+    showToast('Der aktuelle Cloud-Stand wurde übernommen.');
+  }catch(error){
+    console.error('Cloud-Stand konnte nicht vollständig übernommen werden:',error);
+    cloudStateOverrideError='Cloud-Stand konnte nicht übernommen werden. Prüfe die Verbindung und versuche es erneut.';
+  }finally{
+    cloudStateOverrideInProgress=false;
+    button.textContent='Alles aus der Cloud übernehmen';updateConflictCloudAction();
+  }
 }
 function cloudComparable(value){
   const shoppingChecks=Object.fromEntries(Object.entries(value.shoppingChecks||{}).map(([week,checks])=>[
@@ -673,18 +718,18 @@ async function syncStateToCloud({notify=false}={}){
   if(hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
 }
 function scheduleCloudSync({notify=false}={}){
-  if(!cloudReady||loadingCloudState||!navigator.onLine)return;
+  if(!cloudReady||loadingCloudState||cloudStateOverrideInProgress||!navigator.onLine)return;
   cloudSyncNotificationRequested=cloudSyncNotificationRequested||notify;clearTimeout(cloudSyncTimer);
   cloudSyncTimer=setTimeout(()=>{cloudSyncRequested=true;flushCloudSync()},notify?500:350);
 }
 function flushCloudSync(){
   if(cloudSyncInProgress){cloudSyncRequested=true;return cloudSyncPromise||Promise.resolve(false)}
-  if(!cloudSyncRequested)return Promise.resolve(true);
+  if(!cloudSyncRequested||cloudStateOverrideInProgress)return Promise.resolve(true);
   cloudSyncInProgress=true;
   cloudSyncPromise=(async()=>{
     let succeeded=true;
     try{
-      while(cloudSyncRequested){
+      while(cloudSyncRequested&&!cloudStateOverrideInProgress){
         cloudSyncRequested=false;
         const notify=cloudSyncNotificationRequested;cloudSyncNotificationRequested=false;
         await syncStateToCloud({notify});
@@ -820,6 +865,7 @@ async function connectToCloud(){
       else state=starterState();
       cloudBaseState=cloud.state;await saveCloudBase(cloudBaseState);
       cloudReady=true;offlineMode=false;
+      updateConflictCloudAction();
       const migrationKey=cloudMigrationKey();if(!cloud.hasCloudData)localStorage.setItem(migrationKey,'true');
       save({sync:false});saveCloudBackup();
       updateSyncStatus(unresolvedConflicts.length?'Änderungen wurden synchronisiert. Bitte prüfe noch die markierten Konflikte.':'');
@@ -833,6 +879,7 @@ async function connectToCloud(){
       subscribeToHouseholdChanges();
     }catch(error){
       cloudReady=false;offlineMode=true;
+      updateConflictCloudAction();
       console.warn('Cloud-Synchronisierung vorübergehend nicht verfügbar:',error);
       updateSyncStatus('Keine Verbindung – die gespeicherte Einkaufsliste bleibt verfügbar.');
     }
@@ -1030,8 +1077,8 @@ async function bootApplication(){
   });
 }
 void bootApplication();
-window.addEventListener('online',()=>{if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode)resumeCloudSession()});
-window.addEventListener('offline',()=>{if(appInitialized)updateSyncStatus('Offline – Änderungen bleiben lokal gespeichert.')});
+window.addEventListener('online',()=>{updateConflictCloudAction();if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode)resumeCloudSession()});
+window.addEventListener('offline',()=>{updateConflictCloudAction();if(appInitialized)updateSyncStatus('Offline – Änderungen bleiben lokal gespeichert.')});
 window.addEventListener('pageshow',()=>{if(!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'||!appInitialized)return;if(cloudReady)scheduleCloudSync({notify:true});else if(offlineMode&&navigator.onLine)resumeCloudSession()});
 function emptyState(){return{dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:false,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:{}}}
@@ -1640,7 +1687,7 @@ $('#pantry-input').addEventListener('keydown',event=>{if(event.key!=='Enter')ret
 $('#pantry-form').addEventListener('submit',event=>{event.preventDefault();const pantry=pantryDraft.slice(),unmatched=pantry.filter(item=>!state.dishes.some(d=>(d.ingredients||[]).some(i=>ingredientMatches(item,i))));replaceRangePlan(pantry);$('#pantry-dialog').close();renderCalendar({shuffleAnimation:true});showToast(unmatched.length?`7 Tage gemischt. Keine passenden Gerichte für: ${unmatched.join(', ')}`:'Deine nächsten 7 Tage wurden neu gemischt.')});
 $('#add-dish-btn').addEventListener('click',()=>openDish());$('#starter-add').addEventListener('click',()=>openDish());$('#search-dishes').addEventListener('input',renderDishes);$('#close-dish-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#cancel-dialog').addEventListener('click',()=>$('#dish-dialog').close());$('#delete-dish').addEventListener('click',()=>{const id=$('#dish-id').value;if(!id)return;removeCatalogImportForDish(id);state.dishes=state.dishes.filter(d=>d.id!==id);Object.entries(state.plans).forEach(([week,days])=>days.forEach((day,dayIndexValue)=>{const pins=state.pinnedMeals?.[week]?.[dayIndexValue]||[];for(let i=day.length-1;i>=0;i--)if(day[i]===id){day.splice(i,1);pins.splice(i,1)}}));save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Gericht gelöscht.')});$('#dish-form').addEventListener('submit',e=>{e.preventDefault();const pendingIngredient=$('#dish-ingredient-input').value.trim();if(pendingIngredient)addDishIngredient(pendingIngredient);const id=$('#dish-id').value,name=$('#dish-name').value.trim(),ingredient=$('#dish-ingredient').value.trim(),time=timeBlocks[Number($('#dish-time').value)]||30,ingredients=dishIngredientDraft.slice();if(!name)return;const duplicate=state.dishes.find(d=>d.id!==id&&(d.name.trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')||dishFingerprint(d.name,d.ingredient,d.ingredients)===dishFingerprint(name,ingredient,ingredients)));if(duplicate){const error=$('#dish-form-error');error.textContent=`Ähnliches Gericht existiert bereits: ${duplicate.name}`;error.hidden=false;return}const existing=state.dishes.find(d=>d.id===id);if(existing)Object.assign(existing,{name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});else state.dishes.push({id:crypto.randomUUID?.()||`d${Date.now()}`,name,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️'});save();$('#dish-form-error').hidden=true;$('#dish-form-error').textContent='';$('#dish-dialog').close();renderDishes();renderCalendar();showToast(existing?'Gericht aktualisiert.':'Gericht hinzugefügt.')});
 $('#catalog-btn').addEventListener('click',openCatalog);$('#close-catalog').addEventListener('click',event=>{event.preventDefault();const dialog=$('#catalog-dialog');if(dialog.open)dialog.close()});$('#catalog-search').addEventListener('input',event=>{const query=event.currentTarget.value.trim().toLocaleLowerCase('de-DE'),list=$('#catalog-list'),buttons=[...list.querySelectorAll('.choose-item')];let visible=0;buttons.forEach(button=>{const match=button.querySelector('b').textContent.toLocaleLowerCase('de-DE').includes(query);button.hidden=!match;if(match)visible++});const empty=list.querySelector('.catalog-no-results');if(empty)empty.hidden=visible>0||buttons.length===0});$('#catalog-dialog').addEventListener('click',event=>{if(event.target===$('#catalog-dialog'))$('#catalog-dialog').close()});
-$('#sync-status-conflicts').addEventListener('click',openConflictReview);$('#close-conflicts').addEventListener('click',()=>$('#conflict-dialog').close());
+$('#sync-status-conflicts').addEventListener('click',openConflictReview);$('#close-conflicts').addEventListener('click',()=>$('#conflict-dialog').close());$('#conflict-cloud-all').addEventListener('click',takeCloudStateForAllConflicts);
 window.addEventListener('wochentisch:update-ready',event=>showToast('Ein App-Update ist bereit.',{actionLabel:'Jetzt aktualisieren',duration:12000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
 window.addEventListener('wochentisch:update-blocked',event=>showToast('Schließe zuerst die offene Eingabe. Danach kannst du das Update starten.',{actionLabel:'Jetzt aktualisieren',duration:20000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
 $('#close-chooser').addEventListener('click',()=>{const dialog=$('#choose-dialog');if(dialog.open)dialog.close()});$('#choose-dialog').addEventListener('click',event=>{if(event.target===$('#choose-dialog'))$('#choose-dialog').close()});

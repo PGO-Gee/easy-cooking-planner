@@ -760,7 +760,12 @@ body {
 .conflict-card h3 { color: #dce6f1; }
 .conflict-choice { border-color: #3a4a5e; background: #1b2430; color: #e7edf4; }
 .conflict-choice:hover,.conflict-choice:focus-visible { border-color: #718caf; background: #2b3b50; }
+.conflict-choice:disabled { opacity: .58; }
 .conflict-choice span { color: #a5b1bf; }
+.conflict-cloud-hint { color: #a5b1bf; }
+.conflict-cloud-button { border-color: #58779e; background: linear-gradient(145deg, #718fb5, #58779e); }
+.conflict-cloud-button:hover:not(:disabled) { background: linear-gradient(145deg, #6685ad, #4e6d94); }
+.conflict-cloud-button:focus-visible { outline-color: #91acd080; }
 
 .day-rest-action {
   border-color: #4c4a3f;
