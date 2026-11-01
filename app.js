@@ -28,6 +28,7 @@ const compactNavigationQuery=window.matchMedia('(max-width: 700px), (orientation
 const offlineSessionStorageKey='wochentisch-last-signed-in-user';
 let cloudReady=false;
 let cloudBaseState=null;
+let syncCoordinator=null, syncWriteBarrier=null, syncCoordinatorKey='';
 let cloudConnectPromise;
 let realtimeChannel=null;
 let cloudSyncTimer;
@@ -461,18 +462,19 @@ function renderConflictReview(){
 function openConflictReview(){renderConflictReview();const dialog=$('#conflict-dialog');if(!dialog.open)dialog.showModal()}
 async function resolveConflict(id,source){
   const conflict=unresolvedConflicts.find(item=>item.id===id);if(!conflict)return;
-  let value=source==='local'?conflict.localValue:conflict.remoteValue;
-  if(source==='remote'&&cloudReady&&navigator.onLine){
-    try{const latest=await readStateFromCloud();value=conflictEntityValue(latest.state,conflict)}catch(error){console.warn('Aktuelle Haushaltsfassung konnte nicht geladen werden:',error)}
-  }
-  assignConflictValue(conflict,value);
-  save({sync:false});
-  await offlineStoreWriteQueue.catch(()=>{});
-  try{await window.WochentischStore?.remove('conflicts',conflict.storageKey||id)}catch(error){console.warn('Geklärter Konflikt konnte nicht aus dem lokalen Speicher entfernt werden:',error)}
-  unresolvedConflicts=unresolvedConflicts.filter(item=>item.id!==id);
-  updateCounts();refreshVisibleView();updateSyncStatus('');
-  if(unresolvedConflicts.length)renderConflictReview();else $('#conflict-dialog').close();
-  if(cloudReady&&hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
+  if(!cloudReady||!navigator.onLine||cloudStateOverrideInProgress){updateSyncStatus('Zum Klären der Änderung ist eine Verbindung nötig.');return}
+  cloudStateOverrideInProgress=true;updateConflictCloudAction();
+  try{
+    if(cloudSyncInProgress&&cloudSyncPromise)await cloudSyncPromise;
+    const coordinator=getSyncCoordinator();
+    await coordinator.resolve(conflict,source);
+    await syncWriteBarrier.drain();
+    cloudBaseState=await readCloudBase();
+    await loadOfflineQueues(currentUserId,currentHouseholdId);
+    updateCounts();refreshVisibleView();updateSyncStatus('');
+    if(unresolvedConflicts.length)renderConflictReview();else $('#conflict-dialog').close();
+  }catch(error){console.warn('Konflikt konnte nicht geklärt werden:',error);updateSyncStatus('Die Änderung konnte nicht geklärt werden. Bitte erneut versuchen.')}
+  finally{cloudStateOverrideInProgress=false;updateConflictCloudAction();if(cloudReady&&hasCloudChanges(cloudBaseState,state))scheduleCloudSync()}
 }
 async function takeCloudStateForAllConflicts(){
   if(!unresolvedConflicts.length||!cloudReady||!navigator.onLine||cloudStateOverrideInProgress)return;
@@ -483,24 +485,20 @@ async function takeCloudStateForAllConflicts(){
   try{
     if(cloudSyncInProgress&&cloudSyncPromise)await cloudSyncPromise;
     clearTimeout(cloudSyncTimer);cloudSyncRequested=false;cloudSyncNotificationRequested=false;
-    const remote=await readStateFromCloud();
-    state={...remote.state,noteHidden:state.noteHidden};
-    cloudBaseState=remote.state;
-    await saveCloudBase(cloudBaseState);
-    save({sync:false});
-    await offlineStoreWriteQueue;
-    await Promise.all(unresolvedConflicts.map(conflict=>window.WochentischStore?.remove('conflicts',conflict.storageKey||conflict.id)));
-    unresolvedConflicts=[];
-    await reconcileCatalogImports(remote.state);
+    const coordinator=getSyncCoordinator();
+    for(const conflict of [...unresolvedConflicts])await coordinator.resolve(conflict,'remote');
+    await syncWriteBarrier.drain();
+    cloudBaseState=await readCloudBase();
+    await loadOfflineQueues(currentUserId,currentHouseholdId);
     updateCounts();refreshVisibleView();updateSyncStatus('');
-    $('#conflict-dialog').close();
-    showToast('Der aktuelle Cloud-Stand wurde übernommen.');
+    if(unresolvedConflicts.length){renderConflictReview();showToast('Der Haushaltsstand hat sich geändert. Bitte prüfe die verbleibenden Änderungen.')}
+    else{$('#conflict-dialog').close();showToast('Die Haushaltsfassungen wurden übernommen.')}
   }catch(error){
     console.error('Cloud-Stand konnte nicht vollständig übernommen werden:',error);
     cloudStateOverrideError='Cloud-Stand konnte nicht übernommen werden. Prüfe die Verbindung und versuche es erneut.';
   }finally{
     cloudStateOverrideInProgress=false;
-    button.textContent='Alles aus der Cloud übernehmen';updateConflictCloudAction();
+    button.textContent='Alle Haushaltsfassungen übernehmen';updateConflictCloudAction();
   }
 }
 function cloudComparable(value){
@@ -715,26 +713,31 @@ async function reconcileCatalogImports(remoteState){
   await Promise.all(finished.map(item=>window.WochentischStore?.remove('imports',item.dishId).catch(error=>console.warn('Katalogimport bleibt lokal vorgemerkt:',error))));
   const finishedIds=new Set(finished.map(item=>item.dishId));pendingCatalogImports=pendingCatalogImports.filter(item=>!finishedIds.has(item.dishId));
 }
+function getSyncCoordinator(){
+  const key=`${currentUserId}:${currentHouseholdId}`;
+  if(syncCoordinator&&syncCoordinatorKey===key)return syncCoordinator;
+  if(!offlineStoreReady||!currentUserId||!currentHouseholdId)throw new Error('Der Offline-Speicher für die Synchronisierung ist nicht verfügbar.');
+  syncCoordinatorKey=key;
+  syncWriteBarrier=window.WochentischSyncWriteBarrier.create({store:window.WochentischStore,stateKey:'app-state',backupKey:cloudBackupKey(),pendingKey:`sync-pending:${key}`});
+  const barrier=syncWriteBarrier;
+  syncCoordinator=window.WochentischSyncCoordinator.create({
+    store:window.WochentischStore,api:window.WochentischSyncApi.create(authClient),userId:currentUserId,householdId:currentHouseholdId,
+    newRequestId:newId,toShared:cloudComparable,writeBarrier:barrier,
+    beforeSnapshot:async()=>{await offlineStoreWriteQueue;await barrier.drain();if(`${currentUserId}:${currentHouseholdId}`!==key)throw new Error('Der Haushalt wurde während der Synchronisierung gewechselt.')},
+    readMemory:()=>`${currentUserId}:${currentHouseholdId}`===key?state:null,applyMemory:value=>{state=normalizeState(value)}
+  });
+  return syncCoordinator;
+}
 async function syncStateToCloud({notify=false}={}){
   if(!cloudReady||!currentHouseholdId)return;
   prepareLocalIdsForCloud();
-  const before=structuredClone(state),beforeShopping=localShoppingItems(before),remote=await readStateFromCloud(),base=cloudBaseState||remote.state;
-  const latestLocal=structuredClone(state);
-  const merged=mergeHouseholdState(base,latestLocal,remote.state);
-  if(merged.conflicts.length)await persistConflicts(merged.conflicts);
-  state=merged.state;
-  const syncTarget=structuredClone(state);
-  cloudBaseState=remote.state;await saveCloudBase(cloudBaseState);save({sync:false});
-  await writeMergedStateToCloud(remote.state,syncTarget,remote,merged.conflicts);
-  const refreshed=await readStateFromCloud(),stateAtRefresh=structuredClone(state);
-  if(merged.conflicts.length){
-    merged.conflicts.forEach(conflict=>{conflict.remoteValue=structuredClone(conflictEntityValue(refreshed.state,conflict));conflict.updatedAt=Date.now()});
-    await persistConflicts(merged.conflicts);
-  }
-  const afterSync=mergeHouseholdState(syncTarget,stateAtRefresh,refreshed.state);
-  if(afterSync.conflicts.length)await persistConflicts(afterSync.conflicts);
-  state=afterSync.state;cloudBaseState=refreshed.state;await saveCloudBase(cloudBaseState);save({sync:false});
-  await reconcileCatalogImports(refreshed.state);
+  save({sync:false});
+  const beforeShopping=localShoppingItems(state),coordinator=getSyncCoordinator();
+  await coordinator.flush();
+  await syncWriteBarrier.drain();
+  cloudBaseState=await readCloudBase();
+  await loadOfflineQueues(currentUserId,currentHouseholdId);
+  await reconcileCatalogImports(cloudBaseState);
   if(appInitialized){
     $('#bottom-note').classList.toggle('hidden',state.noteHidden);
     updateCounts();refreshVisibleView();
@@ -745,7 +748,7 @@ async function syncStateToCloud({notify=false}={}){
     else if(added.length>1)showToast(`${added[0]} und ${added.length-1} weitere Artikel wurden ergänzt.`);
   }
   updateSyncStatus(unresolvedConflicts.length?'Synchronisierung abgeschlossen. Bitte prüfe die markierten Änderungen.':'');
-  if(hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
+  if(await window.WochentischStore.get('records',coordinator.keys.pending)||hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
 }
 function scheduleCloudSync({notify=false}={}){
   if(!cloudReady||loadingCloudState||cloudStateOverrideInProgress||!navigator.onLine)return;
@@ -875,6 +878,27 @@ function subscribeToHouseholdChanges(){
     else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')updateSyncStatus('Live-Sync pausiert – beim Öffnen wird die Liste aktualisiert.');
   });
 }
+function chooseFirstSync(){
+  const dialog=$('#first-sync-dialog');
+  return new Promise(resolve=>{
+    const finish=choice=>{
+      dialog.removeEventListener('click',onClick);
+      dialog.removeEventListener('cancel',onCancel);
+      resolve(choice);
+    };
+    const onClick=event=>{
+      const button=event.target.closest('button[value]');
+      if(!button)return;
+      event.preventDefault();
+      finish(['cloud','local'].includes(button.value)?button.value:'later');
+    };
+    const onCancel=event=>{event.preventDefault();finish('later')};
+    dialog.addEventListener('click',onClick);
+    dialog.addEventListener('cancel',onCancel);
+    dialog.showModal();
+  });
+}
+function closeFirstSync(){const dialog=$('#first-sync-dialog');if(dialog.open)dialog.close()}
 async function connectToCloud(){
   if(cloudReady||!currentUserId||!authClient)return;
   if(cloudConnectPromise)return cloudConnectPromise;
@@ -882,24 +906,58 @@ async function connectToCloud(){
     try{
       currentHouseholdId=await getCurrentHousehold();
       await loadOfflineQueues(currentUserId,currentHouseholdId);
-      const beforeShopping=localShoppingItems(state),cloud=await readStateFromCloud(),previousBase=await readCloudBase();
+      const beforeShopping=localShoppingItems(state),previousBase=await readCloudBase();
+      let cloud=await readStateFromCloud(),firstSyncChoice='',firstSyncState=null,firstSyncLocal=null;
       if(previousBase){
-        const merged=mergeHouseholdState(previousBase,state,cloud.state);
-        if(merged.conflicts.length)await persistConflicts(merged.conflicts);
-        state=merged.state;
+        // The server compares the confirmed base with both versions.
       }else if(hasCloudChanges(emptyState(),state)){
-        const merged=mergeHouseholdState(emptyState(),state,cloud.state);
-        if(merged.conflicts.length)await persistConflicts(merged.conflicts);
-        state=merged.state;
+        const choice=await chooseFirstSync();
+        if(choice==='later'){
+          updateSyncStatus('Erster Abgleich ausstehend – deine Änderungen bleiben auf diesem Gerät.');
+          return;
+        }
+        // Refresh after the user decides; the dialog can remain open for a long time.
+        const refreshedCloud=await readStateFromCloud();
+        if(choice==='local'&&hasCloudChanges(cloud.state,refreshedCloud.state)){
+          updateSyncStatus('Der Haushaltsstand hat sich während der Auswahl geändert. Bitte starte den ersten Abgleich erneut.');
+          return;
+        }
+        cloud=refreshedCloud;
+        firstSyncChoice=choice;
+        firstSyncLocal=structuredClone(state);
+        firstSyncState=choice==='cloud'?{...cloud.state,noteHidden:state.noteHidden}:structuredClone(state);
       }else if(cloud.hasCloudData)state=cloud.state;
       else state=starterState();
-      cloudBaseState=cloud.state;await saveCloudBase(cloudBaseState);
+      if(firstSyncChoice){
+        if(!offlineStoreReady)throw new Error('Der erste Abgleich benötigt den lokalen Offline-Speicher.');
+        // Commit both sides together: after a restart an old local state must
+        // never be paired with the newly accepted cloud base.
+        await offlineStoreWriteQueue;
+        if(!sameValue(state,firstSyncLocal))throw new Error('Lokale Daten wurden während der Auswahl verändert.');
+        await window.WochentischStore.writeBatch([
+          {type:'put',store:'records',key:'app-state',value:structuredClone(firstSyncState)},
+          {type:'put',store:'records',key:cloudBaseStorageKey(),value:structuredClone(cloud.state)},
+          {type:'put',store:'records',key:cloudBackupKey(),value:structuredClone(firstSyncState)}
+        ]);
+        if(!sameValue(state,firstSyncLocal)){
+          await window.WochentischStore.writeBatch([
+            {type:'put',store:'records',key:'app-state',value:structuredClone(state)},
+            {type:'put',store:'records',key:cloudBackupKey(),value:structuredClone(state)},
+            {type:'remove',store:'records',key:cloudBaseStorageKey()}
+          ]);
+          throw new Error('Lokale Daten wurden während der Auswahl verändert.');
+        }
+        state=firstSyncState;
+      }
+      cloudBaseState=previousBase||cloud.state;
+      if(!firstSyncChoice&&!previousBase)await saveCloudBase(cloudBaseState);
       cloudReady=true;offlineMode=false;
       updateConflictCloudAction();
       const migrationKey=cloudMigrationKey();if(!cloud.hasCloudData)localStorage.setItem(migrationKey,'true');
       save({sync:false});saveCloudBackup();
+      if(firstSyncChoice==='cloud')await reconcileCatalogImports(state);
       updateSyncStatus(unresolvedConflicts.length?'Änderungen wurden synchronisiert. Bitte prüfe noch die markierten Konflikte.':'');
-      if(hasCloudChanges(cloudBaseState,state)||hasUncanonicalCloudIngredients(cloud))scheduleCloudSync();
+      if(previousBase||hasCloudChanges(cloudBaseState,state)||hasUncanonicalCloudIngredients(cloud))scheduleCloudSync();
       if(appInitialized){$('#bottom-note').classList.toggle('hidden',state.noteHidden);updateCounts();refreshVisibleView()}
       if(previousBase&&document.visibilityState==='visible'){
         const added=[...localShoppingItems(state).entries()].filter(([key])=>!beforeShopping.has(key)).map(([,name])=>name);
@@ -912,7 +970,7 @@ async function connectToCloud(){
       updateConflictCloudAction();
       console.warn('Cloud-Synchronisierung vorübergehend nicht verfügbar:',error);
       updateSyncStatus('Keine Verbindung – die gespeicherte Einkaufsliste bleibt verfügbar.');
-    }
+    }finally{closeFirstSync()}
   })().finally(()=>{cloudConnectPromise=undefined});
   return cloudConnectPromise;
 }
@@ -1124,11 +1182,10 @@ function normalizeState(s){
     noteHidden:Boolean(normalized.noteHidden)
   };
 }
-function loadState(){try{return normalizeState(JSON.parse(localStorage.getItem('wochentisch-v1')))}catch(e){return emptyState()}}
+function loadState(){try{return normalizeState(JSON.parse(localStorage.getItem('wochentisch-sync-v1')))}catch(e){return emptyState()}}
 async function initializeOfflineData(){
   if(!window.WochentischStore)return;
   try{
-    await window.WochentischStore.migrateLegacyStorage();
     const saved=await window.WochentischStore.get('records','app-state');
     if(saved)state=normalizeState(saved);
     await window.WochentischStore.put('records','app-state',structuredClone(state));
@@ -1137,16 +1194,18 @@ async function initializeOfflineData(){
     offlineStoreReady=true;
   }catch(error){
     offlineStoreReady=false;
-    safeLocalStorageSet('wochentisch-v1',JSON.stringify(normalizeState(state)));
+    safeLocalStorageSet('wochentisch-sync-v1',JSON.stringify(normalizeState(state)));
     console.warn('IndexedDB konnte nicht initialisiert werden; lokale Sicherung wird verwendet:',error);
     updateSyncStatus('Der sichere Offline-Speicher konnte nicht geöffnet werden. Änderungen werden vorübergehend auf diesem Gerät gesichert.',{storageError:true});
   }
 }
 function save({sync=true}={}){
   state=normalizeState(state);
+  if(syncCoordinatorKey!==`${currentUserId}:${currentHouseholdId}`){syncCoordinator=null;syncWriteBarrier=null;syncCoordinatorKey=''}
   const snapshot=structuredClone(state);
-  if(offlineStoreReady)enqueueOfflineStoreWrite('records','app-state',snapshot);else safeLocalStorageSet('wochentisch-v1',JSON.stringify(snapshot));
-  if(currentUserId){safeLocalStorageSet(localStateOwnerKey(),currentUserId);saveCloudBackup()}
+  if(offlineStoreReady&&syncWriteBarrier){syncWriteBarrier.save(snapshot).catch(error=>{console.warn('Lokale Speicherung fehlgeschlagen:',error);updateSyncStatus('Lokaler Speicher ist gerade nicht verfügbar.',{storageError:true})})}
+  else if(offlineStoreReady)enqueueOfflineStoreWrite('records','app-state',snapshot);else safeLocalStorageSet('wochentisch-sync-v1',JSON.stringify(snapshot));
+  if(currentUserId){safeLocalStorageSet(localStateOwnerKey(),currentUserId);if(!syncWriteBarrier)saveCloudBackup()}
   updateCounts();if(sync)scheduleCloudSync()
 }
 function updateCounts(){$('#dish-count').textContent=state.dishes.length;$('#dish-heading-count').textContent=state.dishes.length}
@@ -1802,7 +1861,7 @@ $('#add-dish-btn').addEventListener('click',()=>openDish());$('#starter-add').ad
 });
 $('#catalog-btn').addEventListener('click',openCatalog);$('#close-catalog').addEventListener('click',event=>{event.preventDefault();const dialog=$('#catalog-dialog');if(dialog.open)dialog.close()});$('#catalog-search').addEventListener('input',event=>{const query=event.currentTarget.value.trim().toLocaleLowerCase('de-DE'),list=$('#catalog-list'),buttons=[...list.querySelectorAll('.choose-item')];let visible=0;buttons.forEach(button=>{const match=button.querySelector('b').textContent.toLocaleLowerCase('de-DE').includes(query);button.hidden=!match;if(match)visible++});const empty=list.querySelector('.catalog-no-results');if(empty)empty.hidden=visible>0||buttons.length===0});$('#catalog-dialog').addEventListener('click',event=>{if(event.target===$('#catalog-dialog'))$('#catalog-dialog').close()});
 $('#sync-status-conflicts').addEventListener('click',openConflictReview);$('#close-conflicts').addEventListener('click',()=>$('#conflict-dialog').close());$('#conflict-cloud-all').addEventListener('click',takeCloudStateForAllConflicts);
-window.addEventListener('wochentisch:update-ready',event=>showToast('Ein App-Update ist bereit.',{actionLabel:'Jetzt aktualisieren',duration:12000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
+window.addEventListener('wochentisch:update-ready',event=>showToast('Ein App-Update ist bereit. Deine lokalen Änderungen bleiben erhalten.',{actionLabel:'Jetzt aktualisieren',duration:12000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
 window.addEventListener('wochentisch:update-blocked',event=>showToast('Schließe zuerst die offene Eingabe. Danach kannst du das Update starten.',{actionLabel:'Jetzt aktualisieren',duration:20000,onAction:()=>window.activateWochentischUpdate?.(event.detail)}));
 $('#close-chooser').addEventListener('click',()=>{const dialog=$('#choose-dialog');if(dialog.open)dialog.close()});$('#choose-dialog').addEventListener('click',event=>{if(event.target===$('#choose-dialog'))$('#choose-dialog').close()});
 if(state.noteHidden)$('#bottom-note').classList.add('hidden');updateCounts();

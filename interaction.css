@@ -1300,12 +1300,13 @@
   box-shadow: 0 0 0 3px rgb(111 145 184 / 16%);
 }
 
-#conflict-dialog {
+#conflict-dialog, #first-sync-dialog {
   width: min(600px, calc(100% - 32px));
   max-height: min(88dvh, 760px);
   padding: 0;
   overflow: hidden;
 }
+#first-sync-dialog .conflict-choices { grid-template-columns: minmax(0, 1fr); min-height: 0; overflow-y: auto; }
 .conflict-dialog-content {
   display: flex;
   flex-direction: column;
