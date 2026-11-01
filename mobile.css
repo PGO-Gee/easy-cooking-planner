@@ -1079,15 +1079,16 @@ html {
   }
 
   .shopping-tile-shell.is-showing-meal-hint .shopping-tile-meal-hint {
-    position: absolute;
+    position: fixed;
     z-index: 6;
-    top: 50%;
-    left: 50%;
+    top: 0;
+    left: 0;
     display: block;
     width: max-content;
-    max-width: min(240px, calc(100vw - 32px));
+    max-width: calc(100vw - 24px);
+    max-height: min(45vh, 240px);
     padding: 10px 12px;
-    transform: translate(-50%, -50%);
+    box-sizing: border-box;
     border: 1px solid var(--line);
     border-radius: 10px;
     background: var(--paper);
@@ -1096,6 +1097,7 @@ html {
     font: 600 12px/1.4 var(--sans);
     text-align: left;
     overflow-wrap: anywhere;
+    overflow-y: auto;
     pointer-events: none;
   }
 
