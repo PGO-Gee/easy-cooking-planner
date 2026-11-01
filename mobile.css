@@ -1135,5 +1135,4 @@ html {
   }
 
 }
-@media(max-width:700px){.shopping-add-form.is-keyboard-open{position:fixed;left:max(var(--mobile-gutter),env(safe-area-inset-left));right:max(var(--mobile-gutter),env(safe-area-inset-right));bottom:calc(100vh - var(--visual-viewport-top,0px) - var(--visual-viewport-height,100vh));z-index:50;margin:0;padding:8px;background:var(--canvas);border-radius:14px;box-shadow:0 -5px 22px rgb(0 0 0 / 14%)}.shopping-add-form.is-keyboard-open .shopping-item-suggestions{max-height:min(180px,28dvh)}}
-@media(max-width:700px){.shopping-section{scroll-margin-top:calc(64px + env(safe-area-inset-top))}.shopping-add-form.is-keyboard-open{transition:none;box-shadow:0 -2px 8px rgb(0 0 0 / 10%);will-change:bottom}}
+

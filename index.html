@@ -28,7 +28,7 @@
   <link rel="stylesheet" href="interaction.css?v=20261028-8" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261101-2" />
   <link rel="stylesheet" href="auth.css?v=20261021-4" />
-  <link rel="stylesheet" href="mobile.css?v=20261101-4" />
+  <link rel="stylesheet" href="mobile.css?v=20261101-5" />
   <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261028-3" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
@@ -106,9 +106,11 @@
         <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><div class="shopping-screen-actions"><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button></div></div>
         <div class="page-heading shopping-page-heading"><div><div class="eyebrow">WOCHENPLAN</div><h1>Einkaufszettel</h1><p id="shopping-period" class="subheading"></p></div></div>
         <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
-        <form id="shopping-add-form" class="shopping-add-form"><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel eingeben …" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
         <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
         <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Schon eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-title">Schon eingekauft</span><span id="shopping-done-count" class="shopping-disclosure-count"></span><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
+        <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
+        <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Schon eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-title">Schon eingekauft</span><span id="shopping-done-count" class="shopping-disclosure-count"></span><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
+        <form id="shopping-add-form" class="shopping-add-form"><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel eingeben …" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
       </section>
     </main>
   </div>
@@ -135,7 +137,7 @@
   <script src="sync-api.js?v=1"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=1"></script>
-  <script src="app.js?v=20261101-7"></script>
+  <script src="app.js?v=20261101-8"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;
