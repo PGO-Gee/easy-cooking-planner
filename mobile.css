@@ -954,9 +954,15 @@ html {
     top: auto;
     bottom: calc(100% + 6px);
     z-index: 40;
-    max-height: min(264px, 36dvh);
+    max-height: min(180px, 28dvh);
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+  }
+
+  .shopping-item-suggestions .pantry-suggestion {
+    min-height: 40px;
+    padding: 7px 10px;
+    font-size: 13px;
   }
 
   .shopping-add-form .primary-button {
