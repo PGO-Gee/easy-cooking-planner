@@ -701,7 +701,13 @@ html {
   }
 
   .shopping-add-form input {
-    flex-basis: 100%;
+    flex-basis: auto;
+  }
+
+  .shopping-add-form .shopping-item-suggest {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
   }
 
   .shopping-add-form .primary-button {
@@ -936,6 +942,21 @@ html {
     min-height: 44px;
     padding: 0 10px;
     font-size: 16px;
+  }
+
+  .shopping-add-form .shopping-item-suggest {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+  }
+
+  .shopping-item-suggestions {
+    top: auto;
+    bottom: calc(100% + 6px);
+    z-index: 40;
+    max-height: min(264px, 36dvh);
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
   }
 
   .shopping-add-form .primary-button {
