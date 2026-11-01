@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>IndexedDB sync tests</title></head>
+<body><pre id="results">Tests laufen …</pre>
+<script src="../local-store.js"></script>
+<script src="../sync-transport.js"></script>
+<script src="../sync-coordinator.js"></script>
+<script src="../sync-write-barrier.js"></script>
+<script>
+(async () => {
+  const store = window.WochentischStore;
+  const assert = (value, message) => { if (!value) throw new Error(message); };
+  const put = (key, value) => ({ type: 'put', store: 'records', key, value });
+  const remove = key => ({ type: 'remove', store: 'records', key });
+  const existing = (key, value) => ({ store: 'records', key, exists: true, value });
+  try {
+    await store.put('records', 'app-state', { version: 1, data: { b: 2, a: 1 } });
+    await store.put('records', 'request', { id: 'r1' });
+    let applied = await store.writeBatchIfUnchanged(
+      [existing('app-state', { data: { a: 1, b: 2 }, version: 1 }), existing('request', { id: 'r1' })],
+      [put('app-state', { version: 2 }), put('base', { version: 2 }), remove('request')]);
+    assert(applied, 'matching acknowledgement did not commit');
+    assert((await store.get('records', 'app-state')).version === 2, 'state missing');
+    assert((await store.get('records', 'base')).version === 2, 'base missing');
+    assert(await store.get('records', 'request') === undefined, 'request not removed');
+    await store.put('records', 'request', { id: 'r2' });
+    applied = await store.writeBatchIfUnchanged([existing('app-state', { version: 1 })],
+      [put('app-state', { version: 3 }), put('base', { version: 3 }), remove('request')]);
+    assert(!applied, 'stale state was accepted');
+    assert((await store.get('records', 'app-state')).version === 2, 'stale write changed state');
+    assert((await store.get('records', 'base')).version === 2, 'stale write changed base');
+    assert((await store.get('records', 'request')).id === 'r2', 'stale write removed request');
+    const results = await Promise.all([3, 4].map(version => store.writeBatchIfUnchanged(
+      [existing('app-state', { version: 2 })], [put('app-state', { version })])));
+    assert(results.filter(Boolean).length === 1, 'concurrent writes were not serialized');
+    await store.remove('records', 'new');
+    applied = await store.writeBatchIfUnchanged([{ store: 'records', key: 'new', exists: false }], [put('new', null)]);
+    assert(applied && await store.get('records', 'new') === null, 'missing record differs from null');
+    applied = await store.writeBatchIfUnchanged([{ store: 'records', key: 'new', exists: false }], [put('new', 1)]);
+    assert(!applied, 'null record was treated as missing');
+    await store.put('records', 'app-state', { version: 5 });
+    await store.remove('records', 'transport-request');
+    let preparations = 0;
+    const transport = window.WochentischSyncTransport.create({
+      store, requestKey: 'transport-request', createRequest: () => ({ requestId: 'request-id' }),
+      send: async () => ({ revision: 5 }),
+      acknowledgementWrites: async () => {
+        const current = await store.get('records', 'app-state');
+        if (++preparations === 1) await store.put('records', 'app-state', { version: 6 });
+        return { conditions: [existing('app-state', current)], writes: [put('app-state', current), put('base', { version: 5 })] };
+      },
+    });
+    await transport.flush();
+    assert(preparations === 2 && (await store.get('records', 'app-state')).version === 6, 'transport lost concurrent edit');
+    assert(await store.get('records', 'transport-request') === undefined, 'transport request not acknowledged');
+    let release, started, requestCount = 0;
+    const waiting = new Promise(resolve => { release = resolve; });
+    const sending = new Promise(resolve => { started = resolve; });
+    const shared = value => ({ dishes: value.dishes, plans: value.plans });
+    const options = {
+      store, userId: 'test-user', householdId: 'test-household', toShared: shared,
+      newRequestId: () => `id-${++requestCount}`,
+      api: { sync: async request => {
+        if (request.requestId === 'id-1') { started(); await waiting; return { state: { dishes: ['local', 'cloud'], plans: {} }, conflicts: [], revision: 1 }; }
+        assert(JSON.stringify(request.base.dishes) === '["local"]', 'later edit used wrong base');
+        return { state: { dishes: ['local', 'later', 'cloud'], plans: {} }, conflicts: [], revision: 2 };
+      } },
+    };
+    const coordinator = window.WochentischSyncCoordinator.create(options);
+    for (const key of [coordinator.keys.request, coordinator.keys.pending]) await store.remove('records', key);
+    await store.put('records', coordinator.keys.base, { dishes: [], plans: {} });
+    await store.put('records', coordinator.keys.state, { dishes: ['local'], plans: {}, noteHidden: true });
+    const firstSync = coordinator.flush();
+    await sending;
+    await store.put('records', coordinator.keys.state, { dishes: ['local', 'later'], plans: {}, noteHidden: true });
+    release();
+    await firstSync;
+    assert((await store.get('records', coordinator.keys.pending)).base.dishes[0] === 'local', 'pending base missing');
+    await window.WochentischSyncCoordinator.create(options).flush();
+    assert((await store.get('records', coordinator.keys.state)).dishes.includes('later'), 'coordinator lost later edit');
+    assert(await store.get('records', coordinator.keys.pending) === undefined, 'pending edit not cleared');
+    let memory = { dishes: ['local'], plans: {}, noteHidden: false }, releaseCommit, commitStarted;
+    const commitGate = new Promise(resolve => { releaseCommit = resolve; });
+    const commitEntered = new Promise(resolve => { commitStarted = resolve; });
+    const delayedStore = { ...store, async writeBatchIfUnchanged(conditions, writes) { commitStarted(); await commitGate; return store.writeBatchIfUnchanged(conditions, writes); } };
+    const barrier = window.WochentischSyncWriteBarrier.create({ store: delayedStore, stateKey: 'app-state', backupKey: 'wochentisch-cloud-backup-test-user', pendingKey: 'sync-pending:test-user:test-household' });
+    const guarded = window.WochentischSyncCoordinator.create({ ...options, store: delayedStore, writeBarrier: barrier,
+      beforeSnapshot: () => barrier.drain(), readMemory: () => memory, applyMemory: next => { memory = next; },
+      api: { sync: async () => ({ state: { dishes: ['local', 'cloud'], plans: {} }, conflicts: [], revision: 3 }) } });
+    await store.remove('records', guarded.keys.pending);
+    await store.put('records', guarded.keys.base, { dishes: [], plans: {} });
+    await store.put('records', guarded.keys.state, memory);
+    const guardedSync = guarded.flush();
+    await commitEntered;
+    memory = { dishes: ['local', 'later'], plans: {}, noteHidden: false };
+    const lateSave = barrier.save(memory);
+    releaseCommit();
+    await Promise.all([guardedSync, lateSave]);
+    assert((await store.get('records', guarded.keys.state)).dishes.includes('later'), 'in-memory edit was overwritten');
+    assert((await store.get('records', guarded.keys.pending)).base.dishes[0] === 'local', 'in-memory edit lost its base');
+    document.querySelector('#results').textContent = 'PASS: atomic commit, transport retry, restart and in-memory edit during commit';
+  } catch (error) {
+    document.querySelector('#results').textContent = `FAIL: ${error.stack || error}`;
+  }
+})();
+</script></body></html>

@@ -1,5 +1,5 @@
 (() => {
-  const DATABASE_NAME = 'wochentisch-local';
+  const DATABASE_NAME = 'wochentisch-sync-v1';
   const DATABASE_VERSION = 1;
   const STORE_NAMES = ['records', 'catalog', 'imports', 'conflicts'];
   let databasePromise;
@@ -70,6 +70,96 @@
     });
   }
 
+  // A sync acknowledgement must never persist the new base without also
+  // persisting the corresponding app state and removing the completed request.
+  async function writeBatch(operations) {
+    if (!Array.isArray(operations) || !operations.length) return;
+    for (const operation of operations) {
+      if (!operation || !STORE_NAMES.includes(operation.store) ||
+          !['put', 'remove'].includes(operation.type) || operation.key === undefined) {
+        throw new TypeError('Ungültiger lokaler Speicherauftrag.');
+      }
+    }
+    const database = await openDatabase();
+    const transaction = database.transaction([...new Set(operations.map(operation => operation.store))], 'readwrite');
+    return new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error || new Error('Lokale Speicherung fehlgeschlagen.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Lokale Speicherung wurde abgebrochen.'));
+      try {
+        for (const operation of operations) {
+          const store = transaction.objectStore(operation.store);
+          if (operation.type === 'put') store.put({ key: operation.key, value: operation.value, updatedAt: Date.now() });
+          else store.delete(operation.key);
+        }
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    });
+  }
+
+  // Compare and apply within one readwrite transaction. This prevents an
+  // acknowledgement from overwriting an app-state saved by another tab after
+  // the response was prepared. Values must be JSON-compatible app data.
+  async function writeBatchIfUnchanged(conditions, operations) {
+    if (!Array.isArray(conditions) || !conditions.length || !Array.isArray(operations) || !operations.length) {
+      throw new TypeError('Ungültiger bedingter Speicherauftrag.');
+    }
+    for (const condition of conditions) {
+      if (!condition || !STORE_NAMES.includes(condition.store) || condition.key === undefined ||
+          typeof condition.exists !== 'boolean' || (condition.exists && !Object.prototype.hasOwnProperty.call(condition, 'value'))) {
+        throw new TypeError('Ungültige Speicherbedingung.');
+      }
+    }
+    for (const operation of operations) {
+      if (!operation || !STORE_NAMES.includes(operation.store) ||
+          !['put', 'remove'].includes(operation.type) || operation.key === undefined) {
+        throw new TypeError('Ungültiger lokaler Speicherauftrag.');
+      }
+    }
+    function stable(value) {
+      if (Array.isArray(value)) return value.map(stable);
+      if (value && typeof value === 'object') return Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]));
+      return value;
+    }
+    const expected = conditions.map(condition => condition.exists ? JSON.stringify(stable(condition.value)) : null);
+    const database = await openDatabase();
+    const stores = [...new Set([...conditions, ...operations].map(entry => entry.store))];
+    const transaction = database.transaction(stores, 'readwrite');
+    return new Promise((resolve, reject) => {
+      let remaining = conditions.length, matches = true, applied = false;
+      transaction.oncomplete = () => resolve(applied);
+      transaction.onerror = () => reject(transaction.error || new Error('Lokale Speicherung fehlgeschlagen.'));
+      transaction.onabort = () => reject(transaction.error || new Error('Lokale Speicherung wurde abgebrochen.'));
+      try {
+        conditions.forEach((condition, index) => {
+          const request = transaction.objectStore(condition.store).get(condition.key);
+          request.onsuccess = () => {
+            const record = request.result;
+            if (Boolean(record) !== condition.exists ||
+                (condition.exists && JSON.stringify(stable(record.value)) !== expected[index])) matches = false;
+            if (--remaining !== 0 || !matches) return;
+            try {
+              for (const operation of operations) {
+                const store = transaction.objectStore(operation.store);
+                if (operation.type === 'put') store.put({ key: operation.key, value: operation.value, updatedAt: Date.now() });
+                else store.delete(operation.key);
+              }
+              applied = true;
+            } catch (error) {
+              transaction.abort();
+              reject(error);
+            }
+          };
+        });
+      } catch (error) {
+        transaction.abort();
+        reject(error);
+      }
+    });
+  }
+
   function safelyReadLocalStorage(key) {
     try { return localStorage.getItem(key); } catch (error) { return null; }
   }
@@ -112,5 +202,5 @@
     });
   }
 
-  window.WochentischStore = Object.freeze({ openDatabase, get, getAll, put, remove, migrateLegacyStorage });
+  window.WochentischStore = Object.freeze({ openDatabase, get, getAll, put, remove, writeBatch, writeBatchIfUnchanged, migrateLegacyStorage });
 })();
