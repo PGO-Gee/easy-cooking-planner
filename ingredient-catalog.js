@@ -126,6 +126,14 @@
     return normalize(value).toLocaleLowerCase('de-DE');
   }
 
+  function manualName(value) {
+    return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+  }
+
+  function manualKey(value) {
+    return manualName(value).toLocaleLowerCase('de-DE');
+  }
+
   function unique(values) {
     const seen = new Set();
     return (Array.isArray(values) ? values : []).reduce((result, value) => {
@@ -142,7 +150,7 @@
   function normalizeQuantities(values) {
     if (!values || typeof values !== 'object' || Array.isArray(values)) return {};
     return Object.entries(values).reduce((result, [rawName, rawQuantity]) => {
-      const itemKey = key(rawName);
+      const itemKey = manualKey(rawName);
       const quantity = Number(rawQuantity);
       if (!itemKey || !Number.isFinite(quantity)) return result;
       result[itemKey] = (result[itemKey] || 0) + quantity;
@@ -153,7 +161,7 @@
   function normalizeChecks(values) {
     if (!values || typeof values !== 'object' || Array.isArray(values)) return {};
     return Object.entries(values).reduce((result, [rawName, checked]) => {
-      const itemKey = key(rawName.replace(/^manual:/i, ''));
+      const itemKey = manualKey(rawName.replace(/^manual:/i, ''));
       if (itemKey && checked) result[itemKey] = true;
       return result;
     }, {});
@@ -178,8 +186,15 @@
         .map(dish => ({ ...dish, ingredients: unique(dish.ingredients) })),
       pantryIngredients: normalizeWeekValues(value.pantryIngredients, unique),
       shoppingChecks: normalizeWeekValues(value.shoppingChecks, normalizeChecks),
-      hiddenShoppingItems: normalizeWeekValues(value.hiddenShoppingItems, normalizeKeys),
-      manualShoppingItems: normalizeWeekValues(value.manualShoppingItems, unique),
+      hiddenShoppingItems: normalizeWeekValues(value.hiddenShoppingItems, values => [...new Set((Array.isArray(values) ? values : []).map(manualKey).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de-DE'))),
+      manualShoppingItems: normalizeWeekValues(value.manualShoppingItems, values => {
+        const seen = new Set();
+        return (Array.isArray(values) ? values : []).reduce((result, raw) => {
+          const name = manualName(raw), itemKey = manualKey(name);
+          if (name && !seen.has(itemKey)) { seen.add(itemKey); result.push(name); }
+          return result;
+        }, []);
+      }),
       shoppingQuantities: normalizeQuantities(value.shoppingQuantities || {})
     };
   }
@@ -199,7 +214,7 @@
 
   window.WochentischIngredients = Object.freeze({
     normalize, key, unique, normalizeQuantities, normalizeChecks, normalizeKeys,
-    normalizeStateIngredients
+    normalizeStateIngredients, manualName, manualKey
   });
   window.COMMON_INGREDIENTS = canonicalIngredients;
   window.COMMON_MAIN_INGREDIENTS = [...new Map([...canonicalIngredients, ...aliasNames].map(name => [aliasKey(name), name])).values()];
