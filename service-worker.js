@@ -1,4 +1,4 @@
-const CACHE_NAME = 'wochentisch-shell-v56';
+const CACHE_NAME = 'wochentisch-shell-v57';
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0';
 const APP_SHELL = [
   './',

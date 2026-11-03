@@ -1463,3 +1463,12 @@
   .sidebar.mobile-open .profile-menu-toggle { margin-left: auto; }
   .sidebar.mobile-open .profile-actions-menu { width: min(220px, calc(84vw - 32px)); }
 }
+
+.profile-actions-menu .profile-action[hidden] { display: none; }
+
+#install-dialog {
+  width: min(420px, calc(100% - 32px));
+  color: var(--ink);
+}
+
+#install-dialog .primary-button { min-height: 44px; }

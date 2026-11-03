@@ -2149,6 +2149,53 @@ const systemTheme=window.matchMedia('(prefers-color-scheme: dark)');let themeOve
 function updateThemeButton(){const button=$('#theme-toggle'),icon=button.querySelector('.sidebar-action-icon'),label=themeOverride?(systemTheme.matches?'Dark Mode':'Light Mode'):(systemTheme.matches?'Light Mode':'Dark Mode');icon.textContent=label==='Dark Mode'?'☾':'☀';button.querySelector('.theme-toggle-label').textContent=label;button.setAttribute('aria-label',`${label} aktivieren`);button.title=`${label} aktivieren`}
 function applyTheme(){const link=$('#theme-stylesheet');link.media=themeOverride?(themeOverride==='dark'?'all':'not all'):'(prefers-color-scheme: dark)';updateThemeButton()}
 function toggleTheme(){themeOverride=themeOverride?null:systemTheme.matches?'light':'dark';applyTheme()}
+const installButton=$('#install-app');
+const installDialog=$('#install-dialog');
+const standaloneDisplay=window.matchMedia('(display-mode: standalone)');
+let pendingInstallPrompt=null;
+let appInstalled=false;
+
+function updateInstallButton(){
+  installButton.hidden=appInstalled||standalonePwa();
+}
+
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  pendingInstallPrompt=event;
+});
+window.addEventListener('appinstalled',()=>{
+  appInstalled=true;
+  pendingInstallPrompt=null;
+  updateInstallButton();
+});
+standaloneDisplay.addEventListener('change',updateInstallButton);
+updateInstallButton();
+
+installButton.addEventListener('click',async()=>{
+  closeProfileActionsMenu({restoreFocus:true});
+  const prompt=pendingInstallPrompt;
+  pendingInstallPrompt=null;
+  if(prompt){
+    try{
+      await prompt.prompt();
+      return;
+    }catch(error){
+      console.debug('Installationsdialog konnte nicht geöffnet werden:',error);
+    }
+  }
+
+  const userAgent=navigator.userAgent;
+  const appleMobile=/iPhone|iPad|iPod/.test(userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  let instructions='Öffne das Browsermenü und wähle „Installieren“ oder „Zum Startbildschirm hinzufügen“, falls verfügbar.';
+  if(appleMobile){
+    instructions='Öffne Wochentisch in Safari. Tippe auf „Teilen“ und dann auf „Zu Home-Bildschirm hinzufügen“. Aktiviere „Als Web-App öffnen“, falls die Option angezeigt wird, und tippe auf „Hinzufügen“.';
+  }else if(/Macintosh/.test(userAgent)&&/Safari/.test(userAgent)&&!/Chrome|Chromium|Edg/.test(userAgent)){
+    instructions='Wähle in Safari „Ablage“ → „Zum Dock hinzufügen“ und bestätige mit „Hinzufügen“.';
+  }
+  $('#install-instructions').textContent=instructions;
+  installDialog.showModal();
+});
+
 $('#profile-menu-toggle').addEventListener('click',()=>{$('#profile-actions-menu').hidden?openProfileActionsMenu():closeProfileActionsMenu()});
 $('#profile-menu-toggle').addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();openProfileActionsMenu({focusFirst:true})}});
 document.addEventListener('click',event=>{if(!event.target.closest('.profile-menu-anchor'))closeProfileActionsMenu()});
