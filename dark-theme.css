@@ -1265,3 +1265,30 @@ dialog { background: rgb(27 36 47 / 96%); }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
 .shopping-quantity{border-color:#344352;background:#18232f;color:#e0e8f1}.shopping-quantity button{background:#293848;color:#e0e8f1}.shopping-quantity button:hover:not(:disabled){background:#364a5e}
+
+/* The same playful accents, tuned for dark surfaces. */
+:root { --canvas: #1d2028; --green: #8bd7b7; --green-dark: #71c6a4; --mint: #29483c; }
+body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%), #1d2028; }
+.sidebar { background: #252832; border-color: #3b4b4b; }
+.topbar { background: rgb(29 32 40 / 90%); border-color: #3b4b4b; }
+.brand-mark { background: #347b72; }
+.nav-item.active { background: #29483c; color: #b5efd2; }
+.primary-button, .password-sign-in-button { background: #347b65; color: #fff; }
+.primary-button:hover, .password-sign-in-button:hover { background: #286b57; }
+.day-card { background: #292c35; border-color: #40514d; }
+.day-card.today { border-color: #78bca0; box-shadow: 0 0 0 1px #78bca0; }
+.day-card .day-head { background: #414b35; border-color: #4a5948; }
+.day-card:nth-child(3n+2) .day-head { background: #30443b; }
+.day-card:nth-child(3n) .day-head { background: #304451; }
+.calendar-grid .meal-card, .calendar-grid .meal-card:nth-child(3n+2), .calendar-grid .meal-card:nth-child(3n) { background: #414c35; }
+.calendar-grid .day-card:nth-child(3n+2) .meal-card { background: #30483d; }
+.calendar-grid .day-card:nth-child(3n) .meal-card { background: #304855; }
+.today-pill { background: #345b48; color: #d2f3dd; }
+.bottom-note { background: #414b30; color: #e5efbd; }
+.home-tile-week { background: #30463c; border-color: #496a59; }
+.home-tile-dishes { background: #304653; border-color: #4a6979; }
+.home-tile-shopping { background: #454d32; border-color: #67714b; }
+.home-tile-week .home-tile-icon { background: #3a6751; color: #d2f6df; }
+.home-tile-dishes .home-tile-icon { background: #416779; color: #d8f0fb; }
+.home-tile-shopping .home-tile-icon { background: #5c6c3d; color: #edf6c9; }
+.shopping-tile { background: #292c35; border-color: #40514d; }
