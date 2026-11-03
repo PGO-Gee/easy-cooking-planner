@@ -1167,3 +1167,30 @@ html {
 
 }
 
+
+/* Cheerful surfaces shared by desktop and mobile. */
+body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%), radial-gradient(ellipse at 12% 8%, #edf4ce, transparent 38%), #f5f9f5; }
+.sidebar { background: rgb(248 251 247 / 92%); border-color: #dce9e1; }
+.topbar { background: rgb(245 249 245 / 88%); border-color: #dce9e1; }
+.brand-mark { background: linear-gradient(145deg, #439781, #256a68); }
+.nav-item.active { background: #d9f2e5; color: #195f50; }
+.primary-button, .password-sign-in-button { background: #267765; color: #fff; }
+.primary-button:hover, .password-sign-in-button:hover { background: #195c50; }
+.day-card { background: #ffffff; border-color: #dce9e1; }
+.day-card.today { border-color: #519c87; box-shadow: 0 0 0 1px #519c87; }
+.day-head { background: #eaf2d6; border-color: #dce9d4; }
+.day-card:nth-child(3n+2) .day-head { background: #e4f5ed; }
+.day-card:nth-child(3n) .day-head { background: #e3f0f8; }
+.calendar-grid .meal-card, .calendar-grid .meal-card:nth-child(3n+2), .calendar-grid .meal-card:nth-child(3n) { background: #ecf3d9; }
+.calendar-grid .day-card:nth-child(3n+2) .meal-card { background: #dcf2e8; }
+.calendar-grid .day-card:nth-child(3n) .meal-card { background: #dcecf6; }
+.today-pill { background: #cbe9d7; color: #225c45; }
+.bottom-note { background: #edf4cf; color: #4c5f2c; }
+.home-tile-week { background: #e0f3e9; border-color: #b9e0cd; }
+.home-tile-dishes { background: #e0eef8; border-color: #c3ddea; }
+.home-tile-shopping { background: #f1f4d5; border-color: #dbe3b2; }
+.home-tile-week .home-tile-icon { background: #bce8d0; color: #185f4b; }
+.home-tile-dishes .home-tile-icon { background: #c2dfed; color: #285e78; }
+.home-tile-shopping .home-tile-icon { background: #dfe9ac; color: #53651f; }
+.dish-icon, .shopping-tile-icon { background: #eaf2d0; color: #53651f; }
+.shopping-tile { border-color: #dce9e1; background: #fcfefb; }
