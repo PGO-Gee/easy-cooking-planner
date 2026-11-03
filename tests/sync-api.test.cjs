@@ -20,6 +20,18 @@ test('resolve sends the expected cloud version and choice to the versioned RPC',
   assert.deepEqual(call, { name: 'resolve_household_conflict_v1', args: { p_household_id: 'h', p_request_id: 'r', p_conflict: conflict, p_choice: 'local' } });
 });
 
+test('routes v2 requests to the recipe-aware RPCs and rejects unknown versions', async () => {
+  const calls = [];
+  const api = create({ rpc: async (name, args) => { calls.push({ name, args }); return { data: response(), error: null }; } });
+  const state = { dishes: [{ id: 'a', recipe: { servings: 2, ingredients: [], steps: [] }, catalogSourceId: 'catalog-a', catalogSourceVersion: 3 }], plans: {} };
+  await api.sync({ version: 2, householdId: 'h', requestId: 'r2', base: state, local: state });
+  const conflict = { id: 'dish:["a"]', kind: 'dish', key: ['a'], label: 'A', basePresent: true, baseValue: { recipe: null }, localPresent: true, localValue: { recipe: state.dishes[0].recipe }, remotePresent: true, remoteValue: { recipe: null } };
+  await api.resolve({ version: 2, householdId: 'h', requestId: 'r3', conflict, choice: 'local' });
+  assert.deepEqual(calls.map(call => call.name), ['sync_household_v2', 'resolve_household_conflict_v2']);
+  assert.equal(calls[0].args.p_local.dishes[0].catalogSourceVersion, 3);
+  assert.throws(() => api.sync({ version: 3 }), /Unbekannte Sync-Version/);
+});
+
 test('converts legacy conflicts and distinguishes deletion from a present null', () => {
   assert.deepEqual(conflictForServer({ id: 'old-id', kind: 'shopping-check', key: ['week', 'milk'], label: 'Milk', baseValue: true, localValue: false, remoteValue: true }), {
     kind: 'shopping-check', key: ['week', 'milk'], label: 'Milk', basePresent: true, baseValue: true,
