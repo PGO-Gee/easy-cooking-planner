@@ -1287,8 +1287,22 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 .bottom-note { background: #414b30; color: #e5efbd; }
 .home-tile-week { background: #30463c; border-color: #496a59; }
 .home-tile-dishes { background: #304653; border-color: #4a6979; }
+.home-tile-cooking { background: #453753; border-color: #66517c; }
 .home-tile-shopping { background: #454d32; border-color: #67714b; }
 .home-tile-week .home-tile-icon { background: #3a6751; color: #d2f6df; }
 .home-tile-dishes .home-tile-icon { background: #416779; color: #d8f0fb; }
+.home-tile-cooking .home-tile-icon { background: #604a78; color: #ecdcfa; }
 .home-tile-shopping .home-tile-icon { background: #5c6c3d; color: #edf6c9; }
 .shopping-tile { background: #292c35; border-color: #40514d; }
+
+/* Recipe editor and cooking assistant dark surfaces */
+.recipe-editor-section,.recipe-overview-panel,.cook-step-text,.cook-ingredients-details,.cook-done-card,.recipe-list-card,.catalog-admin-row{background:#202c3a;border-color:#3a4a5e;color:#e0e8f1}
+.recipe-editor-section h3,.recipe-editor-section h4,.recipe-servings-field,.recipe-list-copy strong,.recipe-detail-heading h2,.recipe-overview-panel h3,.catalog-admin-row h2,.cook-step-title,.cook-done-card h2{color:#e0e8f1}
+.recipe-editor-hint,.recipe-list-copy small,.recipe-detail-heading p,.catalog-admin-row p,.recipe-missing-data,.recipe-ingredient-list li small{color:#a5b1bf}
+.recipe-ingredient-row input,.recipe-step-row textarea,#dish-form .recipe-servings-control input,.recipe-portion-control select,.cooking-search,.catalog-admin-screen .catalog-search,.catalog-admin-screen .catalog-search input{background:#18232f;border-color:#3a4a5e;color:#e0e8f1}
+.recipe-servings-control{background:#202c3a;border-color:#3a4a5e}.recipe-servings-hint{color:#a5b1bf}.recipe-editor-hint{background:#263a32;border-left-color:#6f9b78;color:#c2d8c5}
+.recipe-row-remove,.recipe-row-move,.recipe-add-row,.recipe-back{background:#202c3a;border-color:#3a4a5e;color:#d3dfed}
+.recipe-list-icon{background:#30483d}.recipe-planned-tag{background:#30483d;color:#c6ead0}.recipe-portion-control{color:#bdcbe0}
+.recipe-ingredient-list li{border-color:#354354}.recipe-ingredient-list li strong{color:#b8dfbd}.recipe-stale-note,.catalog-version-conflict,.catalog-update-offer{background:#312a1e;border-color:#625236;color:#ead4a2}.recipe-stale-note,.catalog-version-conflict p,.catalog-update-offer p{color:#ead4a2}
+.cook-progress{background:#344352}.cook-progress span{background:#78b99a}.cook-step-count{color:#b2d9b3}.cook-done-icon{background:#29483c;color:#b9edca}.catalog-admin-notice{background:#233a33;border-color:#3d6651;color:#c6ead0}
+.catalog-version-conflict pre{background:#18232f;color:#d5e0eb}

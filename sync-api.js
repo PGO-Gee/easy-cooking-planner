@@ -47,14 +47,19 @@
       }
       return data;
     }
+    function endpointVersion(request) {
+      const version = request?.version === undefined ? 1 : request.version;
+      if (![1, 2].includes(version)) throw new TypeError('Unbekannte Sync-Version.');
+      return version;
+    }
     function sync(request) {
-      return call('sync_household_v1', {
+      return call(`sync_household_v${endpointVersion(request)}`, {
         p_household_id: request.householdId, p_request_id: request.requestId,
         p_base: request.base, p_local: request.local,
       });
     }
     function resolve(request) {
-      return call('resolve_household_conflict_v1', {
+      return call(`resolve_household_conflict_v${endpointVersion(request)}`, {
         p_household_id: request.householdId, p_request_id: request.requestId,
         p_conflict: conflictForServer(request.conflict), p_choice: request.choice,
       });

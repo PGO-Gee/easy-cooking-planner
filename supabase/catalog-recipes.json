@@ -1,0 +1,2268 @@
+[
+  {
+    "name": "Bauernomelett mit Kartoffeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Eier",
+          "amount": 4,
+          "unit": "Stück",
+          "note": "Größe M"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 400,
+          "unit": "g",
+          "note": "festkochend"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Schnittlauch",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Kartoffeln waschen und in leicht gesalzenem Wasser 18–20 Minuten garen. Abgießen, kurz ausdampfen lassen und in Scheiben schneiden.",
+        "Zwiebel würfeln, Paprika klein schneiden. Öl in einer ofenfesten Pfanne erhitzen und beides 4 Minuten anbraten. Kartoffelscheiben zugeben und weitere 4 Minuten braten.",
+        "Eier verquirlen, mit Salz und Pfeffer würzen und über das Gemüse gießen. Bei kleiner Hitze 6–8 Minuten stocken lassen; für eine gebräunte Oberfläche die Pfanne 2 Minuten unter den Grill stellen. Mit Schnittlauch bestreuen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Eier",
+      "Kartoffeln",
+      "Zwiebeln",
+      "Paprika",
+      "Schnittlauch",
+      "Rapsöl",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Buchweizen-Eintopf",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Buchweizen",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 700,
+          "unit": "ml"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Majoran",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz und Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Buchweizen in einem Sieb heiß abspülen. Kartoffeln und Karotten würfeln, Zwiebel fein hacken.",
+        "Öl in einem Topf erhitzen und die Zwiebel 3 Minuten anschwitzen. Kartoffeln, Karotten und Buchweizen einrühren, Brühe angießen und Majoran zugeben.",
+        "Aufkochen, dann zugedeckt bei kleiner Hitze 20–25 Minuten köcheln lassen, bis Buchweizen und Kartoffeln weich sind. Mit Salz und Pfeffer abschmecken und 5 Minuten ruhen lassen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Buchweizen",
+      "Kartoffeln",
+      "Karotten",
+      "Zwiebeln",
+      "Gemüsebrühe",
+      "Rapsöl",
+      "Majoran",
+      "Salz und Pfeffer"
+    ]
+  },
+  {
+    "name": "Burger und Kartoffel-Pommes",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Burgerbrötchen",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rinderpatty",
+          "amount": 2,
+          "unit": "Stück",
+          "note": "je etwa 150 g"
+        },
+        {
+          "name": "Käse",
+          "amount": 2,
+          "unit": "Scheiben"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Salat",
+          "amount": 4,
+          "unit": "Blätter"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz und Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Backofen auf 220 °C Ober-/Unterhitze vorheizen. Kartoffeln in Stifte schneiden, mit Öl und Salz mischen und auf einem Blech verteilen. 30–35 Minuten backen, nach der Hälfte wenden.",
+        "Tomate in Scheiben schneiden, Salat waschen. Brötchen halbieren und in einer Pfanne oder im Ofen kurz anrösten.",
+        "Patties salzen und pfeffern. In einer heißen Pfanne je Seite 3–4 Minuten braten, bis sie durchgegart sind. Käse in der letzten Minute auflegen. Burger mit Salat und Tomate zusammensetzen und mit Pommes servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Burgerbrötchen",
+      "Rindfleisch",
+      "Käse",
+      "Kartoffeln",
+      "Salat",
+      "Tomaten",
+      "Rapsöl",
+      "Salz und Pfeffer"
+    ]
+  },
+  {
+    "name": "Butter Chicken mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenbrust",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Basmatireis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Sahne",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Butter",
+          "amount": 25,
+          "unit": "g"
+        },
+        {
+          "name": "Ingwer",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 2,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Currypulver",
+          "amount": 2,
+          "unit": "TL"
+        },
+        {
+          "name": "Joghurt",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Hähnchen in mundgerechte Stücke schneiden und mit Joghurt, der Hälfte des Currypulvers und Salz mischen. 10 Minuten ziehen lassen. Reis nach Packungsangabe garen.",
+        "Butter in einer Pfanne erhitzen. Hähnchen rundum 6–8 Minuten anbraten. Fein geriebenen Ingwer und Knoblauch kurz mitbraten.",
+        "Passierte Tomaten und restliches Currypulver einrühren. Bei mittlerer Hitze 10 Minuten köcheln lassen, Sahne einrühren und weitere 3 Minuten erhitzen. Mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Reis",
+      "Passierte Tomaten",
+      "Sahne",
+      "Butter",
+      "Ingwer",
+      "Knoblauch",
+      "Currypulver",
+      "Joghurt",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Chili con Carne mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Rinderhackfleisch",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Kidneybohnen",
+          "amount": 240,
+          "unit": "g",
+          "note": "Abtropfgewicht"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Chilipulver",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Zwiebel und Paprika würfeln, Bohnen abspülen und abtropfen lassen.",
+        "Öl in einem Topf erhitzen. Hackfleisch krümelig und vollständig braun braten. Zwiebel und Paprika 4 Minuten mitbraten, Tomatenmark einrühren.",
+        "Passierte Tomaten und Chili zugeben. 15 Minuten offen köcheln lassen, Bohnen in den letzten 5 Minuten mitwärmen. Abschmecken und mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Rindfleisch",
+      "Kidneybohnen",
+      "Passierte Tomaten",
+      "Reis",
+      "Zwiebeln",
+      "Paprika",
+      "Tomatenmark",
+      "Rapsöl",
+      "Chilipulver"
+    ]
+  },
+  {
+    "name": "Currywurst mit Pommes",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Bratwurst",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Pommes",
+          "amount": 400,
+          "unit": "g"
+        },
+        {
+          "name": "Ketchup",
+          "amount": 120,
+          "unit": "g"
+        },
+        {
+          "name": "Currypulver",
+          "amount": 2,
+          "unit": "TL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Backofen auf die auf der Pommespackung angegebene Temperatur vorheizen. Pommes auf einem Blech verteilen und nach Packungsangabe knusprig backen.",
+        "Würste in einer leicht geölten Pfanne bei mittlerer Hitze rundum 8–10 Minuten braten, bis sie innen vollständig heiß sind.",
+        "Ketchup in einem kleinen Topf erwärmen und mit der Hälfte des Currypulvers verrühren. Würste in Scheiben schneiden, Sauce darübergeben und mit restlichem Curry bestäuben. Pommes dazu reichen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Bratwurst",
+      "Pommes",
+      "Ketchup",
+      "Currypulver",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Fisch mit Kartoffeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Fischfilet",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Zitrone",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Butter",
+          "amount": 20,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Dill",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz und Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Kartoffeln schälen, in Stücke schneiden und in Salzwasser 18–20 Minuten weich kochen. Abgießen und mit Butter schwenken.",
+        "Fisch trocken tupfen und mit Salz und Pfeffer würzen. Öl in einer Pfanne erhitzen und das Filet je nach Dicke 3–5 Minuten pro Seite braten, bis es innen undurchsichtig ist und leicht zerfällt.",
+        "Zitrone halbieren und Fisch mit Zitronensaft und Dill würzen. Mit den Kartoffeln servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Fischfilet",
+      "Kartoffeln",
+      "Zitronen",
+      "Butter",
+      "Rapsöl",
+      "Dill",
+      "Salz und Pfeffer"
+    ]
+  },
+  {
+    "name": "Fischstäbchen mit Kartoffelpüree",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Fischstäbchen",
+          "amount": 8,
+          "unit": "Stück"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Milch",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Butter",
+          "amount": 25,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Kartoffeln schälen, würfeln und in Salzwasser 18–20 Minuten weich kochen. Abgießen.",
+        "Milch und Butter erwärmen. Kartoffeln stampfen, die warme Milch nach und nach einarbeiten und das Püree mit Salz abschmecken.",
+        "Fischstäbchen nach Packungsangabe im Ofen backen oder in wenig Öl in der Pfanne je Seite 3–4 Minuten goldbraun braten. Mit dem Püree servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Fischstäbchen",
+      "Kartoffeln",
+      "Milch",
+      "Butter",
+      "Rapsöl",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Frikadellen mit Kartoffelpüree",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Rinderhackfleisch",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Eier",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paniermehl",
+          "amount": 30,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Milch",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Butter",
+          "amount": 25,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Kartoffeln schälen, würfeln und in Salzwasser 18–20 Minuten kochen. Zwiebel fein würfeln.",
+        "Hackfleisch mit Ei, Paniermehl und der Hälfte der Zwiebel verkneten. Zwei flache Frikadellen formen. In heißem Öl bei mittlerer Hitze je Seite 5–6 Minuten braten, bis sie durchgegart sind.",
+        "Kartoffeln abgießen und mit erwärmter Milch und Butter stampfen. Mit Salz abschmecken und zusammen mit den Frikadellen servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Rindfleisch",
+      "Kartoffeln",
+      "Eier",
+      "Paniermehl",
+      "Zwiebeln",
+      "Milch",
+      "Butter",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Gebratener Reis mit Hähnchen und Ei",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Eier",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Erbsen",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Sesamöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Frühlingszwiebeln",
+          "amount": 2,
+          "unit": "Stück"
+        }
+      ],
+      "steps": [
+        "Reis garen, auf einem großen Teller ausbreiten und möglichst vollständig abkühlen lassen. Hähnchen würfeln, Karotte klein schneiden und Frühlingszwiebeln in Ringe schneiden.",
+        "Hähnchen in der Hälfte des Sesamöls in einer großen Pfanne 6–8 Minuten vollständig durchbraten. An den Pfannenrand schieben, Eier in die freie Fläche schlagen und unter Rühren stocken lassen.",
+        "Karotte und Erbsen 4 Minuten braten. Reis, Sojasauce und übriges Öl zugeben und unter Rühren 4–5 Minuten erhitzen. Frühlingszwiebeln darüberstreuen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Reis",
+      "Hähnchen",
+      "Eier",
+      "Erbsen",
+      "Karotten",
+      "Sojasauce",
+      "Sesamöl",
+      "Frühlingszwiebeln"
+    ]
+  },
+  {
+    "name": "Gulasch mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Rindergulasch",
+          "amount": 400,
+          "unit": "g"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rinderbrühe",
+          "amount": 400,
+          "unit": "ml"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 2,
+          "unit": "TL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Zwiebeln würfeln und Paprika in Streifen schneiden. Öl in einem schweren Topf erhitzen und das Rindfleisch portionsweise kräftig anbraten.",
+        "Zwiebeln zugeben und 4 Minuten mitbraten. Tomatenmark und Paprikapulver einrühren, Brühe angießen und aufkochen.",
+        "Zugedeckt bei kleiner Hitze 75–90 Minuten schmoren, bis das Fleisch weich ist; bei Bedarf etwas Wasser nachgießen. Reis nach Packungsangabe garen und zum Gulasch servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Rindfleisch",
+      "Reis",
+      "Zwiebeln",
+      "Paprika",
+      "Rinderbrühe",
+      "Tomatenmark",
+      "Paprikapulver",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Hähnchen-Woknudeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Mie-Nudeln",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Brokkoli",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 3,
+          "unit": "EL"
+        },
+        {
+          "name": "Ingwer",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Sesamöl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Nudeln nach Packungsangabe garen und abtropfen lassen. Hähnchen in Streifen, Gemüse in dünne Stücke schneiden und Ingwer fein reiben.",
+        "Wok oder große Pfanne stark erhitzen. Öl zugeben und Hähnchen 6–8 Minuten vollständig durchbraten. Herausnehmen.",
+        "Gemüse und Ingwer 4–5 Minuten unter Rühren braten. Nudeln, Hähnchen und Sojasauce dazugeben und 2 Minuten heiß schwenken."
+      ]
+    },
+    "shoppingIngredients": [
+      "Mie-Nudeln",
+      "Hähnchen",
+      "Brokkoli",
+      "Karotten",
+      "Paprika",
+      "Sojasauce",
+      "Ingwer",
+      "Sesamöl"
+    ]
+  },
+  {
+    "name": "Hähnchenschenkel mit Ofenkartoffeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenschenkel",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Rosmarin",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Backofen auf 200 °C Umluft vorheizen. Kartoffeln in Spalten und Zwiebel in Stücke schneiden. Mit einem Esslöffel Öl, Rosmarin und Salz mischen.",
+        "Hähnchenschenkel trocken tupfen und mit restlichem Öl, Paprikapulver und Salz einreiben. Mit den Kartoffeln auf ein Blech legen.",
+        "45–55 Minuten backen, Kartoffeln nach 25 Minuten wenden. Hähnchen ist fertig, wenn es am Knochen durchgegart ist und der austretende Saft klar ist."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Kartoffeln",
+      "Zwiebeln",
+      "Paprikapulver",
+      "Rosmarin",
+      "Rapsöl",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Hühnchen mit Kartoffeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenbrust",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Hühnerbrühe",
+          "amount": 250,
+          "unit": "ml"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Thymian",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Kartoffeln und Karotten schälen und in gleich große Stücke schneiden. Zwiebel würfeln, Hähnchen trocken tupfen und in Stücke schneiden.",
+        "Öl in einem breiten Topf erhitzen. Hähnchen rundum anbraten, Zwiebel zugeben und 3 Minuten mitbraten.",
+        "Kartoffeln, Karotten, Brühe und Thymian zugeben. Zugedeckt 20–25 Minuten sanft köcheln, bis Gemüse weich und Hähnchen vollständig durchgegart ist. Abschmecken."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Kartoffeln",
+      "Karotten",
+      "Zwiebeln",
+      "Hühnerbrühe",
+      "Rapsöl",
+      "Thymian"
+    ]
+  },
+  {
+    "name": "Hühnchen-Wraps",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Tortilla-Wraps",
+          "amount": 4,
+          "unit": "Stück"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Salat",
+          "amount": 4,
+          "unit": "Blätter"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Joghurt",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Gurke",
+          "amount": 0.5,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Hähnchen in Streifen schneiden und mit Paprikapulver würzen. Öl in einer Pfanne erhitzen und die Streifen 6–8 Minuten vollständig durchbraten.",
+        "Gurke raspeln und mit Joghurt verrühren, mit Salz und Pfeffer abschmecken. Salat waschen und Tomate würfeln.",
+        "Wraps nach Packungsangabe erwärmen. Mit Joghurtsauce, Salat, Tomate und Hähnchen belegen, Seiten einschlagen und eng aufrollen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Tortilla-Wraps",
+      "Hähnchen",
+      "Salat",
+      "Tomaten",
+      "Joghurt",
+      "Gurken",
+      "Paprikapulver",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Hühnerfrikassee mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenbrust",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Erbsen",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Champignons",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Hühnerbrühe",
+          "amount": 400,
+          "unit": "ml"
+        },
+        {
+          "name": "Sahne",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Butter",
+          "amount": 20,
+          "unit": "g"
+        },
+        {
+          "name": "Weizenmehl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Hähnchen in Würfel, Karotten in Scheiben und Champignons in Viertel schneiden.",
+        "Hähnchen in der Brühe bei kleiner Hitze 12–15 Minuten gar ziehen lassen. Herausnehmen. Karotten und Champignons in derselben Brühe 8 Minuten kochen, Erbsen zum Schluss 3 Minuten zugeben.",
+        "Butter in einem zweiten Topf schmelzen, Mehl einrühren und portionsweise Brühe zu einer glatten Sauce einrühren. Sahne zugeben, Gemüse und Hähnchen einlegen und 3 Minuten erhitzen. Mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Reis",
+      "Erbsen",
+      "Karotten",
+      "Champignons",
+      "Hühnerbrühe",
+      "Sahne",
+      "Butter",
+      "Weizenmehl"
+    ]
+  },
+  {
+    "name": "Kartoffelgratin",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Kartoffeln",
+          "amount": 600,
+          "unit": "g"
+        },
+        {
+          "name": "Sahne",
+          "amount": 200,
+          "unit": "ml"
+        },
+        {
+          "name": "Käse",
+          "amount": 100,
+          "unit": "g",
+          "note": "gerieben"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehe"
+        },
+        {
+          "name": "Muskatnuss",
+          "amount": 1,
+          "unit": "Prise"
+        },
+        {
+          "name": "Butter",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz und Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Backofen auf 190 °C Ober-/Unterhitze vorheizen. Auflaufform mit Butter ausstreichen. Kartoffeln schälen und in dünne Scheiben schneiden.",
+        "Sahne mit fein geriebenem Knoblauch, Muskat, Salz und Pfeffer verrühren. Kartoffeln dachziegelartig in die Form schichten und Sahne darübergeben.",
+        "Mit Käse bestreuen und 45–55 Minuten backen, bis die Kartoffeln weich und die Oberfläche goldbraun ist. Vor dem Servieren 5 Minuten ruhen lassen."
+      ]
+    },
+    "shoppingIngredients": [
+      "Kartoffeln",
+      "Sahne",
+      "Käse",
+      "Knoblauch",
+      "Muskatnuss",
+      "Butter",
+      "Salz und Pfeffer"
+    ]
+  },
+  {
+    "name": "Kartoffelpuffer mit Apfelmus",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Eier",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Weizenmehl",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 0.5,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sonnenblumenöl",
+          "amount": 4,
+          "unit": "EL"
+        },
+        {
+          "name": "Apfelmus",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Salz",
+          "amount": 1,
+          "unit": "Prise"
+        }
+      ],
+      "steps": [
+        "Kartoffeln und Zwiebel fein reiben. In ein sauberes Tuch geben und möglichst viel Flüssigkeit ausdrücken.",
+        "Mit Ei, Mehl und Salz vermischen. Öl portionsweise in einer Pfanne erhitzen und kleine flache Puffer hineingeben.",
+        "Bei mittlerer Hitze je Seite 3–4 Minuten goldbraun und knusprig braten. Auf Küchenpapier abtropfen lassen und mit Apfelmus servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Kartoffeln",
+      "Eier",
+      "Weizenmehl",
+      "Zwiebeln",
+      "Sonnenblumenöl",
+      "Apfelmus",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Linsensuppe",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Linsen",
+          "amount": 180,
+          "unit": "g",
+          "note": "Tellerlinsen"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 700,
+          "unit": "ml"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Lorbeerblatt",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Essig",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Linsen abspülen. Kartoffeln und Karotte würfeln, Zwiebel fein hacken.",
+        "Öl in einem Topf erhitzen und Zwiebel 3 Minuten anschwitzen. Tomatenmark einrühren, Linsen, Gemüse, Brühe und Lorbeer zugeben.",
+        "Aufkochen und zugedeckt 30–35 Minuten sanft köcheln, bis die Linsen weich sind. Lorbeer entfernen, Essig einrühren und mit Salz und Pfeffer abschmecken."
+      ]
+    },
+    "shoppingIngredients": [
+      "Linsen",
+      "Kartoffeln",
+      "Karotten",
+      "Zwiebeln",
+      "Gemüsebrühe",
+      "Tomatenmark",
+      "Rapsöl",
+      "Lorbeerblatt",
+      "Essig"
+    ]
+  },
+  {
+    "name": "Miso-Ramen mit Hähnchen",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Ramen-Nudeln",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Hühnerbrühe",
+          "amount": 700,
+          "unit": "ml"
+        },
+        {
+          "name": "Misopaste",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Eier",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Shiitake",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Frühlingszwiebeln",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Eier 7 Minuten kochen, kalt abschrecken und schälen. Brühe erhitzen. Hähnchen in dünne Streifen und Shiitake in Scheiben schneiden.",
+        "Hähnchen in der Brühe bei kleiner Hitze 8–10 Minuten vollständig gar ziehen lassen. Shiitake zugeben und 5 Minuten köcheln.",
+        "Nudeln nach Packungsangabe kochen und auf Schalen verteilen. Miso und Sojasauce in die heiße Brühe rühren, nicht mehr sprudelnd kochen. Brühe und Einlagen über die Nudeln geben, mit Ei und Frühlingszwiebeln servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Ramen-Nudeln",
+      "Hähnchen",
+      "Hühnerbrühe",
+      "Misopaste",
+      "Eier",
+      "Shiitake",
+      "Frühlingszwiebeln",
+      "Sojasauce"
+    ]
+  },
+  {
+    "name": "Nudeln mit Fleisch und Gemüse",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Pasta",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Rinderhackfleisch",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Zucchini",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Italienische Kräuter",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Nudeln in Salzwasser nach Packungsangabe bissfest kochen. Zucchini und Paprika würfeln, Zwiebel fein hacken.",
+        "Öl in einer großen Pfanne erhitzen. Hackfleisch krümelig und vollständig braun braten. Zwiebel, Zucchini und Paprika zugeben und 5 Minuten anbraten.",
+        "Passierte Tomaten und Kräuter einrühren und 10 Minuten köcheln lassen. Mit Salz und Pfeffer abschmecken und mit den Nudeln servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Pasta",
+      "Rindfleisch",
+      "Zucchini",
+      "Paprika",
+      "Passierte Tomaten",
+      "Zwiebeln",
+      "Rapsöl",
+      "Italienische Kräuter"
+    ]
+  },
+  {
+    "name": "Nudelsuppe mit Würstchen",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Suppennudeln",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Würstchen",
+          "amount": 3,
+          "unit": "Stück"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sellerie",
+          "amount": 80,
+          "unit": "g"
+        },
+        {
+          "name": "Lauch",
+          "amount": 0.5,
+          "unit": "Stange"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 800,
+          "unit": "ml"
+        },
+        {
+          "name": "Petersilie",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Karotten und Sellerie würfeln, Lauch in Ringe schneiden. Brühe in einem Topf aufkochen.",
+        "Gemüse zugeben und 10 Minuten sanft kochen. Nudeln einrühren und nach Packungszeit garen.",
+        "Würstchen in Scheiben schneiden und in den letzten 4 Minuten in der Suppe erhitzen. Mit Petersilie bestreuen und abschmecken."
+      ]
+    },
+    "shoppingIngredients": [
+      "Suppennudeln",
+      "Würstchen",
+      "Karotten",
+      "Sellerie",
+      "Lauch",
+      "Gemüsebrühe",
+      "Petersilie"
+    ]
+  },
+  {
+    "name": "Ofenkartoffel mit Quark",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Kartoffeln",
+          "amount": 2,
+          "unit": "Stück",
+          "note": "groß, je etwa 300 g"
+        },
+        {
+          "name": "Magerquark",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Joghurt",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Gurke",
+          "amount": 0.5,
+          "unit": "Stück"
+        },
+        {
+          "name": "Schnittlauch",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Zitrone",
+          "amount": 1,
+          "unit": "TL",
+          "note": "Saft"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Backofen auf 200 °C Ober-/Unterhitze vorheizen. Kartoffeln gründlich waschen, trocken reiben und rundum mit einer Gabel einstechen. Dünn mit Öl einreiben.",
+        "Kartoffeln auf dem Rost 55–65 Minuten backen, bis ein Messer leicht hineingleitet. Quark und Joghurt glatt rühren.",
+        "Gurke fein würfeln, Schnittlauch schneiden und beides mit Zitronensaft unter den Quark rühren. Abschmecken, Kartoffeln längs öffnen und mit Kräuterquark servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Kartoffeln",
+      "Magerquark",
+      "Joghurt",
+      "Gurken",
+      "Schnittlauch",
+      "Zitronen",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Pad Thai mit Hähnchen",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Reisnudeln",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Eier",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Mungobohnensprossen",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Erdnüsse",
+          "amount": 30,
+          "unit": "g"
+        },
+        {
+          "name": "Limette",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Fischsauce",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Reisnudeln nach Packungsangabe einweichen oder garen und abtropfen lassen. Hähnchen in Streifen schneiden, Erdnüsse grob hacken.",
+        "Öl in einer großen Pfanne erhitzen und Hähnchen 6–8 Minuten vollständig durchbraten. An den Rand schieben, Eier in die Pfanne geben und stocken lassen.",
+        "Nudeln, Soja- und Fischsauce zugeben und 2–3 Minuten schwenken. Sprossen kurz unterheben. Mit gehackten Erdnüssen und Limettenspalten servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Reisnudeln",
+      "Hähnchen",
+      "Eier",
+      "Mungobohnensprossen",
+      "Erdnüsse",
+      "Limetten",
+      "Sojasauce",
+      "Fischsauce",
+      "Rapsöl"
+    ]
+  },
+  {
+    "name": "Pelmeni (russische Teigtaschen)",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Pelmeni",
+          "amount": 400,
+          "unit": "g",
+          "note": "tiefgekühlt oder frisch"
+        },
+        {
+          "name": "Sauerrahm",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Butter",
+          "amount": 20,
+          "unit": "g"
+        },
+        {
+          "name": "Dill",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Salz",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Schwarze Pfefferkörner",
+          "amount": 4,
+          "unit": "Stück"
+        }
+      ],
+      "steps": [
+        "Einen großen Topf mit Wasser und Salz zum Kochen bringen. Pfefferkörner zugeben.",
+        "Pelmeni ins siedende Wasser geben und vorsichtig umrühren. Sobald sie aufsteigen, nach Packungsangabe noch 4–6 Minuten garen; tiefgekühlte Ware vollständig durchgaren.",
+        "Pelmeni mit einer Schaumkelle herausheben, abtropfen lassen und mit Butter schwenken. Mit Sauerrahm und Dill servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Pelmeni",
+      "Sauerrahm",
+      "Butter",
+      "Dill",
+      "Salz",
+      "Schwarze Pfefferkörner"
+    ]
+  },
+  {
+    "name": "Pizza Prosciutto e funghi",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Pizzateig",
+          "amount": 1,
+          "unit": "Stück",
+          "note": "etwa 400 g"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Mozzarella",
+          "amount": 125,
+          "unit": "g"
+        },
+        {
+          "name": "Prosciutto",
+          "amount": 80,
+          "unit": "g"
+        },
+        {
+          "name": "Champignons",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Oregano",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Backofen mit Blech oder Pizzastein auf 240 °C Ober-/Unterhitze vorheizen. Champignons in Scheiben schneiden und Mozzarella abtropfen lassen.",
+        "Teig auf Backpapier dünn ausrollen. Passierte Tomaten darauf verstreichen und mit Oregano würzen. Mozzarella und Champignons verteilen.",
+        "Pizza 10–14 Minuten auf dem heißen Blech backen, bis der Rand gebräunt ist. Prosciutto nach dem Backen darauf verteilen und mit wenig Olivenöl beträufeln."
+      ]
+    },
+    "shoppingIngredients": [
+      "Pizzateig",
+      "Passierte Tomaten",
+      "Käse",
+      "Schweinefleisch",
+      "Champignons",
+      "Oregano",
+      "Olivenöl"
+    ]
+  },
+  {
+    "name": "Plov mit Hühnchen",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenbrust",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Langkornreis",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Hühnerbrühe",
+          "amount": 350,
+          "unit": "ml"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Kreuzkümmel",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 2,
+          "unit": "Zehen"
+        }
+      ],
+      "steps": [
+        "Reis in kaltem Wasser spülen, bis das Wasser klar bleibt. Hähnchen würfeln, Karotten in Stifte und Zwiebel in Streifen schneiden.",
+        "Öl in einem schweren Topf erhitzen. Hähnchen rundum anbraten, Zwiebel und Karotten zugeben und 5 Minuten braten. Kreuzkümmel und Knoblauch einrühren.",
+        "Reis gleichmäßig darauf verteilen und Brühe angießen, nicht umrühren. Aufkochen, zugedeckt bei kleinster Hitze 18 Minuten garen und anschließend 10 Minuten ruhen lassen. Vor dem Servieren lockern."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Langkornreis",
+      "Karotten",
+      "Zwiebeln",
+      "Hühnerbrühe",
+      "Rapsöl",
+      "Kreuzkümmel",
+      "Knoblauch"
+    ]
+  },
+  {
+    "name": "Pommes und Chicken Nuggets",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Pommes",
+          "amount": 400,
+          "unit": "g"
+        },
+        {
+          "name": "Chicken Nuggets",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL",
+          "note": "nur falls laut Packung nötig"
+        },
+        {
+          "name": "Ketchup",
+          "amount": 50,
+          "unit": "g"
+        }
+      ],
+      "steps": [
+        "Backofen auf die auf den Packungen angegebene Temperatur vorheizen. Pommes auf einem Blech verteilen und gemäß Packung backen.",
+        "Nuggets nach Packungsangabe auf einem zweiten Blech oder nach der Hälfte der Pommes-Backzeit mit in den Ofen geben. Die Produkte vollständig durcherhitzen.",
+        "Pommes einmal wenden und alles goldbraun backen. Mit Ketchup servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Pommes",
+      "Hähnchen",
+      "Rapsöl",
+      "Ketchup"
+    ]
+  },
+  {
+    "name": "Reis mit Hühnchen und Gemüse",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Brokkoli",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Karotten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Hühnerbrühe",
+          "amount": 250,
+          "unit": "ml"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 1,
+          "unit": "EL"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Hähnchen würfeln und Gemüse in mundgerechte Stücke schneiden.",
+        "Öl in einer großen Pfanne erhitzen und Hähnchen 6–8 Minuten vollständig durchbraten. Herausnehmen. Gemüse in die Pfanne geben und 5 Minuten anbraten.",
+        "Brühe und Sojasauce angießen, Hähnchen zurückgeben und zugedeckt 4–5 Minuten garen, bis das Gemüse bissfest und heiß ist. Mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Reis",
+      "Hähnchen",
+      "Brokkoli",
+      "Karotten",
+      "Paprika",
+      "Hühnerbrühe",
+      "Rapsöl",
+      "Sojasauce"
+    ]
+  },
+  {
+    "name": "Reis-Bowl mit Salat",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Salat",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Gurke",
+          "amount": 0.5,
+          "unit": "Stück"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Avocado",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Mais",
+          "amount": 100,
+          "unit": "g"
+        },
+        {
+          "name": "Joghurt",
+          "amount": 80,
+          "unit": "g"
+        },
+        {
+          "name": "Zitrone",
+          "amount": 1,
+          "unit": "EL",
+          "note": "Saft"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen und auf zwei Schalen verteilen. Mais abtropfen lassen.",
+        "Salat waschen, Gurke und Tomate würfeln. Avocado halbieren, Kern entfernen und das Fruchtfleisch in Scheiben schneiden.",
+        "Joghurt mit Zitronensaft, Salz und Pfeffer verrühren. Gemüse auf dem Reis anrichten und mit dem Dressing servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Reis",
+      "Salat",
+      "Gurken",
+      "Tomaten",
+      "Avocados",
+      "Mais",
+      "Joghurt",
+      "Zitronen"
+    ]
+  },
+  {
+    "name": "Rotes Thai-Curry mit Hähnchen und Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenbrust",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Kokosmilch",
+          "amount": 400,
+          "unit": "ml"
+        },
+        {
+          "name": "Rote Currypaste",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zucchini",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Limette",
+          "amount": 0.5,
+          "unit": "Stück"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Hähnchen in Streifen und Gemüse in mundgerechte Stücke schneiden.",
+        "Öl in einem Topf erhitzen und Currypaste 1 Minute anrösten. Hähnchen zugeben und unter Rühren 5 Minuten anbraten.",
+        "Kokosmilch und Gemüse einrühren. 12–15 Minuten sanft köcheln lassen, bis Hähnchen durchgegart und Gemüse weich ist. Mit Limettensaft abschmecken und mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Hähnchen",
+      "Reis",
+      "Kokosmilch",
+      "Rote Currypaste",
+      "Paprika",
+      "Zucchini",
+      "Rapsöl",
+      "Limetten"
+    ]
+  },
+  {
+    "name": "Schnitzel mit Pommes",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Schweineschnitzel",
+          "amount": 2,
+          "unit": "Stück",
+          "note": "je etwa 150 g"
+        },
+        {
+          "name": "Pommes",
+          "amount": 400,
+          "unit": "g"
+        },
+        {
+          "name": "Eier",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Paniermehl",
+          "amount": 80,
+          "unit": "g"
+        },
+        {
+          "name": "Weizenmehl",
+          "amount": 50,
+          "unit": "g"
+        },
+        {
+          "name": "Sonnenblumenöl",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Zitrone",
+          "amount": 0.5,
+          "unit": "Stück"
+        }
+      ],
+      "steps": [
+        "Pommes nach Packungsangabe im vorgeheizten Ofen backen. Schnitzel zwischen Folie flach klopfen.",
+        "Mehl auf einen Teller geben, Ei verquirlen und Paniermehl auf einen dritten Teller streuen. Schnitzel nacheinander in Mehl, Ei und Paniermehl wenden.",
+        "Öl etwa fingerdick in einer Pfanne erhitzen. Schnitzel je Seite 3–4 Minuten goldbraun ausbacken und auf Küchenpapier abtropfen lassen. Mit Pommes und Zitrone servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Schweinefleisch",
+      "Pommes",
+      "Eier",
+      "Paniermehl",
+      "Weizenmehl",
+      "Sonnenblumenöl",
+      "Zitronen"
+    ]
+  },
+  {
+    "name": "Schweinebraten mit Semmelknödeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Schweinebraten",
+          "amount": 600,
+          "unit": "g"
+        },
+        {
+          "name": "Semmelknödel",
+          "amount": 4,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Karotten",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 400,
+          "unit": "ml"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Senf",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Kümmel",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Backofen auf 170 °C Ober-/Unterhitze vorheizen. Braten trocken tupfen, mit Salz, Pfeffer, Senf und Kümmel einreiben. Zwiebel und Karotten grob schneiden.",
+        "Öl in einem ofenfesten Topf erhitzen und den Braten rundum anbraten. Gemüse zugeben, Brühe angießen und zugedeckt in den Ofen stellen.",
+        "Etwa 100–120 Minuten schmoren, gelegentlich wenden und bei Bedarf Brühe nachgießen. Knödel nach Packungsangabe garen. Braten vor dem Aufschneiden 10 Minuten ruhen lassen und mit Gemüse und Sauce servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Schweinefleisch",
+      "Semmelknödel",
+      "Zwiebeln",
+      "Karotten",
+      "Gemüsebrühe",
+      "Rapsöl",
+      "Senf",
+      "Kümmel"
+    ]
+  },
+  {
+    "name": "Spaghetti Bolognese",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Spaghetti",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Rinderhackfleisch",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Karotten",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Parmesan",
+          "amount": 30,
+          "unit": "g"
+        }
+      ],
+      "steps": [
+        "Zwiebel und Karotte fein würfeln. Spaghetti in reichlich Salzwasser nach Packungsangabe bissfest kochen.",
+        "Olivenöl in einem Topf erhitzen. Hackfleisch krümelig und vollständig braun braten. Gemüse und Tomatenmark zugeben und 4 Minuten anbraten.",
+        "Passierte Tomaten einrühren und die Sauce 15–20 Minuten sanft köcheln lassen. Abschmecken, mit Spaghetti anrichten und Parmesan darüberreiben."
+      ]
+    },
+    "shoppingIngredients": [
+      "Spaghetti",
+      "Rindfleisch",
+      "Passierte Tomaten",
+      "Zwiebeln",
+      "Karotten",
+      "Tomatenmark",
+      "Olivenöl",
+      "Käse"
+    ]
+  },
+  {
+    "name": "Teriyaki-Lachs mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Lachsfilet",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Sojasauce",
+          "amount": 3,
+          "unit": "EL"
+        },
+        {
+          "name": "Honig",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Ingwer",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Sesam",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Brokkoli",
+          "amount": 150,
+          "unit": "g"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Brokkoli in Röschen teilen und 5–6 Minuten dämpfen oder in wenig Wasser bissfest kochen.",
+        "Sojasauce, Honig und fein geriebenen Ingwer verrühren. Lachs trocken tupfen. Öl in einer Pfanne erhitzen und den Lachs je Seite 3–4 Minuten braten.",
+        "Sauce in die Pfanne geben und den Lachs 1–2 Minuten darin glasieren, dabei wenden. Mit Sesam bestreuen und mit Reis und Brokkoli servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Lachsfilet",
+      "Reis",
+      "Sojasauce",
+      "Honig",
+      "Ingwer",
+      "Sesam",
+      "Rapsöl",
+      "Brokkoli"
+    ]
+  },
+  {
+    "name": "Thunfisch-Nudeln",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Pasta",
+          "amount": 180,
+          "unit": "g"
+        },
+        {
+          "name": "Thunfisch",
+          "amount": 1,
+          "unit": "Dose",
+          "note": "im eigenen Saft, abgetropft"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 250,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Kapern",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Oregano",
+          "amount": 1,
+          "unit": "TL"
+        }
+      ],
+      "steps": [
+        "Nudeln in Salzwasser nach Packungsangabe bissfest kochen. Zwiebel fein würfeln und Thunfisch abtropfen lassen.",
+        "Olivenöl in einer Pfanne erhitzen und Zwiebel 3 Minuten anschwitzen. Passierte Tomaten und Oregano einrühren und 8 Minuten köcheln.",
+        "Thunfisch und Kapern vorsichtig unterheben und 2 Minuten erhitzen. Mit Salz und Pfeffer abschmecken und mit den Nudeln servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Pasta",
+      "Thunfisch",
+      "Passierte Tomaten",
+      "Zwiebeln",
+      "Kapern",
+      "Olivenöl",
+      "Oregano"
+    ]
+  },
+  {
+    "name": "Tofu-Curry mit Reis",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Tofu",
+          "amount": 250,
+          "unit": "g",
+          "note": "fest"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Kokosmilch",
+          "amount": 400,
+          "unit": "ml"
+        },
+        {
+          "name": "Rote Currypaste",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Brokkoli",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Limette",
+          "amount": 0.5,
+          "unit": "Stück"
+        }
+      ],
+      "steps": [
+        "Reis nach Packungsangabe garen. Tofu trocken pressen und würfeln, Brokkoli in Röschen und Paprika in Streifen schneiden.",
+        "Öl in einem Topf erhitzen. Tofu rundum 5–6 Minuten goldbraun braten. Currypaste einrühren und 1 Minute anrösten.",
+        "Kokosmilch und Gemüse zugeben und 10–12 Minuten sanft köcheln, bis Brokkoli gar, aber noch bissfest ist. Mit Limettensaft abschmecken und mit Reis servieren."
+      ]
+    },
+    "shoppingIngredients": [
+      "Tofu",
+      "Reis",
+      "Kokosmilch",
+      "Rote Currypaste",
+      "Brokkoli",
+      "Paprika",
+      "Rapsöl",
+      "Limetten"
+    ]
+  }
+]

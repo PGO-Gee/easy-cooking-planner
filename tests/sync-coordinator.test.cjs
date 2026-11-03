@@ -136,6 +136,32 @@ test('stores a server deletion in the form expected by the existing conflict dis
   assert.deepEqual(stored.remoteValue, { id: 'a' });
 });
 
+test('sends new household snapshots with v2 and records that version on conflicts', async () => {
+  const store = memoryStore();
+  const conflict = { id: 'dish:["a"]', kind: 'dish', key: ['a'], label: 'A', basePresent: true, baseValue: { id: 'a' }, localPresent: true, localValue: { id: 'a', recipe: { servings: 2 } }, remotePresent: true, remoteValue: { id: 'a' } };
+  let sent;
+  const coordinator = create({ store, userId: 'u', householdId: 'h', toShared, newRequestId: () => 'r',
+    api: { sync: async request => { sent = request; return { state: toShared(state([])), revision: 1, conflicts: [conflict] }; } } });
+  await store.put('records', coordinator.keys.base, toShared(state([])));
+  await store.put('records', coordinator.keys.state, state([{ id: 'a', recipe: { servings: 2 } }]));
+  await coordinator.flush();
+  assert.equal(sent.version, 2);
+  assert.equal((await store.get('conflicts', 'u:h:dish:["a"]')).apiVersion, 2);
+});
+
+test('keeps a stored v2 conflict on v2 while older conflicts keep the v1 default', async () => {
+  const store = memoryStore();
+  const conflict = { id: 'dish:["a"]', kind: 'dish', key: ['a'], label: 'A', basePresent: true, baseValue: { id: 'a' }, localPresent: true, localValue: { id: 'a' }, remotePresent: true, remoteValue: { id: 'a' }, storageKey: 'u:h:dish:["a"]', apiVersion: 2 };
+  let sent;
+  const coordinator = create({ store, userId: 'u', householdId: 'h', toShared, newRequestId: () => 'r',
+    api: { resolve: async request => { sent = request; return { state: toShared(state([])), revision: 1, conflicts: [] }; } } });
+  await store.put('records', coordinator.keys.base, toShared(state([])));
+  await store.put('records', coordinator.keys.state, state([]));
+  await store.put('conflicts', conflict.storageKey, conflict);
+  await coordinator.resolve(conflict, 'local');
+  assert.equal(sent.version, 2);
+});
+
 test('retries a conflict decision after a lost response and removes it only after acknowledgement', async () => {
   const store = memoryStore();
   let attempts = 0, first;
@@ -150,6 +176,7 @@ test('retries a conflict decision after a lost response and removes it only afte
   await store.put('records', coordinator.keys.state, state([]));
   await store.put('conflicts', conflict.storageKey, conflict);
   await assert.rejects(coordinator.resolve(conflict, 'local'), /offline/);
+  assert.equal(first.version, 1);
   assert.deepEqual(await store.get('conflicts', conflict.storageKey), conflict);
   await coordinator.flush();
   assert.equal(await store.get('conflicts', conflict.storageKey), undefined);

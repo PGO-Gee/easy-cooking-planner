@@ -41,9 +41,9 @@
           const stored = await store.get('conflicts', decision.storageKey);
           if (!stored || !equal(stored, decision.conflict)) throw new Error('Der Konflikt wurde inzwischen geändert.');
           if (pending || !equal(toShared(state), toShared(base))) throw new Error('Bitte zuerst ausstehende Änderungen synchronisieren.');
-          return { operation: 'resolve', householdId, requestId: newRequestId(), local: toShared(state), conflict: stored, storageKey: decision.storageKey, choice: decision.choice };
+          return { operation: 'resolve', version: stored.apiVersion || 1, householdId, requestId: newRequestId(), local: toShared(state), conflict: stored, storageKey: decision.storageKey, choice: decision.choice };
         }
-        return { operation: 'sync', householdId, requestId: newRequestId(), base: pending?.base || toShared(base), local: toShared(state) };
+        return { operation: 'sync', version: 2, householdId, requestId: newRequestId(), base: pending?.base || toShared(base), local: toShared(state) };
       },
       send: request => request.operation === 'resolve' ? api.resolve(request) : api.sync(request),
       async acknowledgementWrites(request, response) {
@@ -64,7 +64,7 @@
         }
         for (const conflict of response.conflicts) {
           const storageKey = `${suffix}:${conflict.id}`;
-          const displayed = { ...conflict, userId, householdId, storageKey };
+          const displayed = { ...conflict, apiVersion: request.version || 1, userId, householdId, storageKey };
           for (const side of ['base', 'local', 'remote']) {
             if (!conflict[`${side}Present`]) displayed[`${side}Value`] = undefined;
           }

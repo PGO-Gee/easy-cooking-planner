@@ -1,8 +1,10 @@
-# Synchronisierung v1
+# Synchronisierung v1 und v2
 
-Dieser Vertrag beschreibt die versionierten RPCs und den PWA-Client. Die RPCs
-sind im verbundenen Supabase-Projekt installiert. Direkte Schreibzugriffe auf
-die synchronisierten Haushaltstabellen sind für Clients gesperrt.
+Dieser Vertrag beschreibt die versionierten RPCs und den PWA-Client. v1 ist im
+verbundenen Supabase-Projekt installiert. v2 und die Katalog-RPCs werden durch
+`20261103175353_recipe_cooking_catalog.sql` ergänzt und stehen nach Anwendung
+dieser Migration bereit. Direkte Schreibzugriffe auf die synchronisierten
+Haushaltstabellen sind für Clients gesperrt.
 
 ## Abgleich
 
@@ -12,6 +14,14 @@ Zielstand) als JSON-Objekte. Der Zustand enthält die Felder `dishes`, `plans`,
 `pinnedMeals`, `pantryIngredients`, `restDays`, `shoppingChecks`,
 `hiddenShoppingItems`, `manualShoppingItems` und `shoppingQuantities`.
 Gerätespezifische Anzeigeeinstellungen gehören nicht zum Haushaltszustand.
+
+Neue Clients verwenden `sync_household_v2` und
+`resolve_household_conflict_v2`. v2 transportiert zusätzlich `recipe`,
+`catalogSourceId` und `catalogSourceVersion` in jedem Gericht. Der Server prüft
+die Rezeptform und schreibt diese Felder zusammen mit dem übrigen Gericht.
+v1 bleibt verfügbar: Seine Antwort enthält weiterhin die bisherige
+Gerichtsansicht, und sein Writer aktualisiert ausschließlich die alten
+Gerichtsfelder. Rezept- und Herkunftsdaten bleiben dabei erhalten.
 
 Die Antwort hat die Form:
 
@@ -56,6 +66,24 @@ Abgleich. Wenn die erwartete Haushaltsfassung inzwischen geändert wurde, bleibt
 sie unverändert und `conflicts` enthält den aktualisierten Konflikt. Auch eine
 erneut kollidierende Abhängigkeit zwischen Gericht und Planung bleibt als
 Konflikt erhalten.
+
+v2-Konflikte verwenden dieselbe Gerichtseinheit, deren Wert zusätzlich die
+Rezept- und Herkunftsfelder enthält. Der Client speichert die Sync-Version
+zusammen mit jedem dauerhaften Request. Ausstehende v1-Requests und alte
+Konflikte werden weiterhin über ihre ursprünglichen v1-RPCs wiederholt.
+
+## Standardkatalog
+
+`update_catalog_dish_v1` erhält die Katalog-ID, die erwartete Version und die
+änderbaren Rezeptfelder. `create_catalog_dish_v1` nimmt dieselben Felder ohne
+Katalog-ID an und erstellt ein neues Standardgericht. Beide Funktionen prüfen
+Authentifizierung und zentralen Zugriffsmodus serverseitig. Beim Anlegen werden
+eine Basis-Portionszahl, mindestens eine Rezeptzutat und ein Zubereitungsschritt verlangt;
+doppelte normalisierte Namen werden als Duplikat zurückgegeben. Beim Bearbeiten
+liefert ein Versionskonflikt den aktuellen Eintrag zurück und ändert nichts.
+Direkte Schreibrechte auf `public.catalog_dishes` bleiben gesperrt. Die neue
+Anlegefunktion steht nach Anwendung von
+`20261103183928_create_catalog_dish_v1.sql` zur Verfügung.
 
 ## Prüfung
 
