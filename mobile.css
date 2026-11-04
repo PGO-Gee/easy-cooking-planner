@@ -426,6 +426,7 @@ html {
   }
 
   #dish-form,
+  #install-dialog > form,
   .choose-dialog-content,
   .pantry-dialog-content,
   .household-dialog-content,

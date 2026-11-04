@@ -1471,4 +1471,7 @@
   color: var(--ink);
 }
 
+#install-dialog > form { padding: 24px; }
+#install-dialog #install-instructions { margin: 0 0 18px; line-height: 1.55; }
+#install-dialog .dialog-actions { position: static; margin: 0; padding: 16px 0 0; }
 #install-dialog .primary-button { min-height: 44px; }
