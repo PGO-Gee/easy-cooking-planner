@@ -48,3 +48,15 @@ test('errors and invalid responses fail before acknowledgement', async () => {
     await assert.rejects(create({ rpc: async () => ({ data }) }).sync({}), /Ungültige Antwort/);
   }
 });
+
+test('uses the read-only snapshot endpoint and falls back only when it is unavailable', async () => {
+  const api = create({ rpc: async (name, args) => {
+    assert.equal(name, 'read_household_v2');
+    assert.deepEqual(args, { p_household_id: 'h' });
+    return { data: response() };
+  } });
+  assert.deepEqual(await api.pull('h'), response());
+  assert.equal(await create({ rpc: async () => ({ error: { code: 'PGRST202' } }) }).pull('h'), null);
+  const forbidden = { code: '42501' };
+  await assert.rejects(create({ rpc: async () => ({ error: forbidden }) }).pull('h'), error => error === forbidden);
+});

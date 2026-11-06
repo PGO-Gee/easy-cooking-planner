@@ -182,3 +182,33 @@ test('retries a conflict decision after a lost response and removes it only afte
   assert.equal(await store.get('conflicts', conflict.storageKey), undefined);
   assert.deepEqual(await store.get('records', coordinator.keys.state), state(['chosen']));
 });
+
+test('reads clean state without a mutation and still saves local changes with the same account key', async () => {
+  const store = memoryStore();
+  let pulls = 0, pushes = 0;
+  const coordinator = create({ store, userId: 'u', householdId: 'h', stateKey: 'app-state:u',
+    toShared, newRequestId: () => 'r',
+    api: {
+      pull: async household => {
+        assert.equal(household, 'h');
+        pulls++;
+        return { state: toShared(state(['remote'])), revision: 1, conflicts: [] };
+      },
+      sync: async request => {
+        assert.deepEqual(request.base, toShared(state(['remote'])));
+        pushes++;
+        return { state: request.local, revision: 2, conflicts: [] };
+      }
+    }
+  });
+  await store.put('records', coordinator.keys.base, toShared(state([])));
+  await store.put('records', coordinator.keys.state, state([], true));
+  await store.put('records', 'app-state:other', state(['other']));
+  await coordinator.flush();
+  assert.deepEqual(await store.get('records', coordinator.keys.state), state(['remote'], true));
+  await store.put('records', coordinator.keys.state, state(['remote', 'local'], true));
+  await coordinator.flush();
+  assert.equal(pulls, 1);
+  assert.equal(pushes, 1);
+  assert.deepEqual(await store.get('records', 'app-state:other'), state(['other']));
+});

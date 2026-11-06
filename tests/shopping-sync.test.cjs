@@ -30,6 +30,26 @@ test('retains a local deletion when the cloud item is unchanged', () => {
   assert.deepEqual(merge(['Milch'], [], ['Milch']).items, []);
 });
 
+test('collects planned ingredients and manual items before starting sync', () => {
+  const itemsStart = source.indexOf('function localShoppingItems(');
+  const itemsEnd = source.indexOf('async function reconcileCatalogImports(', itemsStart);
+  const week = '2026-10-26';
+  const sandbox = {
+    rangeDates: () => [new Date(2026, 9, 26)],
+    mondayFor: date => date,
+    keyFor: () => week,
+    dayIndex: () => 0,
+    manualItemKey: name => name.toLowerCase(),
+  };
+  vm.runInNewContext(source.slice(itemsStart, itemsEnd), sandbox);
+  const items = sandbox.localShoppingItems({
+    dishes: [{ id: 'meal', ingredients: ['Milch'] }],
+    plans: { [week]: [['meal']] },
+    manualShoppingItems: { [week]: ['milch', 'Brot'] },
+  });
+  assert.deepEqual(Object.fromEntries(items), { milch: 'Milch', brot: 'Brot' });
+});
+
 test('keeps an item added while sync is persisting conflicts', async () => {
   const syncStart = source.indexOf('async function syncStateToCloud(');
   const syncEnd = source.indexOf('function scheduleCloudSync(', syncStart);
@@ -40,14 +60,14 @@ test('keeps an item added while sync is persisting conflicts', async () => {
   const gate = new Promise(resolve => { release = resolve; });
   const sandbox = {
     structuredClone, Date,
-    cloudReady: true, currentHouseholdId: 'household', currentUserId: 'user', state: { items: [] },
+    authScope: 0, cloudReady: true, currentHouseholdId: 'household', currentUserId: 'user', state: { items: [] },
     cloudBaseState: { items: [] }, unresolvedConflicts: [], appInitialized: false,
     document: { visibilityState: 'hidden' },
     prepareLocalIdsForCloud() {}, localShoppingItems: () => new Map(),
     getSyncCoordinator: () => ({ keys: { pending: 'pending' }, flush: async () => { started(); await gate; } }),
     syncWriteBarrier: { drain: async () => {} }, readCloudBase: async () => ({ items: [] }),
     loadOfflineQueues: async () => {}, window: { WochentischStore: { get: async () => null } }, save() {},
-    reconcileCatalogImports: async () => {}, updateSyncStatus() {},
+    reconcileCatalogImports: async () => {}, removeOrphanedCookingProgress: async () => {}, updateSyncStatus() {},
     hasCloudChanges: () => false, scheduleCloudSync() {}
   };
   vm.runInNewContext(source.slice(syncStart, syncEnd), sandbox);

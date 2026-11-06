@@ -40,6 +40,13 @@ Antwort zurück; eine Wiederverwendung mit anderem Inhalt oder durch ein anderes
 Mitglied wird abgelehnt. Die Revision ändert sich nur, wenn sich der
 Haushaltsstand ändert.
 
+Wenn keine lokalen Änderungen anstehen, liest `read_household_v2` den
+Haushaltsstand und seine Revision in einem Aufruf. Die Funktion prüft die
+Mitgliedschaft, gibt `conflicts: []` zurück und schreibt keinen Eintrag ins
+Request-Journal. Bei älteren Datenbankständen verwendet der Client weiterhin
+die bisherige Synchronisierung. Schreibanfragen behalten ihre dauerhafte
+Request-ID und ihr bisheriges Wiederholungsverhalten.
+
 ## Konfliktentscheidung
 
 Ein Konflikt enthält `id`, `kind`, `key`, `label` sowie die Paare

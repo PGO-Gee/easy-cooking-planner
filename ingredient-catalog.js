@@ -155,7 +155,7 @@
       if (!itemKey || !Number.isFinite(quantity)) return result;
       result[itemKey] = (result[itemKey] || 0) + quantity;
       return result;
-    }, {});
+    }, Object.create(null));
   }
 
   function normalizeChecks(values) {
@@ -164,7 +164,7 @@
       const itemKey = manualKey(rawName.replace(/^manual:/i, ''));
       if (itemKey && checked) result[itemKey] = true;
       return result;
-    }, {});
+    }, Object.create(null));
   }
 
   function normalizeKeys(values) {

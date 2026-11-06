@@ -33,13 +33,13 @@ test('groups rice and cheese varieties while preserving distinct ingredients', (
   assert.equal(ingredients.normalize('Mehl aus dem Dorf'), 'Mehl aus dem Dorf');
 });
 
-test('deduplicates canonical arrays and sums quantities for merged names', () => {
+test('deduplicates recipe ingredients and preserves exact shopping items', () => {
   assert.deepEqual(Array.from(ingredients.unique(['Zwiebel', 'Zwiebeln', 'Rinderfilet', 'Rinderhackfleisch'])), ['Zwiebeln', 'Rindfleisch']);
-  assert.deepEqual({ ...ingredients.normalizeQuantities({ zwiebel: 2, zwiebeln: 3, basmatireis: 1 }) }, { zwiebeln: 5, reis: 1 });
+  assert.deepEqual({ ...ingredients.normalizeQuantities({ zwiebel: 2, zwiebeln: 3, basmatireis: 1 }) }, { zwiebel: 2, zwiebeln: 3, basmatireis: 1 });
 });
 
-test('merges checked states and removes the legacy manual prefix', () => {
-  assert.deepEqual({ ...ingredients.normalizeChecks({ 'manual:zwiebel': true, zwiebeln: false, 'rinderhackfleisch': false }) }, { zwiebeln: true });
+test('removes the legacy manual prefix and preserves exact checked items', () => {
+  assert.deepEqual({ ...ingredients.normalizeChecks({ 'manual:zwiebel': true, zwiebeln: false, 'rinderhackfleisch': false }) }, { zwiebel: true });
 });
 
 test('normalizes a saved household state and is idempotent', () => {
@@ -57,10 +57,10 @@ test('normalizes a saved household state and is idempotent', () => {
   const migratedAgain = ingredients.normalizeStateIngredients(migrated);
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.dishes[0].ingredients)), ['Zwiebeln', 'Rindfleisch', 'Rinderbrühe']);
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.pantryIngredients['2026-10-26'])), ['Reis', 'Zwiebeln']);
-  assert.deepEqual(JSON.parse(JSON.stringify(migrated.manualShoppingItems['2026-10-26'])), ['Käse']);
-  assert.deepEqual(JSON.parse(JSON.stringify(migrated.hiddenShoppingItems['2026-10-26'])), ['rindfleisch']);
-  assert.deepEqual({ ...migrated.shoppingChecks['2026-10-26'] }, { zwiebeln: true });
-  assert.deepEqual({ ...migrated.shoppingQuantities }, { zwiebeln: 5, reis: 3 });
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.manualShoppingItems['2026-10-26'])), ['Mozzarella', 'Käse']);
+  assert.deepEqual(JSON.parse(JSON.stringify(migrated.hiddenShoppingItems['2026-10-26'])), ['rinderfilet', 'rindfleisch']);
+  assert.deepEqual({ ...migrated.shoppingChecks['2026-10-26'] }, { zwiebel: true, zwiebeln: true });
+  assert.deepEqual({ ...migrated.shoppingQuantities }, { zwiebel: 2, zwiebeln: 3, basmatireis: 1, reis: 2 });
   assert.deepEqual(JSON.parse(JSON.stringify(migratedAgain)), JSON.parse(JSON.stringify(migrated)));
 });
 
@@ -76,4 +76,11 @@ test('suggestion catalog contains canonical names only', () => {
   assert.ok(!keys.includes('emmentaler'));
   const mainKeys = Array.from(window.COMMON_MAIN_INGREDIENTS, value => String(value).toLocaleLowerCase('de-DE'));
   assert.ok(mainKeys.includes('rinderfilet'));
+});
+
+test('treats inherited object names as ordinary shopping keys', () => {
+  const quantities = ingredients.normalizeQuantities(JSON.parse('{"__proto__":2,"constructor":3}'));
+  const checks = ingredients.normalizeChecks(JSON.parse('{"__proto__":true,"constructor":true}'));
+  assert.deepEqual({ ...quantities }, { ['__proto__']: 2, constructor: 3 });
+  assert.deepEqual({ ...checks }, { ['__proto__']: true, constructor: true });
 });
