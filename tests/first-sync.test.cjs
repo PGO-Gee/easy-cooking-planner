@@ -9,19 +9,21 @@ const start = source.indexOf('async function connectToCloud()');
 const end = source.indexOf('function startOfflineApp(', start);
 assert.ok(start >= 0 && end > start);
 
-async function connect(choice, { failCommit = false, changedCloud = false } = {}) {
+async function connect(choice, { failCommit = false, changedCloud = false, previousHousehold = '' } = {}) {
   const local = { dishes: [{ id: 'local' }], noteHidden: true };
   const cloud = { dishes: [{ id: 'cloud' }], noteHidden: false };
   const effects = { reads: 0, saves: 0, scheduled: 0, status: '' };
   const sandbox = {
     state: structuredClone(local), currentUserId: 'user', currentHouseholdId: '',
+    authScope: 0, loadingCloudState: false, hasLocalState: true, cookingHouseholdScopeId: previousHousehold,
     cloudReady: false, cloudBaseState: null, cloudConnectPromise: undefined,
     authClient: {}, unresolvedConflicts: [], offlineMode: false, appInitialized: false,
     offlineStoreReady: true, offlineStoreWriteQueue: Promise.resolve(),
     window: { WochentischStore: { writeBatch: async () => { effects.saves++; if (failCommit) throw Error('storage failed'); } } },
-    cloudBaseStorageKey: () => 'base', cloudBackupKey: () => 'backup', structuredClone,
+    cloudBaseStorageKey: () => 'base', cloudBackupKey: () => 'backup', appStateKey: () => 'app-state:user', structuredClone,
     document: { visibilityState: 'hidden' }, localStorage: { setItem() {} },
     getCurrentHousehold: async () => 'household', loadOfflineQueues: async () => {},
+    rememberCookingHouseholdScope() {}, removeOrphanedCookingProgress: async () => {},
     localShoppingItems: () => new Map(), readCloudBase: async () => null,
     readStateFromCloud: async () => { effects.reads++; const value = structuredClone(cloud); if (changedCloud && effects.reads > 1) value.dishes.push({ id: 'new' }); return { state: value, hasCloudData: true }; },
     emptyState: () => ({ dishes: [] }), hasCloudChanges: (a, b) => JSON.stringify(a.dishes) !== JSON.stringify(b.dishes),
@@ -78,4 +80,12 @@ test('a changed household state prevents an outdated local takeover', async () =
   assert.equal(effects.saves, 0);
   assert.equal(effects.scheduled, 0);
   assert.match(effects.status, /hat sich während der Auswahl geändert/);
+});
+
+test('switching households never offers the previous household state for upload', async () => {
+  const { sandbox, effects } = await connect('local', { previousHousehold: 'old-household' });
+  assert.equal(sandbox.state.dishes[0].id, 'cloud');
+  assert.equal(sandbox.cloudReady, true);
+  assert.equal(effects.reads, 1);
+  assert.equal(effects.scheduled, 0);
 });

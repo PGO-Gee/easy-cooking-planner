@@ -64,7 +64,16 @@
         p_conflict: conflictForServer(request.conflict), p_choice: request.choice,
       });
     }
-    return Object.freeze({ sync, resolve });
+    async function pull(householdId) {
+      try {
+        return await call('read_household_v2', { p_household_id: householdId });
+      } catch (error) {
+        // Older deployments can still use the transactional sync endpoint.
+        if (error?.code === 'PGRST202') return null;
+        throw error;
+      }
+    }
+    return Object.freeze({ sync, resolve, pull });
   }
   return Object.freeze({ create, conflictForServer });
 });

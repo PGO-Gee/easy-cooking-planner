@@ -5,6 +5,7 @@ declare
   dish_id uuid := gen_random_uuid();
   state jsonb;
   actual jsonb;
+  unchanged_rows jsonb;
 begin
   state := jsonb_build_object(
     'dishes', jsonb_build_array(jsonb_build_object('id',dish_id,'name','Testgericht','ingredient','','time',30,'emoji','🍽️','ingredients','[]'::jsonb,'nutrition',null)),
@@ -20,9 +21,24 @@ begin
   perform wochentisch_sync.write_state(household, state);
   actual := wochentisch_sync.cloud_state(household);
   if actual <> state then raise exception 'state did not round-trip: %', actual; end if;
+  select jsonb_build_array(m.ctid::text, i.ctid::text, c.ctid::text) into strict unchanged_rows
+  from public.weekly_plans p
+  join public.planned_meals m on m.weekly_plan_id = p.id
+  join public.shopping_items i on i.weekly_plan_id = p.id
+  join public.shopping_item_checks c on c.weekly_plan_id = p.id
+  where p.household_id = household;
+  state := jsonb_set(state, '{dishes,0,name}', '"Umbenanntes Testgericht"'::jsonb);
   perform wochentisch_sync.write_state(household, state);
   actual := wochentisch_sync.cloud_state(household);
-  if actual <> state then raise exception 'repeated write changed state: %', actual; end if;
+  if actual <> state then raise exception 'changed dish did not round-trip: %', actual; end if;
+  if unchanged_rows is distinct from (
+    select jsonb_build_array(m.ctid::text, i.ctid::text, c.ctid::text)
+    from public.weekly_plans p
+    join public.planned_meals m on m.weekly_plan_id = p.id
+    join public.shopping_items i on i.weekly_plan_id = p.id
+    join public.shopping_item_checks c on c.weekly_plan_id = p.id
+    where p.household_id = household
+  ) then raise exception 'an unrelated row was rewritten'; end if;
   begin
     perform wochentisch_sync.write_state(household, jsonb_set(state, '{dishes}', '[]'::jsonb));
     raise exception 'dangling plan was accepted';

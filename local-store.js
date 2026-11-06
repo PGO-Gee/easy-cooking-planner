@@ -48,6 +48,13 @@
     return requestResult(transaction.objectStore(storeName).getAll());
   }
 
+  async function getKeys(storeName, prefix) {
+    const database = await openDatabase();
+    const transaction = database.transaction(storeName, 'readonly');
+    const range = IDBKeyRange.bound(prefix, prefix + '\uffff', false, true);
+    return requestResult(transaction.objectStore(storeName).getAllKeys(range));
+  }
+
   async function put(storeName, key, value) {
     const database = await openDatabase();
     const transaction = database.transaction(storeName, 'readwrite');
@@ -202,5 +209,5 @@
     });
   }
 
-  window.WochentischStore = Object.freeze({ openDatabase, get, getAll, put, remove, writeBatch, writeBatchIfUnchanged, migrateLegacyStorage });
+  window.WochentischStore = Object.freeze({ openDatabase, get, getAll, getKeys, put, remove, writeBatch, writeBatchIfUnchanged, migrateLegacyStorage });
 })();

@@ -6,13 +6,13 @@
 
   // The UI drains its local write queue before snapshots and uses the write
   // barrier to preserve edits made during the IndexedDB transaction.
-  function create({ store, api, userId, householdId, newRequestId, toShared, beforeSnapshot = async () => {}, writeBarrier, readMemory, applyMemory, locks, requireLock, requireConditional }) {
+  function create({ store, api, userId, householdId, stateKey = 'app-state', newRequestId, toShared, beforeSnapshot = async () => {}, writeBarrier, readMemory, applyMemory, locks, requireLock, requireConditional }) {
     if (!store || !api || !userId || !householdId || typeof newRequestId !== 'function' || typeof toShared !== 'function') {
       throw new TypeError('Synchronisierung ist nicht vollständig eingerichtet.');
     }
     const suffix = `${userId}:${householdId}`;
     const keys = {
-      state: 'app-state',
+      state: stateKey,
       base: `wochentisch-cloud-base-${userId}-${householdId}`,
       backup: `wochentisch-cloud-backup-${userId}`,
       request: `sync-request:${suffix}`,
@@ -43,9 +43,19 @@
           if (pending || !equal(toShared(state), toShared(base))) throw new Error('Bitte zuerst ausstehende Änderungen synchronisieren.');
           return { operation: 'resolve', version: stored.apiVersion || 1, householdId, requestId: newRequestId(), local: toShared(state), conflict: stored, storageKey: decision.storageKey, choice: decision.choice };
         }
-        return { operation: 'sync', version: 2, householdId, requestId: newRequestId(), base: pending?.base || toShared(base), local: toShared(state) };
+        const sharedBase = pending?.base || toShared(base);
+        const local = toShared(state);
+        const operation = api.pull && !pending && equal(sharedBase, local) ? 'pull' : 'sync';
+        return { operation, version: 2, householdId, requestId: newRequestId(), base: sharedBase, local };
       },
-      send: request => request.operation === 'resolve' ? api.resolve(request) : api.sync(request),
+      async send(request) {
+        if (request.operation === 'resolve') return api.resolve(request);
+        if (request.operation === 'pull' && api.pull) {
+          const snapshot = await api.pull(request.householdId);
+          if (snapshot) return snapshot;
+        }
+        return api.sync(request);
+      },
       async acknowledgementWrites(request, response) {
         await beforeSnapshot();
         const latest = await store.get('records', keys.state);
