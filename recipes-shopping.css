@@ -306,3 +306,18 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 @media (max-width: 700px) {
   .starter-tip { align-items: center; gap: 10px; padding: 12px; }
 }
+
+/* Ingredient fields stay usable on touch screens and suggestions work on iOS. */
+.recipe-ingredient-name { position: relative; min-width: 0; }
+.recipe-ingredient-suggestions { position: absolute; z-index: 4; top: 100%; left: 0; right: 0; max-height: 180px; }
+.recipe-ingredient-suggestions [aria-selected="true"] { background: #f3f6f1; }
+@media (max-width: 600px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #dish-form.is-dish-wizard .form-row { grid-template-columns: minmax(0, 1fr); }
+  .recipe-ingredient-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+  .recipe-ingredient-name { grid-column: 1 / 3; grid-row: 1; }
+  .recipe-ingredient-row [data-recipe-field="amount"] { grid-column: 1; grid-row: 2; }
+  .recipe-ingredient-row [data-recipe-field="unit"] { grid-column: 2; grid-row: 2; }
+  .recipe-ingredient-row [data-recipe-field="note"] { grid-column: 1 / 4; grid-row: 3; }
+  .recipe-ingredient-row .recipe-row-remove { grid-column: 3; grid-row: 1; }
+  .recipe-ingredient-suggestions { position: static; max-height: 176px; }
+}

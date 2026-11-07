@@ -929,7 +929,7 @@ textarea::placeholder { color: #91a0b1; opacity: 1; }
 #dish-dialog .time-slider-label,
 #dish-dialog .ingredients-field > label { color: #bdc9d6; }
 #dish-dialog .ingredients-field small { color: #a5b1bf; }
-#dish-dialog #dish-name,
+#dish-dialog #dish-recipe-title,
 #dish-dialog .pantry-search,
 #dish-dialog select,
 #dish-dialog #dish-ingredients {
@@ -938,7 +938,7 @@ textarea::placeholder { color: #91a0b1; opacity: 1; }
   color: #e7edf4;
   color-scheme: dark;
 }
-#dish-dialog #dish-name::placeholder,
+#dish-dialog #dish-recipe-title::placeholder,
 #dish-dialog .pantry-search input::placeholder,
 #dish-dialog #dish-ingredients::placeholder { color: #8595a8; }
 #dish-dialog .pantry-search { color: #a5b1bf; }
@@ -951,7 +951,7 @@ textarea::placeholder { color: #91a0b1; opacity: 1; }
   background: transparent;
   color: #e7edf4;
 }
-#dish-dialog #dish-name:focus,
+#dish-dialog #dish-recipe-title:focus,
 #dish-dialog select:focus,
 #dish-dialog #dish-ingredients:focus {
   border-color: #7898c1;
@@ -1309,3 +1309,5 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 #dish-form.is-dish-wizard .dialog-actions { background: #1c242e; }
 .dish-wizard-progress { color: #a9bfdc; }
 .dish-wizard-hint { color: #a5b1bf; }
+
+.recipe-ingredient-suggestions [aria-selected="true"] { background: #31445b; }
