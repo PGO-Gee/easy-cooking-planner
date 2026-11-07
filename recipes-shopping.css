@@ -231,6 +231,7 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 
 /* Recipe editor and cooking assistant */
 .nav-item[hidden]{display:none!important}
+#dish-dialog:focus{outline:none}
 #dish-dialog{box-sizing:border-box;max-height:calc(var(--visual-viewport-height,100dvh) - 24px);overflow:auto;overscroll-behavior:contain}
 #dish-form{min-width:0}
 #dish-form input:not([type=hidden]),#dish-form select,#dish-form textarea{box-sizing:border-box;font-size:16px}
