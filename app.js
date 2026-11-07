@@ -1799,10 +1799,11 @@ function renderDishes(){renderDishesContent();renderedDishesSnapshot=dishesState
 function showToast(text,{actionLabel='',onAction=null,duration=2600,scopeBound=true}={}){const t=$('#toast'),message=document.createElement('span');t.replaceChildren();t.classList.toggle('has-action',Boolean(actionLabel&&onAction));message.className='toast-message';message.textContent=text;t.append(message);if(actionLabel&&onAction){const scope=authScope,householdId=currentHouseholdId,action=document.createElement('button');action.type='button';action.className='toast-action';action.textContent=actionLabel;action.addEventListener('click',()=>{clearTimeout(toastTimer);t.classList.remove('show','has-action');if(!scopeBound||(scope===authScope&&householdId===currentHouseholdId))onAction()});t.append(action)}t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show','has-action'),duration)}
 function recipeRowControl(tag,attrs={}){const element=document.createElement(tag);Object.entries(attrs).forEach(([key,value])=>{if(key==='text')element.textContent=value;else if(key==='className')element.className=value;else element.setAttribute(key,value)});return element}
 let recipeIngredientSuggestionId=0,recipeIngredientPage=0,recipeStepPage=0;
+let dishImport=null,importDefaultType='meal';
 function renderRecipeIngredientRows(items=[]){
   const container=$('#recipe-ingredient-rows');container.replaceChildren();
   (items.length?items:[{name:'',amount:null,unit:'',note:''}]).forEach(item=>{
-    const row=document.createElement('div');row.className='recipe-ingredient-row';const showNote=!dishWizardActive||(dishWizardEditing&&Boolean(item.note));row.classList.toggle('has-ingredient-note',showNote);
+    const row=document.createElement('div');row.className='recipe-ingredient-row';const showNote=!dishWizardActive||Boolean(dishImport)||(dishWizardEditing&&Boolean(item.note));row.classList.toggle('has-ingredient-note',showNote);
     const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
     const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
     const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:item.name||'',role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
@@ -1910,12 +1911,13 @@ function renderDishWizard({focus=false}={}){
   dishWizardForm.classList.toggle('is-dish-edit-wizard',dishWizardEditing);
   dishWizardForm.noValidate=dishWizardActive;
   Object.entries(dishWizardElements).forEach(([key,group])=>group.forEach(el=>{el.hidden=dishWizardActive&&!step.groups.includes(key)}));
-  $('.recipe-servings-control').hidden=dishWizardActive&&(!dishWizardEditing||step.key!=='ingredients');
-  servingsSuffix.hidden=!dishWizardEditing;
+  $('.recipe-servings-control').hidden=dishWizardActive&&(!(dishWizardEditing||dishImport)||step.key!=='ingredients');
+  servingsSuffix.hidden=!(dishWizardEditing||dishImport);
   $('.recipe-servings-field').textContent=dishWizardEditing?'Mengen für':'Basis-Portionen';
-  $('#recipe-servings').placeholder=dishWizardEditing?'–':'2';
+  $('#recipe-servings').placeholder=dishWizardEditing||dishImport?'–':'2';
   $('.recipe-editor-hint').hidden=dishWizardActive;
-  portionHint.hidden=!dishWizardActive||dishWizardEditing||step.key!=='ingredients';
+  portionHint.hidden=!dishWizardActive||dishWizardEditing||Boolean(dishImport)||step.key!=='ingredients';
+  dishImportSource.hidden=!dishImport;dishImportDefaults.hidden=!dishImport||!step.groups.includes('name');
   updateRecipePagers();
   if(step.key!=='ingredients')ingredientPager.pager.hidden=true;
   if(step.key!=='preparation')stepPager.pager.hidden=true;
@@ -1941,7 +1943,7 @@ function validateDishWizardStep(step){
   $('#dish-form-error').hidden=true;
   if(step==='name'&&!$('#dish-recipe-title').value.trim()){dishWizardError('Bitte gib einen Namen für das Rezept ein.',$('#dish-recipe-title'));return false}
   if(step==='ingredients'){
-    if(dishWizardEditing&&!$('#recipe-servings').validity.valid){dishWizardError('Die Portionszahl muss eine ganze Zahl zwischen 1 und 100 sein.',$('#recipe-servings'));return false}
+    if((dishWizardEditing||dishImport)&&!$('#recipe-servings').validity.valid){dishWizardError('Die Portionszahl muss eine ganze Zahl zwischen 1 und 100 sein.',$('#recipe-servings'));return false}
     for(const [index,row] of [...$('#recipe-ingredient-rows').querySelectorAll('.recipe-ingredient-row')].entries()){
       const name=row.querySelector('[data-recipe-field="name"]'),amount=row.querySelector('[data-recipe-field="amount"]');
       if(!name.value.trim()&&[...row.querySelectorAll('[data-recipe-field]')].some(input=>input.value.trim())){recipeIngredientPage=index;updateRecipePagers();dishWizardError('Gib für jede ausgefüllte Zutatenzeile einen Namen an.',name);return false}
@@ -1951,12 +1953,51 @@ function validateDishWizardStep(step){
   if(step==='nutrition'){for(const {id} of nutritionFields){const field=$(`#${id}`);if(!field.validity.valid){dishWizardError('Bitte gib einen gültigen Nährwert ab 0 ein.',field);return false}}}
   return true;
 }
-function closeDishEditor(){if(dishWizardActive&&dishWizardSnapshot()!==dishWizardInitial&&!confirm('Deine Eingaben gehen verloren. Rezept wirklich verwerfen?'))return;dishWizardDialog.close()}
+function closeDishEditor(){if(dishWizardActive&&(dishImport||dishWizardSnapshot()!==dishWizardInitial)&&!confirm('Deine Eingaben gehen verloren. Rezept wirklich verwerfen?'))return;dishWizardDialog.close()}
 dishWizardDialog.addEventListener('cancel',event=>{if(dishWizardActive){event.preventDefault();closeDishEditor()}});
 dishWizardBack.addEventListener('click',()=>{dishWizardStep--;$('#dish-form-error').hidden=true;renderDishWizard({focus:true})});
 dishWizardNext.addEventListener('click',()=>{if(!validateDishWizardStep(dishWizardSteps()[dishWizardStep].key))return;dishWizardStep++;renderDishWizard({focus:true})});
+const dishImportSource=document.createElement('details');dishImportSource.className='recipe-import-source';dishImportSource.hidden=true;
+dishImportSource.innerHTML='<summary>Quelltext und Hinweise ansehen</summary><p>Der Quelltext wird nicht mit dem Rezept gespeichert. Prüfe unzugeordnete Angaben und kopiere wichtige Inhalte in die Rezeptfelder.</p><label for="dish-import-source-text">Quelltext</label><textarea id="dish-import-source-text" rows="7"></textarea><p class="recipe-import-unassigned" aria-live="polite"></p><pre class="recipe-import-unassigned-lines"></pre><p class="recipe-import-source-error form-error" role="alert" hidden></p><button type="button" class="secondary-button recipe-import-reparse">Erneut auswerten</button>';
+$('#dish-form-error').after(dishImportSource);
+const dishImportSourceText=dishImportSource.querySelector('textarea'),dishImportUnassigned=dishImportSource.querySelector('.recipe-import-unassigned'),dishImportSourceError=dishImportSource.querySelector('.recipe-import-source-error');
+const dishImportDefaults=document.createElement('p');dishImportDefaults.className='recipe-import-defaults';dishImportDefaults.hidden=true;$('#dish-recipe-title').closest('label').before(dishImportDefaults);
+function recipeImportMessage(result){return result.error||(result.errors||[]).join(' ')}
+function applyRecipeImport(result,source){
+  dishImport={result,source};dishImportSourceText.value=source;dishImportSourceError.hidden=true;
+  dishImportUnassigned.textContent=result.unassigned.length?`${result.unassigned.length} Textzeilen wurden nicht zugeordnet und werden nicht gespeichert:`:'Alle erkannten Textzeilen wurden zugeordnet.';dishImportSource.querySelector('.recipe-import-unassigned-lines').textContent=result.unassigned.join('\n');
+  dishImportDefaults.textContent=`Rezeptart: Voreinstellung. ${result.time?'Zeit aus dem Text übernommen.':'Zeit: Voreinstellung (30 Min.).'} ${result.name?'':'Bitte ergänze den Rezeptnamen.'}`;
+  $('#dish-recipe-title').value=result.name;setRecipeTypeFilter($('#dish-type'),importDefaultType);updateDishTypeFields();$('#dish-ingredient').value='';dishIngredientDraft=[];$('#dish-ingredient-input').value='';renderDishIngredientChips();
+  const minutes=result.time||30;$('#dish-time').value=String(timeBlocks.indexOf(minutes));$('#dish-time-output').textContent=`${minutes} Min.`;
+  nutritionFields.forEach(({id})=>{$(`#${id}`).value=''});$('#recipe-servings').value=result.servings??'';
+  recipeIngredientPage=0;recipeStepPage=0;renderRecipeIngredientRows(result.ingredients);renderRecipeStepRows(result.steps);
+}
+dishImportSource.querySelector('.recipe-import-reparse').addEventListener('click',()=>{
+  const result=window.WochentischRecipeImport.parse(dishImportSourceText.value),message=recipeImportMessage(result);
+  if(message){dishImportSourceError.textContent=message;dishImportSourceError.hidden=false;dishImportSourceError.tabIndex=-1;dishImportSourceError.focus();return}
+  if(!confirm('Die erneute Auswertung ersetzt deine bisherigen Eingaben im Rezeptentwurf. Fortfahren?'))return;
+  applyRecipeImport(result,dishImportSourceText.value);dishWizardStep=0;renderDishWizard({focus:true});
+});
+const recipeImportDialog=$('#recipe-import-dialog'),recipeImportInput=$('#recipe-import-input'),recipeImportText=$('#recipe-import-text'),recipeImportError=$('#recipe-import-error');let creationDefaultType='meal';
+function openRecipeCreation(defaultType='meal'){
+  creationDefaultType=defaultType;recipeImportText.value='';recipeImportError.hidden=true;recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportDialog.showModal();
+}
+function closeRecipeImport(){if(recipeImportText.value.trim()&&!confirm('Der eingefügte Text geht verloren. Wirklich abbrechen?'))return;recipeImportDialog.close()}
+$('#recipe-import-close').addEventListener('click',closeRecipeImport);
+recipeImportDialog.addEventListener('cancel',event=>{event.preventDefault();closeRecipeImport()});
+$('#recipe-import-manual').addEventListener('click',()=>{if(recipeImportText.value.trim()&&!confirm('Der eingefügte Text geht verloren. Selbst eingeben?'))return;recipeImportDialog.close();openDish('',{defaultType:creationDefaultType})});
+$('#recipe-import-text-choice').addEventListener('click',()=>{$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;recipeImportText.focus()});
+$('#recipe-import-back').addEventListener('click',()=>{recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportError.hidden=true;$('#recipe-import-text-choice').focus()});
+$('#recipe-import-analyze').addEventListener('click',()=>{
+  const source=recipeImportText.value,result=window.WochentischRecipeImport.parse(source),message=recipeImportMessage(result);
+  if(message){recipeImportError.textContent=message;recipeImportError.hidden=false;recipeImportText.focus();return}
+  recipeImportDialog.close();openDish('',{defaultType:creationDefaultType,importData:{source,result}});
+});
+dishWizardDialog.addEventListener('close',()=>{dishImport=null;dishImportSourceText.value='';dishImportSource.querySelector('.recipe-import-unassigned-lines').textContent='';dishImportUnassigned.textContent='';dishImportSource.open=false});
+recipeImportDialog.addEventListener('close',()=>{recipeImportText.value=''});
 function catalogDishForEditor(dish){return{...dish,time:Number(dish.cooking_time_minutes)||30,ingredients:cleanIngredients(dish.ingredients),recipe:window.WochentischRecipes.normalizeRecipe(dish.recipe),nutrition:cleanNutrition(dish.nutrition)}}
-function openDish(id='',{catalogDish=null,catalogCreate=false,defaultType='meal'}={}){
+function openDish(id='',{catalogDish=null,catalogCreate=false,defaultType='meal',importData=null}={}){
+  dishImport=importData;importDefaultType=defaultType;
   const catalogMode=Boolean(catalogDish)||catalogCreate,blankCatalogDish={name:'',ingredient:'',time:30,ingredients:[],nutrition:null,recipe:{servings:2,ingredients:[],steps:[]},version:1},d=catalogMode?catalogDishForEditor(catalogDish||blankCatalogDish):state.dishes.find(x=>x.id===id),minutes=Number(d?.time)||30;let timeIndex=0;
   dishWizardMobile=window.matchMedia('(max-width: 600px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse)').matches;dishWizardEditing=!catalogMode&&Boolean(d)&&dishWizardMobile;dishWizardActive=!catalogMode&&(!d||dishWizardEditing);dishWizardStep=0;recipeIngredientPage=0;recipeStepPage=0;
   recipeEditorMode=catalogMode?'catalog':'dish';catalogEditDraft=catalogMode?{id:catalogCreate?'':d.id,version:Number(d.version)||1,original:structuredClone(d),creating:catalogCreate}:null;
@@ -1965,6 +2006,7 @@ function openDish(id='',{catalogDish=null,catalogCreate=false,defaultType='meal'
   dishIngredientDraft=(d?.ingredients||[]).slice();$('#dish-ingredient-input').value='';renderDishIngredientChips();renderDishIngredientSuggestions();$('#dish-time').value=timeIndex;for(let i=1;i<timeBlocks.length;i++)if(Math.abs(timeBlocks[i]-minutes)<Math.abs(timeBlocks[Number($('#dish-time').value)]-minutes))$('#dish-time').value=i;$('#dish-time-output').textContent=`${timeBlocks[Number($('#dish-time').value)]} Min.`;
   const nutrition=cleanNutrition(d?.nutrition)||{};nutritionFields.forEach(({key,id:fieldId})=>{$(`#${fieldId}`).value=nutrition[key]===undefined?'':String(nutrition[key])});
   const recipe=window.WochentischRecipes.normalizeRecipe(d?.recipe);$('#recipe-servings').value=recipe?.servings??(dishWizardActive&&!dishWizardEditing?'1':(d?'':'2'));renderRecipeIngredientRows(window.WochentischRecipes.editableIngredients(recipe,d?.ingredients));renderRecipeStepRows(recipe?.steps||[]);
+  if(dishImport)applyRecipeImport(dishImport.result,dishImport.source);
   $('#dialog-title').textContent=catalogCreate?'Standardgericht hinzufügen':catalogMode?`${d.name} bearbeiten`:d?'Rezept bearbeiten':'Rezept hinzufügen';$('#delete-dish').hidden=!d||catalogMode;$('#dish-form [type="submit"]').textContent=catalogCreate?'Standardgericht hinzufügen':catalogMode?'Änderungen speichern':'Speichern';hideCatalogVersionConflict();renderDishWizard();dishWizardInitial=dishWizardSnapshot();$('#dish-dialog').showModal();setTimeout(()=>{if(dishWizardEditing)dishWizardDialog.focus({preventScroll:true});else $('#dish-recipe-title').focus()},30);
 }
 function normalizeIngredient(value){return window.WochentischIngredients.normalize(value)}
@@ -2127,7 +2169,7 @@ function chooseDish(day){
   if(!state.dishes.length){
     const message=document.createElement('p');message.className='empty-state';message.textContent='Noch keine Gerichte vorhanden.';
     const add=document.createElement('button');add.type='button';add.className='primary-button';add.textContent='Gericht hinzufügen';
-    add.addEventListener('click',()=>{$('#choose-dialog').close();openDish()});list.append(message,add);search.hidden=true;
+    add.addEventListener('click',()=>{$('#choose-dialog').close();openRecipeCreation()});list.append(message,add);search.hidden=true;
   }else{
     search.hidden=false;
     const dishes=[...state.dishes].sort((a,b)=>a.name.localeCompare(b.name,'de-DE',{sensitivity:'base'})),entries=[];
@@ -2524,7 +2566,7 @@ function deleteDish(){
   Object.entries(state.plans).forEach(([week,days])=>days.forEach((day,dayIndexValue)=>{const pins=state.pinnedMeals?.[week]?.[dayIndexValue]||[];for(let i=day.length-1;i>=0;i--)if(day[i]===id){day.splice(i,1);pins.splice(i,1)}}));
   void removeDishProgressForCurrentScope(id);save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Rezept gelöscht.');
 }
-$('#add-dish-btn').addEventListener('click',()=>openDish('',{defaultType:selectedRecipeType($('#dishes-type'))}));$('#starter-add').addEventListener('click',()=>openDish('',{defaultType:selectedRecipeType($('#dishes-type'))}));$('#search-dishes').addEventListener('input',renderDishes);$('#dishes-type').addEventListener('click',event=>{const button=event.target.closest('button[data-type]');if(!button)return;setRecipeTypeFilter($('#dishes-type'),button.dataset.type);renderDishes()});$('#close-dish-dialog').addEventListener('click',closeDishEditor);$('#cancel-dialog').addEventListener('click',closeDishEditor);$('#delete-dish').addEventListener('click',deleteDish);
+$('#add-dish-btn').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#starter-add').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#search-dishes').addEventListener('input',renderDishes);$('#dishes-type').addEventListener('click',event=>{const button=event.target.closest('button[data-type]');if(!button)return;setRecipeTypeFilter($('#dishes-type'),button.dataset.type);renderDishes()});$('#close-dish-dialog').addEventListener('click',closeDishEditor);$('#cancel-dialog').addEventListener('click',closeDishEditor);$('#delete-dish').addEventListener('click',deleteDish);
 $('#recipe-add-ingredient').addEventListener('click',()=>{const rows=[...$('#recipe-ingredient-rows').querySelectorAll('.recipe-ingredient-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-recipe-field]')].map(input=>[input.dataset.recipeField,input.value])));rows.push({name:'',amount:'',unit:'',note:''});recipeIngredientPage=rows.length-1;renderRecipeIngredientRows(rows);$('#recipe-ingredient-rows .recipe-ingredient-row:last-child input').focus()});
 $('#recipe-add-step').addEventListener('click',()=>{const steps=[...$('#recipe-step-rows').querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value);steps.push('');recipeStepPage=steps.length-1;renderRecipeStepRows(steps);$('#recipe-step-rows .recipe-step-row:last-child textarea').focus()});
 $('#dish-form').addEventListener('submit',event=>{
@@ -2538,6 +2580,7 @@ $('#dish-form').addEventListener('submit',event=>{
   const duplicate=!catalogMode&&state.dishes.find(d=>d.id!==id&&(d.name.trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')||dishFingerprint(d.name,d.ingredient,d.ingredients)===dishFingerprint(name,ingredient,ingredients)));
   if(duplicate){if(dishWizardActive){dishWizardStep=0;renderDishWizard()}const error=$('#dish-form-error');error.textContent=`Ähnliches Gericht existiert bereits: ${duplicate.name}`;error.hidden=false;if(dishWizardActive)$('#dish-recipe-title').focus();return}
   if(catalogMode){void saveCatalogDishDraft({id,name,type,ingredient,time,ingredients,recipe,nutrition});return}
+  if(dishImport&&(dishImport.result.unassigned.length||dishImportSourceText.value!==dishImport.source)&&!confirm('Nicht zugeordnete oder nachträglich geänderte Inhalte aus dem Quelltext werden nicht gespeichert. Rezept trotzdem speichern?'))return;
   const existing=state.dishes.find(d=>d.id===id);
   if(existing){const oldFingerprint=window.WochentischRecipes.fingerprint(existing);Object.assign(existing,{name,type,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️',nutrition,recipe});if(oldFingerprint!==window.WochentischRecipes.fingerprint(existing))void invalidateRecipeProgress(existing)}
   else state.dishes.push({id:newId(),name,type,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️',nutrition,recipe,catalogSourceId:null,catalogSourceVersion:null});

@@ -1316,3 +1316,6 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 .recipe-per-portion, .recipe-row-pager { color: #a5b1bf; }
 
 #dish-form.is-dish-edit-wizard .recipe-servings-suffix { color: #bdc9d6; }
+#recipe-import-dialog { background: #1c242e; color: #e0e8f1; }
+#recipe-import-text, #dish-form #dish-import-source-text { background: #18232f; border-color: #3a4a5e; color: #e0e8f1; }
+.recipe-import-source { border-color: #3a4a5e; }

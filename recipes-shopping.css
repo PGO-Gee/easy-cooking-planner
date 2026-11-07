@@ -331,3 +331,23 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 .recipe-row-pager span { min-width: 100px; text-align: center; font-size: 12px; font-weight: 600; }
 .recipe-row-pager button { min-width: 44px; min-height: 44px; padding: 0 12px; }
 .recipe-row-pager button:disabled { opacity: .45; }
+
+/* Local recipe text import */
+#recipe-import-dialog { box-sizing: border-box; width: min(560px, calc(100% - 24px)); max-height: calc(var(--visual-viewport-height, 100dvh) - 24px); overflow: auto; overscroll-behavior: contain; }
+.recipe-import-content { padding: 24px; }
+.recipe-import-content p, .recipe-import-source p, .recipe-import-defaults { color: var(--muted); font-size: 13px; line-height: 1.5; }
+#recipe-import-choice { display: grid; gap: 10px; }
+#recipe-import-choice[hidden], #recipe-import-input[hidden] { display: none; }
+#recipe-import-choice button, #recipe-import-input button, .recipe-import-source button { min-height: 44px; font-size: 14px; }
+.recipe-import-content .close-button { min-width: 44px; min-height: 44px; }
+#recipe-import-input label, .recipe-import-source label { display: block; margin: 12px 0 6px; color: var(--ink); font-weight: 700; }
+#recipe-import-text, #dish-form #dish-import-source-text { display: block; width: 100%; min-height: 150px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); resize: vertical; }
+.recipe-import-source { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.recipe-import-source summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
+.recipe-import-unassigned-lines { max-height: 160px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font: 13px/1.5 var(--sans); }
+.recipe-import-defaults { margin: 8px 0 16px; }
+@media (max-width: 600px) {
+  .recipe-import-content { padding: 16px 16px max(16px, env(safe-area-inset-bottom)); }
+  #recipe-import-input .dialog-actions { flex-wrap: wrap; }
+  #dish-form.is-dish-wizard .recipe-ingredient-row [data-recipe-field="note"] { grid-column: 1 / 4; grid-row: 3; }
+}
