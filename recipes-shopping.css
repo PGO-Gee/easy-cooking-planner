@@ -256,3 +256,21 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 @media(max-width:600px){.recipe-ingredient-row{grid-template-columns:minmax(0,1fr) minmax(68px,.7fr) minmax(78px,.7fr) 44px}.recipe-ingredient-row [data-recipe-field="note"]{grid-column:1/4;grid-row:2}.recipe-step-row{grid-template-columns:28px minmax(0,1fr);gap:6px 10px}.recipe-step-actions{grid-column:2;grid-row:2;display:flex;justify-content:flex-end;gap:8px}.recipe-step-actions .recipe-row-move{flex:0 0 44px}.recipe-list{grid-template-columns:1fr}.recipe-detail-heading h2{font-size:21px}.recipe-overview-panel{padding:14px}.recipe-ingredient-list li{grid-template-columns:minmax(84px,auto) minmax(0,1fr);gap:5px 8px}.cook-step-text{min-height:30vh}.cook-step-actions button{min-width:0;flex:1}}
 @media(prefers-reduced-motion:reduce){.cook-progress span{transition:none}}
 .catalog-version-conflict details{margin:12px 0}.catalog-version-conflict summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:700}.catalog-version-conflict pre{max-height:240px;padding:10px;overflow:auto;border-radius:8px;background:#f2f4ef;color:#4e5d50;font:11px/1.45 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Guided creation uses the existing editor fields and save behavior. */
+#dish-form [hidden], #dish-form .recipe-editor-section[hidden] { display: none !important; }
+.dish-wizard-progress { margin: 0 0 20px; color: var(--green); font-size: 13px; font-weight: 700; }
+.dish-wizard-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+#dish-form.is-dish-wizard .dialog-actions { position: sticky; bottom: 0; z-index: 2; margin: 20px -25px -25px; padding: 14px 25px max(14px, env(safe-area-inset-bottom)); background: var(--paper); }
+#dish-form.is-dish-wizard .dialog-actions button { min-height: 44px; font-size: 13px; }
+#dish-form.is-dish-wizard .close-button { min-width: 44px; min-height: 44px; }
+@media (max-width: 600px) {
+  #dish-form.is-dish-wizard .dialog-actions { flex-wrap: wrap; gap: 8px; }
+  #dish-form.is-dish-wizard .dialog-actions #cancel-dialog { margin-right: auto; }
+  #dish-form.is-dish-wizard .dialog-actions button { padding-inline: 10px; }
+}
+
+/* The entire dish row opens the editor. */
+.dish-row[role="button"] { cursor: pointer; }
+.dish-row[role="button"]:focus-visible { outline: 2px solid #7899bf; outline-offset: -3px; }
+.row-edit[aria-hidden="true"] { display: grid; place-items: center; }
