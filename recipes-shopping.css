@@ -274,3 +274,35 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 .dish-row[role="button"] { cursor: pointer; }
 .dish-row[role="button"]:focus-visible { outline: 2px solid #7899bf; outline-offset: -3px; }
 .row-edit[aria-hidden="true"] { display: grid; place-items: center; }
+
+/* Keep the current step compact so the ingredient panel is immediately visible. */
+.cook-step-text { min-height: 0; padding: clamp(18px, 4vw, 32px); font-size: clamp(19px, 3vw, 27px); }
+.cook-step-actions { margin: 12px 0; }
+.cook-ingredients-details .recipe-panel-heading { flex-wrap: wrap; }
+.cook-ingredients-details h3 { margin: 0; font-size: 17px; }
+.cook-ingredients-details .recipe-portion-control { margin: 0; }
+@media (max-width: 600px) { .cook-step-text { min-height: 0; } }
+.cooking-screen.is-cooking-step > .page-heading { display: none; }
+
+.main-ingredient-hint { display: block; margin: 4px 0 8px; color: var(--text-muted, #718078); font-size: 12px; line-height: 1.4; }
+
+
+/* The whole recipe prompt is one accessible touch target. */
+.starter-tip {
+  width: 100%;
+  min-height: 64px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: border-color .16s ease, box-shadow .16s ease;
+}
+.starter-tip:hover { border-color: #b6c7b6; }
+.starter-tip:focus-visible { outline: 2px solid #7899bf; outline-offset: 2px; }
+.starter-tip-copy { display: flex; flex: 1; flex-direction: column; gap: 4px; min-width: 0; }
+.starter-tip .starter-tip-icon { flex: 0 0 auto; font-size: 18px; }
+.starter-tip-description { display: block; color: var(--text-muted, #9aa197); font-size: 10px; line-height: 1.4; }
+@media (max-width: 700px) {
+  .starter-tip { align-items: center; gap: 10px; padding: 12px; }
+}

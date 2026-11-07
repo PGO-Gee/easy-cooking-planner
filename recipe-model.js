@@ -59,6 +59,16 @@
     });
   }
 
+  // Older dishes may only have a shopping list; expose it in the same editor
+  // without inventing quantities or discarding their existing names.
+  function editableIngredients(recipe, legacyIngredients = []) {
+    const normalized = normalizeRecipe(recipe);
+    if (normalized?.ingredients.length) return normalized.ingredients;
+    return (Array.isArray(legacyIngredients) ? legacyIngredients : [])
+      .map(name => String(name ?? '').trim()).filter(Boolean)
+      .map(name => ({ name, amount: null, unit: '', note: '' }));
+  }
+
   function fingerprint(dish) {
     const value = JSON.stringify({ name: dish?.name, ingredient: dish?.ingredient, time: dish?.time,
       ingredients: dish?.ingredients, nutrition: dish?.nutrition, recipe: normalizeRecipe(dish?.recipe),
@@ -68,5 +78,5 @@
     return (hash >>> 0).toString(16).padStart(8, '0');
   }
 
-  return Object.freeze({ parseAmount, normalizeAmount, normalizeRecipe, formatAmount, scaledAmount, shoppingIngredients, fingerprint });
+  return Object.freeze({ parseAmount, normalizeAmount, normalizeRecipe, formatAmount, scaledAmount, shoppingIngredients, editableIngredients, fingerprint });
 });

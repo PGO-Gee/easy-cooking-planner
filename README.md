@@ -39,3 +39,7 @@ Die Website besteht aus statischen Dateien und benötigt keinen Build-Schritt:
 3. Den vorgesehenen Veröffentlichungsbranch und den Ordner `/(root)` auswählen.
 
 Änderungen am ausgewählten Branch werden anschließend von GitHub Pages veröffentlicht. Mit GitHub Free muss das Repository für GitHub Pages öffentlich sein. GitHub Pages unterstützt auch eine eigene Domain; die Domain registriert und bezahlt man separat.
+
+## Backrezepte
+
+Die Migration `20261107203423_baking_recipe_type.sql` vor der Veröffentlichung der zugehörigen App-Version auf die Datenbank anwenden. Sie ergänzt die Rezeptart für Haushalts- und Katalogrezepte und fügt zehn Backrezepte zum Standardkatalog hinzu. Bereits vorhandene Rezepte bleiben Gerichte. Backrezepte erscheinen erst nach Übernahme in die eigene Sammlung im Wochenplan und werden beim Mischen erhalten.

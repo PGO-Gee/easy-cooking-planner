@@ -37,3 +37,14 @@ test('recipe fingerprints change when recipe fields change', () => {
   assert.notEqual(recipes.fingerprint(dish), recipes.fingerprint({ ...dish, recipe: { ...dish.recipe, steps: ['Länger kochen'] } }));
   assert.notEqual(recipes.fingerprint({ ...dish, recipe: { servings: 2, ingredients: [], steps: ['Kochen'] } }), recipes.fingerprint({ ...dish, ingredients: ['Kartoffeln'], recipe: { servings: 2, ingredients: [], steps: ['Kochen'] } }));
 });
+
+test('older shopping-only ingredients appear in the unified editor without invented quantities', () => {
+  assert.deepEqual(recipes.editableIngredients(null, ['Linsen', 'Karotten']), [
+    { name: 'Linsen', amount: null, unit: '', note: '' },
+    { name: 'Karotten', amount: null, unit: '', note: '' }
+  ]);
+  const recipe = { servings: 2, ingredients: [{ name: 'Mehl', amount: 200, unit: 'g' }], steps: [] };
+  assert.deepEqual(recipes.editableIngredients(recipe, ['Alt']), [
+    { name: 'Mehl', amount: 200, unit: 'g', note: '' }
+  ]);
+});
