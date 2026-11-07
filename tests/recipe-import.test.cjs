@@ -189,3 +189,46 @@ test('synthetic: unusual group notes are preserved when they exceed the field li
   const r=parse(`Zutaten\n${line}\nZubereitung\n1. Rühren.`);
   assert.equal(r.ingredients.length,0);assert(r.unassigned.includes(line));
 });
+
+test('section import recognizes standalone ingredient lists without headings',()=>{
+  const r=require('../recipe-import.js').parseSection('250 g Reis\n2 Tomaten\nSalz nach Geschmack','ingredients');
+  assert.deepEqual(r.ingredients.map(item=>item.name),['Reis','Tomaten','Salz']);assert.equal(r.servings,null);
+});
+test('section import recognizes separate unnumbered or numbered preparation',()=>{
+  const r=require('../recipe-import.js').parseSection('Reis kochen.\n\n2. Tomaten schneiden.','preparation');
+  assert.deepEqual(r.steps,['Reis kochen.','Tomaten schneiden.']);
+});
+test('section import reports empty and nonmatching input',()=>{
+  const parser=require('../recipe-import.js');assert(parser.parseSection('','ingredients').error);assert(parser.parseSection('https://example.test','preparation').error);assert(parser.parseSection('Zutaten\n','ingredients').error);
+});
+test('section nutrition import only reads per-portion values and retains unrecognized text',()=>{
+  const parser=require('../recipe-import.js'),r=parser.parseSection('Nährwerte pro Portion:\nEnergie: 430 kcal\nEiweiß: 22,5 g\n15 g Fett\nKohlenhydrate: 45 g\nBallaststoffe: 4 g','nutrition');
+  assert.deepEqual(r.nutrition,{kcal:430,protein:22.5,fat:15,carbs:45});assert(r.unassigned.some(x=>x.includes('Ballaststoffe')));
+  assert(parser.parseSection('pro 100 g\n450 kcal\nFett: 5 g','nutrition').error);
+  assert(parser.parseSection('Kalorien: -2 kcal','nutrition').error);
+});
+
+test('section imports append ingredients without changing unrelated values and preserve safe serving bases',()=>{
+  const parser=require('../recipe-import.js'),r=parser.parseSection('200 g Reis\n100 g Gemüse','ingredients');
+  const first=parser.mergeSection('ingredients',{ingredients:[{name:'',amount:'',unit:'',note:''}],servings:1},r);
+  assert.equal(first.ingredients.length,2);assert.equal(first.servings,null);
+  const conflict=parser.mergeSection('ingredients',{ingredients:[{name:'Ei',amount:1}],servings:2},{...r,servings:4});assert(conflict.error);
+  const combined=parser.mergeSection('ingredients',{ingredients:[{name:'Ei',amount:1}],servings:2},{...r,servings:2});assert.equal(combined.ingredients.length,3);assert.equal(combined.servings,2);
+  const uncertain=parser.mergeSection('ingredients',{ingredients:[{name:'Ei',amount:1}],servings:2},r);assert.equal(uncertain.servings,null);
+});
+test('section imports append steps with limit and preserve previously entered nutrition',()=>{
+  const {mergeSection}=require('../recipe-import.js');assert.deepEqual(mergeSection('preparation',{steps:['Bestehend']},{steps:['Neu']}).steps,['Bestehend','Neu']);
+  assert(mergeSection('preparation',{steps:Array(100).fill('alt')},{steps:['neu']}).error);
+  assert.deepEqual(mergeSection('nutrition',{nutrition:{kcal:'400',fat:''}},{nutrition:{kcal:500,fat:12}}),{nutrition:{kcal:'400',fat:12},skipped:['kcal']});
+});
+
+test('nutrition conflicts identify only source lines that were not applied',()=>{
+  const parser=require('../recipe-import.js'),r=parser.parseSection('Energie: 500 kcal\nKohlenhydrate: 45 g','nutrition');
+  const merged=parser.mergeSection('nutrition',{nutrition:{kcal:'430',carbs:''}},r);
+  assert.deepEqual(merged.skipped.map(key=>r.nutritionLines[key]),['Energie: 500 kcal']);assert.equal(merged.nutrition.carbs,45);
+});
+
+test('section nutrition import accepts several per-portion values on one line',()=>{
+  const r=require('../recipe-import.js').parseSection('Pro Portion: 430 kcal | Eiweiß: 22,5 g | Fett: 12 g; Kohlenhydrate: 45 g','nutrition');
+  assert.deepEqual(r.nutrition,{kcal:430,protein:22.5,fat:12,carbs:45});assert.deepEqual(r.unassigned,[]);
+});

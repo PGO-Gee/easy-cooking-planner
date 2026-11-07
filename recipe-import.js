@@ -75,5 +75,49 @@
     if(!ingredients.length&&!steps.length&&!name)errors.push('Es konnten keine Rezeptangaben sicher erkannt werden. Ergänze Überschriften wie „Zutaten“ und „Zubereitung“.');
     return {name,servings,time,ingredients,steps,unassigned,errors};
   }
-  return Object.freeze({parse,MAX_SOURCE});
+  function parseSection(source,section){
+    const text=String(source??'');if(!text.trim())return {error:'Bitte füge zuerst einen Text ein.'};
+    if(text.length>MAX_SOURCE)return {error:'Der Text ist zu lang. Bitte kürze ihn auf höchstens 50.000 Zeichen.'};
+    if(section==='ingredients'||section==='preparation'){
+      const result=parse(`${section==='ingredients'?'Zutaten':'Zubereitung'}\n${text}`);
+      if(result.error)return result;if(result.errors?.length)return {...result,error:result.errors.join(' ')};
+      const items=section==='ingredients'?result.ingredients:result.steps;
+      if(!items.length)return {...result,error:section==='ingredients'?'Keine Zutaten erkannt. Bitte prüfe den Text.':'Keine Zubereitungsschritte erkannt. Bitte prüfe den Text.'};
+      const other=section==='ingredients'?Boolean(result.steps.length||result.name||result.time):Boolean(result.ingredients.length||result.name||result.servings||result.time);
+      if(other)result.unassigned=[...result.unassigned,text];
+      return result;
+    }
+    if(section!=='nutrition')return {error:'Dieser Bereich kann nicht importiert werden.'};
+    if(/(?:pro|je|\/)\s*100\s*(?:g|gramm|ml)\b/i.test(text))return {error:'Angaben pro 100 g oder 100 ml können nicht als Werte pro Portion übernommen werden.'};
+    const values={},nutritionLines={},unassigned=[],lines=text.replace(/\r\n?/g,'\n').split(/\n|[|;]|,\s+(?=\d)/);
+    const names={kcal:'kcal',kalorien:'kcal',energie:'kcal',eiweiß:'protein',eiweiss:'protein',protein:'protein',fett:'fat',kohlenhydrate:'carbs'};
+    const word='(?:kalorien|energie|kcal|eiweiß|eiweiss|protein|fett|kohlenhydrate)',number='(\\d+(?:[.,]\\d+)?)';
+    const byName=new RegExp(`^(${word})(?:\\s*\\((kcal|g)\\))?\\s*:?\\s*${number}\\s*(kcal|g)?\\s*$`,'i');
+    const byNumber=new RegExp(`^${number}\\s*(kcal|g)\\s+(${word})\\s*$`,'i');
+    lines.forEach(raw=>{let line=cleanLine(raw);if(!line)return;if(/^(?:nährwerte|naehrwerte)(?:\s+pro\s+portion)?\s*:?$/i.test(line)||/^pro\s+portion\s*:?$/i.test(line))return;line=line.replace(/^(?:(?:nährwerte|naehrwerte)\s+)?pro\s+portion\s*:\s*/i,'');
+      let match=line.match(byName),name,value,unit;if(match){name=match[1];value=match[3];unit=match[2]||match[4]||''}else if((match=line.match(byNumber))){value=match[1];unit=match[2];name=match[3]}else if((match=line.match(/^(\d+(?:[.,]\d+)?)\s*kcal$/i))){name='kcal';value=match[1];unit='kcal'}else{unassigned.push(raw);return}
+      const key=names[name.toLocaleLowerCase('de-DE')],numeric=Number(value.replace(',','.'));if(!key||!Number.isFinite(numeric)||numeric<0||(unit&&unit.toLowerCase()!==(key==='kcal'?'kcal':'g'))||Object.prototype.hasOwnProperty.call(values,key)){unassigned.push(raw);return}values[key]=numeric;nutritionLines[key]=raw;
+    });
+    if(!Object.keys(values).length)return {error:'Keine Nährwerte pro Portion erkannt. Bitte prüfe den Text.',unassigned};
+    return {nutrition:values,nutritionLines,unassigned};
+  }
+  function mergeSection(section,current,result){
+    if(section==='ingredients'){
+      const existing=(current.ingredients||[]).filter(item=>Object.values(item).some(value=>String(value??'').trim()));
+      const oldBase=Number(current.servings)||null,newBase=result.servings||null;
+      if(existing.length&&oldBase&&newBase&&oldBase!==newBase)return {error:`Die vorhandenen Mengen gelten für ${oldBase} Portionen, der neue Text für ${newBase}. Bitte gleiche zuerst die Basis-Portionen an.`};
+      return {ingredients:[...existing,...result.ingredients],servings:existing.length?(oldBase&&newBase?oldBase:null):newBase};
+    }
+    if(section==='preparation'){
+      const steps=[...(current.steps||[]).filter(step=>String(step).trim()),...result.steps];
+      if(steps.length>100)return {error:'Insgesamt sind höchstens 100 Zubereitungsschritte möglich.'};
+      return {steps};
+    }
+    if(section==='nutrition'){
+      const values={...current.nutrition},skipped=[];for(const [key,value] of Object.entries(result.nutrition)){if(values[key]!==''&&values[key]!==undefined&&values[key]!==null){if(Number(values[key])!==value)skipped.push(key)}else values[key]=value}
+      return {nutrition:values,skipped};
+    }
+    return {error:'Dieser Bereich kann nicht importiert werden.'};
+  }
+  return Object.freeze({parse,parseSection,mergeSection,MAX_SOURCE});
 });

@@ -351,3 +351,13 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
   #recipe-import-input .dialog-actions { flex-wrap: wrap; }
   #dish-form.is-dish-wizard .recipe-ingredient-row [data-recipe-field="note"] { grid-column: 1 / 4; grid-row: 3; }
 }
+
+/* Import separately into the current recipe section. */
+.dish-section-import { min-width: 0; margin: 8px 0 14px; padding: 0 12px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.dish-section-import summary { display: flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink); font-size: 13px; font-weight: 700; }
+.dish-section-import p { margin: 8px 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+#dish-form .dish-section-import label { display: block; margin: 12px 0 6px; font-size: 13px; font-weight: 700; }
+#dish-form .dish-section-import textarea { display: block; width: 100%; min-height: 120px; margin-bottom: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); resize: vertical; }
+.dish-section-import button { min-height: 44px; font-size: 13px; }
+.dish-section-import .dish-section-import-status { color: var(--ink); font-weight: 600; }
+.dish-section-import-unassigned { max-height: 140px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--ink); font: 12px/1.5 var(--sans); }
