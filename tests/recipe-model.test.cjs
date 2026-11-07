@@ -48,3 +48,14 @@ test('older shopping-only ingredients appear in the unified editor without inven
     { name: 'Mehl', amount: 200, unit: 'g', note: '' }
   ]);
 });
+
+
+test('per-portion recipes scale to the selected serving count', () => {
+  const recipe = recipes.normalizeRecipe({ servings: 1, ingredients: [{ name: 'Reis', amount: '75', unit: 'g' }], steps: [] });
+  assert.equal(recipes.scaledAmount(recipe.ingredients[0].amount, 3, recipe.servings), 225);
+});
+
+test('existing ingredient notes and nonstandard units survive normalization', () => {
+  const ingredient = { name: 'Tomaten', amount: 2, unit: 'Handvoll', note: 'halbiert' };
+  assert.deepEqual(recipes.editableIngredients({ servings: 4, ingredients: [ingredient] }), [ingredient]);
+});
