@@ -1314,3 +1314,5 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 
 .recipe-ingredient-row select { background: #18232f; border-color: #3a4a5e; color: #e0e8f1; }
 .recipe-per-portion, .recipe-row-pager { color: #a5b1bf; }
+
+#dish-form.is-dish-edit-wizard .recipe-servings-suffix { color: #bdc9d6; }

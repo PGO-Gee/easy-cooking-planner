@@ -1229,3 +1229,19 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
   .dish-keyboard-open #dish-form.is-dish-wizard .dialog-head h2 { font-size: 16px; }
   .dish-keyboard-open #dish-form.is-dish-wizard .dialog-actions { margin-top: 6px; padding-top: 6px; padding-bottom: 6px; }
 }
+
+/* A compact editor with direct access to each recipe section. */
+@media (max-width: 600px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #dish-form .recipe-ingredient-suggestions { position: static; max-height: 144px; margin: 6px 0 0; }
+  #dish-form.is-dish-wizard .recipe-ingredient-suggestions { max-height: 96px; }
+  #dish-form.is-dish-edit-wizard .dish-wizard-section { width: 100%; min-height: 44px; margin: 0 0 10px; }
+  #dish-form.is-dish-edit-wizard .recipe-servings-control { display: flex; gap: 8px; padding: 0; border: 0; background: transparent; }
+  #dish-form.is-dish-edit-wizard .recipe-servings-field { font-size: 12px; white-space: nowrap; }
+  #dish-form.is-dish-edit-wizard .recipe-servings-control input { width: 62px; min-height: 44px; height: 44px; font-size: 16px; }
+  #dish-form.is-dish-edit-wizard .recipe-servings-hint { display: none; }
+  #dish-form.is-dish-edit-wizard .recipe-servings-suffix { font-size: 12px; }
+  #dish-form.is-dish-edit-wizard .dialog-actions { justify-content: flex-end; }
+  #dish-form.is-dish-edit-wizard #delete-dish { margin-right: auto; }
+  .dish-keyboard-open #dish-form.is-dish-edit-wizard .dish-wizard-section,
+  .dish-keyboard-open #dish-form.is-dish-edit-wizard .recipe-servings-control { display: none; }
+}
