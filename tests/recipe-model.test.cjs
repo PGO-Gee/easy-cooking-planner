@@ -37,3 +37,25 @@ test('recipe fingerprints change when recipe fields change', () => {
   assert.notEqual(recipes.fingerprint(dish), recipes.fingerprint({ ...dish, recipe: { ...dish.recipe, steps: ['Länger kochen'] } }));
   assert.notEqual(recipes.fingerprint({ ...dish, recipe: { servings: 2, ingredients: [], steps: ['Kochen'] } }), recipes.fingerprint({ ...dish, ingredients: ['Kartoffeln'], recipe: { servings: 2, ingredients: [], steps: ['Kochen'] } }));
 });
+
+test('older shopping-only ingredients appear in the unified editor without invented quantities', () => {
+  assert.deepEqual(recipes.editableIngredients(null, ['Linsen', 'Karotten']), [
+    { name: 'Linsen', amount: null, unit: '', note: '' },
+    { name: 'Karotten', amount: null, unit: '', note: '' }
+  ]);
+  const recipe = { servings: 2, ingredients: [{ name: 'Mehl', amount: 200, unit: 'g' }], steps: [] };
+  assert.deepEqual(recipes.editableIngredients(recipe, ['Alt']), [
+    { name: 'Mehl', amount: 200, unit: 'g', note: '' }
+  ]);
+});
+
+
+test('per-portion recipes scale to the selected serving count', () => {
+  const recipe = recipes.normalizeRecipe({ servings: 1, ingredients: [{ name: 'Reis', amount: '75', unit: 'g' }], steps: [] });
+  assert.equal(recipes.scaledAmount(recipe.ingredients[0].amount, 3, recipe.servings), 225);
+});
+
+test('existing ingredient notes and nonstandard units survive normalization', () => {
+  const ingredient = { name: 'Tomaten', amount: 2, unit: 'Handvoll', note: 'halbiert' };
+  assert.deepEqual(recipes.editableIngredients({ servings: 4, ingredients: [ingredient] }), [ingredient]);
+});

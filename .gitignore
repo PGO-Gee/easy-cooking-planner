@@ -3,3 +3,8 @@ supabase/migrations/20261019_restore_household.sql
 Sync Plan.rtf
 KOCHASSISTENT-PLAN.md
 /supabase
+!/supabase/
+/supabase/*
+!/supabase/migrations/
+/supabase/migrations/*
+!/supabase/migrations/20261107203423_baking_recipe_type.sql

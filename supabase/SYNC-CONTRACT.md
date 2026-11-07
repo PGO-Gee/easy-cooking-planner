@@ -96,3 +96,7 @@ Anlegefunktion steht nach Anwendung von
 
 Die SQL-Tests prüfen synthetische Daten in zurückgerollten Transaktionen. Für
 die Abnahme sind zusätzlich echte PWA-Sitzungen und Offline-Wechsel zu prüfen.
+
+## Rezeptart
+
+Die Migration `20261107203423_baking_recipe_type.sql` erweitert den v2-Gerätezustand um `type` (`meal` oder `baking`) und die Katalogeinträge um `recipe_type`. Fehlende Werte werden als `meal` behandelt; ältere v1- und v2-Writer erhalten die gespeicherte Rezeptart, wenn sie kein `type` senden. Die Migration muss vor der zugehörigen App-Version bereitgestellt werden.
