@@ -1321,3 +1321,15 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 .recipe-import-source { border-color: #3a4a5e; }
 .dish-section-import { background: #202c3a; border-color: #3a4a5e; }
 #dish-form .dish-section-import textarea { background: #18232f; border-color: #3a4a5e; color: #e0e8f1; }
+.screenshot-import { background: #202c3a; border-color: #3a4a5e; color: #e0e8f1; }
+.screenshot-import p, .screenshot-import summary, .screenshot-import .screenshot-status, .screenshot-import .screenshot-error { color: #c4d0df; }
+.screenshot-import .secondary-button { background: #263549; border-color: #45586e; color: #e0e8f1; }
+.screenshot-import input[type="file"], .screenshot-import input::file-selector-button { color: #e0e8f1; }
+#recipe-import-input .dialog-actions { background: #1c242e; border-color: #3a4a5e; }
+
+#dish-form.is-dish-wizard.is-imported-ingredients .recipe-ingredient-row { background: #20372f; border-color: #496d5c; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input { background: #182b25; border-color: #78ad95; color: #e0f5e8; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input::placeholder { color: #b1c5b9; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input:focus-visible { outline-color: #a8dabc; }
+.screenshot-import .screenshot-start { background: #347b65; border-color: #63a78c; color: #fff; }
+#dish-form.is-imported-ingredients .recipe-ingredient-row select { background-color: #18232f; border-color: #60758b; color: #e0e8f1; }
