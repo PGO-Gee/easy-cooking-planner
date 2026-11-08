@@ -1321,3 +1321,8 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 .recipe-import-source { border-color: #3a4a5e; }
 .dish-section-import { background: #202c3a; border-color: #3a4a5e; }
 #dish-form .dish-section-import textarea { background: #18232f; border-color: #3a4a5e; color: #e0e8f1; }
+.screenshot-import { background: #202c3a; border-color: #3a4a5e; color: #e0e8f1; }
+.screenshot-import p, .screenshot-import summary, .screenshot-import .screenshot-status, .screenshot-import .screenshot-error { color: #c4d0df; }
+.screenshot-import .secondary-button { background: #263549; border-color: #45586e; color: #e0e8f1; }
+.screenshot-import input[type="file"], .screenshot-import input::file-selector-button { color: #e0e8f1; }
+#recipe-import-input .dialog-actions { background: #1c242e; border-color: #3a4a5e; }

@@ -40,6 +40,25 @@ Die Website besteht aus statischen Dateien und benötigt keinen Build-Schritt:
 
 Änderungen am ausgewählten Branch werden anschließend von GitHub Pages veröffentlicht. Mit GitHub Free muss das Repository für GitHub Pages öffentlich sein. GitHub Pages unterstützt auch eine eigene Domain; die Domain registriert und bezahlt man separat.
 
+## Lokaler Screenshot-Import
+
+Beim Anlegen sowie in den Importbereichen für Zutaten, Zubereitung und Nährwerte
+können bis zu fünf Screenshots ausgewählt werden. Unterstützt werden PNG, JPEG
+und WebP mit höchstens 10 MB und acht Megapixeln je Datei. Der erkannte Text wird
+vor dem vorhandenen Rezeptparser zur Korrektur angezeigt. Bilder und Quelltext
+werden weder hochgeladen noch mit dem Rezept gespeichert.
+
+Die deutsche Texterkennung verwendet Tesseract.js 7.0.0 auf dem Gerät. Ihre
+Dateien (rund 12,14 MiB) werden bei der ersten Erkennung ausschließlich vom
+App-Ursprung geladen und separat zwischengespeichert. Danach funktioniert die
+Erkennung offline, solange alle Dateien im Browsercache vorhanden sind. Die
+normalen Synchronisierungsfunktionen der App bleiben unverändert; es gibt keine
+neue externe API und keine OCR-Nutzungsgebühren.
+
+Versionen, Herkunft und Lizenzen: [OCR-Dateien](vendor/ocr-7.0.0/README.md).
+Getestete Umgebungen und bekannte Erkennungsfehler:
+[OCR-Testbericht](tests/OCR-TESTREPORT.md).
+
 ## Backrezepte
 
 Die Migration `20261107203423_baking_recipe_type.sql` vor der Veröffentlichung der zugehörigen App-Version auf die Datenbank anwenden. Sie ergänzt die Rezeptart für Haushalts- und Katalogrezepte und fügt zehn Backrezepte zum Standardkatalog hinzu. Bereits vorhandene Rezepte bleiben Gerichte. Backrezepte erscheinen erst nach Übernahme in die eigene Sammlung im Wochenplan und werden beim Mischen erhalten.

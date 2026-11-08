@@ -1,6 +1,9 @@
+importScripts('./ocr-assets.js');
+const OCR_CACHE_NAME=`wochentisch-ocr-${WochentischOCRAssets.version}:${self.registration.scope}`;
+const ocrUrls=new Set(WochentischOCRAssets.files.map(path=>new URL(path,self.registration.scope).href));
 const CACHE_PREFIX = 'wochentisch-shell-';
 const CACHE_SCOPE = `:${self.registration.scope}`;
-const CACHE_NAME = `${CACHE_PREFIX}v82${CACHE_SCOPE}`;
+const CACHE_NAME = `${CACHE_PREFIX}v83${CACHE_SCOPE}`;
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const SUPABASE_INTEGRITY = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
 const APP_SHELL = [
@@ -18,6 +21,11 @@ const APP_SHELL = [
   './ingredient-catalog.js',
   './recipe-model.js',
   './recipe-import.js',
+  './ocr-assets.js',
+  './ocr-import.js',
+  './ocr-import-ui.js',
+  './ocr-worker.js',
+  './ocr-layout.js',
   './sync-transport.js',
   './sync-api.js',
   './sync-write-barrier.js',
@@ -75,6 +83,17 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
   if (url.origin === self.location.origin) {
+    if(ocrUrls.has(url.href)){
+      event.respondWith((async()=>{
+        try{
+          const cache=await caches.open(OCR_CACHE_NAME);
+          return await cache.match(url.href)||await fetch(request);
+        }catch{
+          return new Response('Erkennungsdatei offline nicht verfügbar.',{status:503});
+        }
+      })());
+      return;
+    }
     url.search = '';
     if (!shellUrls.has(url.href)) return;
     event.respondWith((async () => {
