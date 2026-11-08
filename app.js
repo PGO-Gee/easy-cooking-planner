@@ -2021,16 +2021,19 @@ function applyRecipeImport(result,source){
 }
 const recipeImportDialog=$('#recipe-import-dialog'),recipeImportInput=$('#recipe-import-input'),recipeImportText=$('#recipe-import-text'),recipeImportError=$('#recipe-import-error');let creationDefaultType='meal';
 const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze')});
+function updateRecipeImportAction(){ $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim()||(recipeImportInput.classList.contains('screenshot-mode')&&!fullRecipeOCR.hasRecognized()) }
+recipeImportText.addEventListener('input',updateRecipeImportAction);
+fullRecipeOCR.panel.addEventListener('ocr-state-change',updateRecipeImportAction);
 function openRecipeCreation(defaultType='meal'){
   fullRecipeOCR.reset();recipeImportInput.classList.remove('screenshot-mode');
-  creationDefaultType=defaultType;recipeImportText.value='';recipeImportError.hidden=true;recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportDialog.showModal();
+  creationDefaultType=defaultType;recipeImportText.value='';recipeImportError.hidden=true;recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;updateRecipeImportAction();recipeImportDialog.showModal();
 }
 function closeRecipeImport(){if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Wirklich abbrechen?'))return;recipeImportDialog.close()}
 $('#recipe-import-close').addEventListener('click',closeRecipeImport);
 recipeImportDialog.addEventListener('cancel',event=>{if(event.target!==recipeImportDialog)return;event.preventDefault();closeRecipeImport()});
 $('#recipe-import-manual').addEventListener('click',()=>{if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Selbst eingeben?'))return;recipeImportDialog.close();openDish('',{defaultType:creationDefaultType})});
-$('#recipe-import-text-choice').addEventListener('click',()=>{recipeImportInput.classList.remove('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;recipeImportText.focus()});
-$('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.open=true;fullRecipeOCR.panel.querySelector('input').focus()});
+$('#recipe-import-text-choice').addEventListener('click',()=>{recipeImportInput.classList.remove('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;updateRecipeImportAction();recipeImportText.focus()});
+$('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.open=true;updateRecipeImportAction();fullRecipeOCR.panel.querySelector('input').focus()});
 $('#recipe-import-back').addEventListener('click',()=>{recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportError.hidden=true;$('#recipe-import-text-choice').focus()});
 $('#recipe-import-analyze').addEventListener('click',()=>{
   if(fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Screenshots werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;

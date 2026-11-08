@@ -409,3 +409,5 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 #dish-form.is-imported-ingredients .recipe-ingredient-name input { background: #fff; border-color: #7aa999; color: #174c3b; font-weight: 700; }
 #dish-form.is-imported-ingredients .recipe-ingredient-name input::placeholder { color: #687f75; font-weight: 400; }
 #dish-form.is-imported-ingredients .recipe-ingredient-name input:focus-visible { outline: 2px solid #23654f; outline-offset: 2px; }
+
+#recipe-import-analyze:disabled { opacity: .5; cursor: default; }

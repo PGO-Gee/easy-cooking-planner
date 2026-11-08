@@ -19,9 +19,9 @@
     // File inputs emit a bubbling cancel event when the native picker closes.
     // It must not reach the enclosing dialog's Escape handler.
     input.addEventListener('cancel',event=>event.stopPropagation());
-    let entries=[],controller=null,generation=0,busy=false;
+    let entries=[],controller=null,generation=0,busy=false,recognized=false;
     function error(message){errorBox.textContent=message;errorBox.hidden=!message}
-    function setBusy(value){busy=value;input.disabled=value;start.disabled=value||!entries.some(entry=>!entry.done);cancel.hidden=!value;text.disabled=value;parseButton.disabled=value;panel.setAttribute('aria-busy',String(value));render()}
+    function setBusy(value){busy=value;input.disabled=value;start.disabled=value||!entries.some(entry=>!entry.done);cancel.hidden=!value;text.disabled=value;parseButton.disabled=value;panel.setAttribute('aria-busy',String(value));render();panel.dispatchEvent(new Event('ocr-state-change',{bubbles:true}))}
     function render(){
       list.replaceChildren();
       entries.forEach((entry,index)=>{
@@ -74,7 +74,7 @@
           onResult:result=>{
             if(token!==generation)return;
             const entry=selected[result.index];entry.error=result.error||'';
-            if(result.text){text.value+=(text.value.trim()?'\n\n':'')+result.text;entry.rawText=result.rawText;entry.done=true;completed++;text.dispatchEvent(new Event('input',{bubbles:true}))}
+            if(result.text){text.value+=(text.value.trim()?'\n\n':'')+result.text;entry.rawText=result.rawText;entry.done=true;recognized=true;completed++;text.dispatchEvent(new Event('input',{bubbles:true}))}
             render();
           }
         });
@@ -91,9 +91,9 @@
     cancel.addEventListener('click',()=>{
       generation++;controller?.abort();controller=null;setBusy(false);status.textContent='Erkennung abgebrochen. Bereits erkannter Text bleibt erhalten.';error('');start.focus();
     });
-    function reset(){generation++;controller?.abort();controller=null;entries=[];input.value='';status.textContent='';cacheStatus.textContent='';error('');panel.open=false;setBusy(false)}
+    function reset(){generation++;controller?.abort();controller=null;entries=[];recognized=false;input.value='';status.textContent='';cacheStatus.textContent='';error('');panel.open=false;setBusy(false)}
     setBusy(false);
-    return {panel,reset,hasDraft:()=>entries.length>0||busy,hasPending:()=>busy||entries.some(entry=>!entry.done)};
+    return {panel,reset,hasDraft:()=>entries.length>0||busy,hasPending:()=>busy||entries.some(entry=>!entry.done),hasRecognized:()=>recognized,isBusy:()=>busy};
   }
   window.WochentischOCRUI={attach};
 })();
