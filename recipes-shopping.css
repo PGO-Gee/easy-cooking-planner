@@ -401,3 +401,11 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 /* One compact, read-only source instead of duplicate editable text. */
 #dish-form #dish-import-source-text { min-height: 0; max-height: none; overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.55 var(--sans); }
 #dish-import-source-text:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* Make the next action and imported ingredient names easy to scan. */
+.screenshot-import .screenshot-start { min-height: 48px; padding: 10px 18px; background: #23654f; color: #fff; border: 1px solid #23654f; border-radius: 10px; font-size: 16px; font-weight: 700; }
+.screenshot-import .screenshot-start:disabled { opacity: .55; }
+#dish-form.is-dish-wizard.is-imported-ingredients .recipe-ingredient-row { margin-bottom: 10px; padding: 10px; border: 1px solid #c7ddd4; border-radius: 12px; background: #f2f8f5; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input { background: #fff; border-color: #7aa999; color: #174c3b; font-weight: 700; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input::placeholder { color: #687f75; font-weight: 400; }
+#dish-form.is-imported-ingredients .recipe-ingredient-name input:focus-visible { outline: 2px solid #23654f; outline-offset: 2px; }

@@ -9,7 +9,7 @@
       <label class="screenshot-file-label" for="${id}">Bilder auswählen</label>
       <input id="${id}" type="file" accept="image/png,image/jpeg,image/webp" multiple>
       <ol class="screenshot-list"></ol>
-      <div class="screenshot-actions"><button type="button" class="secondary-button screenshot-start">Text erkennen</button><button type="button" class="secondary-button screenshot-cancel" hidden>Erkennung abbrechen</button></div>
+      <div class="screenshot-actions"><button type="button" class="primary-button screenshot-start">Text erkennen</button><button type="button" class="secondary-button screenshot-cancel" hidden>Erkennung abbrechen</button></div>
       <p class="screenshot-status" role="status" aria-live="polite"></p>
       <p class="screenshot-error" role="alert" hidden></p>
       <p class="screenshot-cache"></p>

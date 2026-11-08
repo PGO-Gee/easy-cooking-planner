@@ -72,6 +72,17 @@ fs.mkdirSync(output,{recursive:true});
       await page.evaluate(key=>{dishWizardStep=dishWizardSteps().findIndex(step=>step.key===key);renderDishWizard()},key);
       assert(await page.locator('.recipe-import-source').evaluate(el=>el.open));
       assert.equal(await page.locator(selector+':visible').count(),count);
+      if(key==='ingredients'){
+        await page.locator(selector).first().scrollIntoViewIfNeeded();
+        for(const theme of ['light','dark']){
+          await page.emulateMedia({colorScheme:theme});
+          if(theme==='dark')await page.waitForFunction(()=>getComputedStyle(document.querySelector('#dish-form.is-imported-ingredients .recipe-ingredient-name input')).color==='rgb(224, 245, 232)');
+          await page.screenshot({path:path.join(output,`ingredients-${theme}.png`)});
+          const styles=await page.locator(selector+' input[data-recipe-field="name"]').first().evaluate(el=>({font:getComputedStyle(el).fontWeight,size:getComputedStyle(el).fontSize}));
+          assert(Number(styles.font)>=700);assert.equal(styles.size,'16px');
+        }
+        await page.emulateMedia({colorScheme:'light'});
+      }
       assert.equal(await page.locator('#dish-import-source-text').evaluate(el=>getComputedStyle(el).overflowY),'visible');
     }
     await page.evaluate(()=>{dishWizardStep=dishWizardSteps().length-1;renderDishWizard();document.querySelector('#dish-form').requestSubmit()});

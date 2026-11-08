@@ -1951,6 +1951,7 @@ function dishWizardSnapshot(){
 let dishImportSourceStep='';
 function renderDishWizard({focus=false}={}){
   const steps=dishWizardSteps(),step=steps[dishWizardStep];
+  dishWizardForm.classList.toggle('is-imported-ingredients',dishWizardActive&&step.key==='ingredients'&&(Boolean(dishImport)||Boolean(sectionImportPanels.ingredients.lastSource)));
   dishWizardForm.classList.toggle('is-dish-wizard',dishWizardActive);
   dishWizardForm.classList.toggle('is-dish-edit-wizard',dishWizardEditing);
   dishWizardForm.noValidate=dishWizardActive;
