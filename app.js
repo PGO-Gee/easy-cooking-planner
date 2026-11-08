@@ -1996,50 +1996,44 @@ function validateDishWizardStep(step){
   return true;
 }
 function closeDishEditor(){if(dishWizardActive&&(dishImport||sectionImportHasUnreviewed()||Object.values(sectionImportPanels).some(entry=>entry.ocr.hasDraft())||dishWizardSnapshot()!==dishWizardInitial)&&!confirm('Deine Eingaben gehen verloren. Rezept wirklich verwerfen?'))return;dishWizardDialog.close()}
-dishWizardDialog.addEventListener('cancel',event=>{if(dishWizardActive){event.preventDefault();closeDishEditor()}});
+dishWizardDialog.addEventListener('cancel',event=>{if(event.target!==dishWizardDialog)return;if(dishWizardActive){event.preventDefault();closeDishEditor()}});
 dishWizardBack.addEventListener('click',()=>{dishWizardStep--;$('#dish-form-error').hidden=true;renderDishWizard({focus:true})});
 dishWizardNext.addEventListener('click',()=>{if(!validateDishWizardStep(dishWizardSteps()[dishWizardStep].key))return;dishWizardStep++;renderDishWizard({focus:true})});
 const dishImportSource=document.createElement('details');dishImportSource.className='recipe-import-source';dishImportSource.hidden=true;
-dishImportSource.innerHTML='<summary>Quelltext und Hinweise ansehen</summary><p>Der Quelltext wird nicht mit dem Rezept gespeichert. Prüfe unzugeordnete Angaben und kopiere wichtige Inhalte in die Rezeptfelder.</p><label for="dish-import-source-text">Quelltext</label><textarea id="dish-import-source-text" rows="7"></textarea><p class="recipe-import-unassigned" aria-live="polite"></p><pre class="recipe-import-unassigned-lines"></pre><p class="recipe-import-source-error form-error" role="alert" hidden></p><button type="button" class="secondary-button recipe-import-reparse">Erneut auswerten</button>';
+dishImportSource.innerHTML='<summary>Quelltext ansehen</summary><pre id="dish-import-source-text" tabindex="0" role="region" aria-label="Quelltext des Rezepts"></pre><p class="recipe-import-unassigned" aria-live="polite"></p>';
 $('#dish-form-error').after(dishImportSource);
-const dishImportSourceText=dishImportSource.querySelector('textarea'),dishImportUnassigned=dishImportSource.querySelector('.recipe-import-unassigned'),dishImportSourceError=dishImportSource.querySelector('.recipe-import-source-error');
+const dishImportSourceText=dishImportSource.querySelector('pre'),dishImportUnassigned=dishImportSource.querySelector('.recipe-import-unassigned');
 const dishImportDefaults=document.createElement('p');dishImportDefaults.className='recipe-import-defaults';dishImportDefaults.hidden=true;$('#dish-recipe-title').closest('label').before(dishImportDefaults);
 function recipeImportMessage(result){return result.error||(result.errors||[]).join(' ')}
 function applyRecipeImport(result,source){
-  resetSectionImports();dishImport={result,source};dishImportSourceText.value=source;dishImportSourceError.hidden=true;
-  dishImportUnassigned.textContent=result.unassigned.length?`${result.unassigned.length} Textzeilen wurden nicht zugeordnet und werden nicht gespeichert:`:'Alle erkannten Textzeilen wurden zugeordnet.';dishImportSource.querySelector('.recipe-import-unassigned-lines').textContent=result.unassigned.join('\n');
+  resetSectionImports();dishImport={result,source};dishImportSourceText.textContent=source;
+  dishImportUnassigned.textContent=result.unassigned.length?`${result.unassigned.length} Textzeilen wurden nicht übernommen. Ergänze wichtige Angaben in den Rezeptfeldern.`:'';
   dishImportDefaults.setAttribute('role','status');dishImportDefaults.textContent=`Import abgeschlossen: ${result.ingredients.length} Zutaten und ${result.steps.length} Zubereitungsschritte erkannt. Bitte prüfen. Rezeptart: Voreinstellung. ${result.time?'Zeit aus dem Text übernommen.':'Zeit: Voreinstellung (30 Min.).'} ${result.name?'':'Bitte ergänze den Rezeptnamen.'}`;
   $('#dish-recipe-title').value=result.name;setRecipeTypeFilter($('#dish-type'),importDefaultType);updateDishTypeFields();$('#dish-ingredient').value='';dishIngredientDraft=[];$('#dish-ingredient-input').value='';renderDishIngredientChips();
   const minutes=result.time||30;$('#dish-time').value=String(timeBlocks.indexOf(minutes));$('#dish-time-output').textContent=`${minutes} Min.`;
   nutritionFields.forEach(({id})=>{$(`#${id}`).value=''});$('#recipe-servings').value=result.servings??'';
   recipeIngredientPage=0;recipeStepPage=0;renderRecipeIngredientRows(result.ingredients);renderRecipeStepRows(result.steps);
 }
-dishImportSource.querySelector('.recipe-import-reparse').addEventListener('click',()=>{
-  const result=window.WochentischRecipeImport.parse(dishImportSourceText.value),message=recipeImportMessage(result);
-  if(message){dishImportSourceError.textContent=message;dishImportSourceError.hidden=false;dishImportSourceError.tabIndex=-1;dishImportSourceError.focus();return}
-  if(!confirm('Die erneute Auswertung ersetzt deine bisherigen Eingaben im Rezeptentwurf. Fortfahren?'))return;
-  applyRecipeImport(result,dishImportSourceText.value);dishWizardStep=0;renderDishWizard({focus:true});
-});
 const recipeImportDialog=$('#recipe-import-dialog'),recipeImportInput=$('#recipe-import-input'),recipeImportText=$('#recipe-import-text'),recipeImportError=$('#recipe-import-error');let creationDefaultType='meal';
 const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze')});
 function openRecipeCreation(defaultType='meal'){
-  fullRecipeOCR.reset();
+  fullRecipeOCR.reset();recipeImportInput.classList.remove('screenshot-mode');
   creationDefaultType=defaultType;recipeImportText.value='';recipeImportError.hidden=true;recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportDialog.showModal();
 }
 function closeRecipeImport(){if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Wirklich abbrechen?'))return;recipeImportDialog.close()}
 $('#recipe-import-close').addEventListener('click',closeRecipeImport);
-recipeImportDialog.addEventListener('cancel',event=>{event.preventDefault();closeRecipeImport()});
+recipeImportDialog.addEventListener('cancel',event=>{if(event.target!==recipeImportDialog)return;event.preventDefault();closeRecipeImport()});
 $('#recipe-import-manual').addEventListener('click',()=>{if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Selbst eingeben?'))return;recipeImportDialog.close();openDish('',{defaultType:creationDefaultType})});
-$('#recipe-import-text-choice').addEventListener('click',()=>{$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;recipeImportText.focus()});
-$('#recipe-import-screenshot-choice').addEventListener('click',()=>{$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.open=true;fullRecipeOCR.panel.querySelector('input').focus()});
+$('#recipe-import-text-choice').addEventListener('click',()=>{recipeImportInput.classList.remove('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;recipeImportText.focus()});
+$('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.open=true;fullRecipeOCR.panel.querySelector('input').focus()});
 $('#recipe-import-back').addEventListener('click',()=>{recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportError.hidden=true;$('#recipe-import-text-choice').focus()});
 $('#recipe-import-analyze').addEventListener('click',()=>{
   if(fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Screenshots werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;
   const source=recipeImportText.value,result=window.WochentischRecipeImport.parse(source),message=recipeImportMessage(result);
-  if(message){recipeImportError.textContent=message;recipeImportError.hidden=false;recipeImportText.focus();return}
+  if(message){recipeImportError.textContent=message;recipeImportError.hidden=false;if(recipeImportInput.classList.contains('screenshot-mode')){recipeImportError.tabIndex=-1;recipeImportError.focus()}else recipeImportText.focus();return}
   recipeImportDialog.close();openDish('',{defaultType:creationDefaultType,importData:{source,result}});
 });
-dishWizardDialog.addEventListener('close',()=>{resetSectionImports();dishImport=null;dishImportSourceText.value='';dishImportSource.querySelector('.recipe-import-unassigned-lines').textContent='';dishImportUnassigned.textContent='';dishImportSource.open=false});
+dishWizardDialog.addEventListener('close',()=>{resetSectionImports();dishImport=null;dishImportSourceText.textContent='';dishImportUnassigned.textContent='';dishImportSource.open=false});
 recipeImportDialog.addEventListener('close',()=>{fullRecipeOCR.reset();recipeImportText.value=''});
 function catalogDishForEditor(dish){return{...dish,time:Number(dish.cooking_time_minutes)||30,ingredients:cleanIngredients(dish.ingredients),recipe:window.WochentischRecipes.normalizeRecipe(dish.recipe),nutrition:cleanNutrition(dish.nutrition)}}
 function openDish(id='',{catalogDish=null,catalogCreate=false,defaultType='meal',importData=null}={}){
@@ -2626,7 +2620,7 @@ $('#dish-form').addEventListener('submit',event=>{
   const duplicate=!catalogMode&&state.dishes.find(d=>d.id!==id&&(d.name.trim().toLocaleLowerCase('de-DE')===name.toLocaleLowerCase('de-DE')||dishFingerprint(d.name,d.ingredient,d.ingredients)===dishFingerprint(name,ingredient,ingredients)));
   if(duplicate){if(dishWizardActive){dishWizardStep=0;renderDishWizard()}const error=$('#dish-form-error');error.textContent=`Ähnliches Gericht existiert bereits: ${duplicate.name}`;error.hidden=false;if(dishWizardActive)$('#dish-recipe-title').focus();return}
   if(catalogMode){void saveCatalogDishDraft({id,name,type,ingredient,time,ingredients,recipe,nutrition});return}
-  if(((dishImport&&(dishImport.result.unassigned.length||dishImportSourceText.value!==dishImport.source))||sectionImportHasUnreviewed())&&!confirm('Nicht zugeordnete oder nachträglich geänderte Inhalte aus dem Quelltext und noch nicht erkannte Screenshots werden nicht gespeichert. Rezept trotzdem speichern?'))return;
+  if(((dishImport&&dishImport.result.unassigned.length)||sectionImportHasUnreviewed())&&!confirm('Nicht zugeordnete oder nachträglich geänderte Inhalte aus dem Quelltext und noch nicht erkannte Screenshots werden nicht gespeichert. Rezept trotzdem speichern?'))return;
   const existing=state.dishes.find(d=>d.id===id);
   if(existing){const oldFingerprint=window.WochentischRecipes.fingerprint(existing);Object.assign(existing,{name,type,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️',nutrition,recipe});if(oldFingerprint!==window.WochentischRecipes.fingerprint(existing))void invalidateRecipeProgress(existing)}
   else state.dishes.push({id:newId(),name,type,ingredient,time,ingredients,emoji:emojiMap[ingredient]||'🍽️',nutrition,recipe,catalogSourceId:null,catalogSourceVersion:null});

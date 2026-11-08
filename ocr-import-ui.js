@@ -5,8 +5,7 @@
     const panel=document.createElement('details');panel.className='screenshot-import';
     const id=`screenshot-files-${++nextId}`;
     panel.innerHTML=`<summary>Screenshots hinzufügen</summary>
-      <p>Bis zu 5 deutsche Rezept-Screenshots (PNG, JPEG, WebP; je höchstens 10 MB und 8 Megapixel). Die Bilder bleiben auf diesem Gerät.</p>
-      <p>Beim ersten Erkennen werden Programm- und Sprachdateien von unserer App geladen. Danach ist die Erkennung bei vorhandenem Cache offline möglich.</p>
+      <p>Füge bis zu 5 Screenshots eines deutschen Rezepts hinzu und starte die Texterkennung.</p>
       <label class="screenshot-file-label" for="${id}">Bilder auswählen</label>
       <input id="${id}" type="file" accept="image/png,image/jpeg,image/webp" multiple>
       <ol class="screenshot-list"></ol>
@@ -14,9 +13,12 @@
       <p class="screenshot-status" role="status" aria-live="polite"></p>
       <p class="screenshot-error" role="alert" hidden></p>
       <p class="screenshot-cache"></p>
-      <p>Erkannten Text unten prüfen, besonders Mengen und Einheiten. Überlappende Screenshots können doppelte Textstellen enthalten. Erst „${parseButton.textContent.trim()}“ übernimmt Angaben in die Rezeptfelder.</p>`;
+`;
     before.before(panel);
     const input=panel.querySelector('input'),list=panel.querySelector('ol'),start=panel.querySelector('.screenshot-start'),cancel=panel.querySelector('.screenshot-cancel'),status=panel.querySelector('.screenshot-status'),errorBox=panel.querySelector('.screenshot-error'),cacheStatus=panel.querySelector('.screenshot-cache');
+    // File inputs emit a bubbling cancel event when the native picker closes.
+    // It must not reach the enclosing dialog's Escape handler.
+    input.addEventListener('cancel',event=>event.stopPropagation());
     let entries=[],controller=null,generation=0,busy=false;
     function error(message){errorBox.textContent=message;errorBox.hidden=!message}
     function setBusy(value){busy=value;input.disabled=value;start.disabled=value||!entries.some(entry=>!entry.done);cancel.hidden=!value;text.disabled=value;parseButton.disabled=value;panel.setAttribute('aria-busy',String(value));render()}
@@ -78,15 +80,16 @@
         });
         if(token!==generation)return;
         const failed=results.filter(result=>result.error);
-        status.textContent=completed?`Text aus ${completed} ${completed===1?'Screenshot':'Screenshots'} erkannt – bitte unten prüfen. Noch keine Rezeptfelder übernommen.`:'Kein Text übernommen. Bitte Lesbarkeit prüfen oder Text einfügen.';
+        status.textContent=completed?`Text aus ${completed} ${completed===1?'Screenshot':'Screenshots'} erkannt – bitte prüfen. Noch keine Rezeptfelder übernommen.`:'Kein Text übernommen. Bitte Lesbarkeit prüfen oder Text einfügen.';
+        if(completed&&panel.closest('.screenshot-mode'))status.textContent=`Text aus ${completed} ${completed===1?'Screenshot':'Screenshots'} erkannt. Weiter mit „Rezept erkennen“.`;
         error(failed.map(result=>`Screenshot ${result.index+1}: ${result.error}`).join(' '));
-      }catch(e){if(token!==generation)return;error(e.message);status.textContent=completed?`Text aus ${completed} Screenshots bleibt unten erhalten. Übrige Bilder bitte erneut versuchen.`:'Erkennung nicht abgeschlossen. Text kann weiterhin eingefügt werden.'}
+      }catch(e){if(token!==generation)return;error(e.message);status.textContent=completed?`Text aus ${completed} Screenshots bleibt erhalten. Übrige Bilder bitte erneut versuchen.`:'Erkennung nicht abgeschlossen. Text kann weiterhin eingefügt werden.'}
       finally{
         if(token===generation){controller=null;setBusy(false);refreshCache(token);status.tabIndex=-1;status.focus({preventScroll:true});status.scrollIntoView({block:'nearest'})}
       }
     });
     cancel.addEventListener('click',()=>{
-      generation++;controller?.abort();controller=null;setBusy(false);status.textContent='Erkennung abgebrochen. Bereits erkannter Text bleibt unten erhalten.';error('');start.focus();
+      generation++;controller?.abort();controller=null;setBusy(false);status.textContent='Erkennung abgebrochen. Bereits erkannter Text bleibt erhalten.';error('');start.focus();
     });
     function reset(){generation++;controller?.abort();controller=null;entries=[];input.value='';status.textContent='';cacheStatus.textContent='';error('');panel.open=false;setBusy(false)}
     setBusy(false);
