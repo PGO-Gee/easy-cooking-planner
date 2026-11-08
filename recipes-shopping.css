@@ -399,5 +399,5 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 #recipe-import-input.screenshot-mode .screenshot-import { border: 0; padding: 0; }
 
 /* One compact, read-only source instead of duplicate editable text. */
-#dish-form #dish-import-source-text { min-height: 0; max-height: min(40dvh, 320px); overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.5 var(--sans); touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+#dish-form #dish-import-source-text { min-height: 0; max-height: none; overflow: visible; white-space: pre-wrap; overflow-wrap: anywhere; font: 14px/1.55 var(--sans); }
 #dish-import-source-text:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }

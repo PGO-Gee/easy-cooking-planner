@@ -1879,9 +1879,11 @@ const ingredientPager=createRecipePager($('#recipe-ingredient-rows'),'Zutat'),st
 function updateRecipePagers(){
   const paged=dishWizardActive&&dishWizardMobile,currentKey=paged?dishWizardSteps()[dishWizardStep]?.key:'';
   [[ingredientPager,$('#recipe-ingredient-rows'),'ingredient'],[stepPager,$('#recipe-step-rows'),'step']].forEach(([controls,container,type])=>{
+    const imported=Boolean(dishImport)||(type==='ingredient'?Boolean(sectionImportPanels.ingredients.lastSource):Boolean(sectionImportPanels.preparation.lastSource));
+    const showPages=paged&&!imported;
     const rows=[...container.children];let index=type==='ingredient'?recipeIngredientPage:recipeStepPage;index=Math.max(0,Math.min(index,rows.length-1));
     if(type==='ingredient')recipeIngredientPage=index;else recipeStepPage=index;
-    rows.forEach((row,i)=>{row.hidden=paged&&i!==index});controls.pager.hidden=!paged||rows.length<2||currentKey!==(type==='ingredient'?'ingredients':'preparation');
+    rows.forEach((row,i)=>{row.hidden=showPages&&i!==index});controls.pager.hidden=!showPages||rows.length<2||currentKey!==(type==='ingredient'?'ingredients':'preparation');
     controls.previous.disabled=index===0;controls.next.disabled=index>=rows.length-1;
     controls.count.textContent=`${type==='ingredient'?'Zutat':'Schritt'} ${index+1} von ${rows.length}`;
   });
@@ -1946,6 +1948,7 @@ function dishWizardSteps(){
 function dishWizardSnapshot(){
   return JSON.stringify({fields:[...dishWizardForm.querySelectorAll('input:not([type=hidden]), textarea, select:not(.dish-wizard-section)')].map(el=>el.value),type:selectedRecipeType($('#dish-type')),ingredients:dishIngredientDraft});
 }
+let dishImportSourceStep='';
 function renderDishWizard({focus=false}={}){
   const steps=dishWizardSteps(),step=steps[dishWizardStep];
   dishWizardForm.classList.toggle('is-dish-wizard',dishWizardActive);
@@ -1959,6 +1962,7 @@ function renderDishWizard({focus=false}={}){
   $('.recipe-editor-hint').hidden=dishWizardActive;
   portionHint.hidden=!dishWizardActive||dishWizardEditing||Boolean(dishImport)||dishSectionIngredients||step.key!=='ingredients';
   Object.entries(sectionImportPanels).forEach(([key,entry])=>{entry.panel.hidden=!dishWizardActive||!step.groups.includes(key)});
+  if(dishImport&&dishImportSourceStep!==step.key){dishImportSource.open=['ingredients','preparation'].includes(step.key);dishImportSourceStep=step.key}
   dishImportSource.hidden=!dishImport;dishImportDefaults.hidden=!dishImport||!step.groups.includes('name');
   updateRecipePagers();
   if(step.key!=='ingredients')ingredientPager.pager.hidden=true;
@@ -2033,7 +2037,7 @@ $('#recipe-import-analyze').addEventListener('click',()=>{
   if(message){recipeImportError.textContent=message;recipeImportError.hidden=false;if(recipeImportInput.classList.contains('screenshot-mode')){recipeImportError.tabIndex=-1;recipeImportError.focus()}else recipeImportText.focus();return}
   recipeImportDialog.close();openDish('',{defaultType:creationDefaultType,importData:{source,result}});
 });
-dishWizardDialog.addEventListener('close',()=>{resetSectionImports();dishImport=null;dishImportSourceText.textContent='';dishImportUnassigned.textContent='';dishImportSource.open=false});
+dishWizardDialog.addEventListener('close',()=>{resetSectionImports();dishImport=null;dishImportSourceStep='';dishImportSourceText.textContent='';dishImportUnassigned.textContent='';dishImportSource.open=false});
 recipeImportDialog.addEventListener('close',()=>{fullRecipeOCR.reset();recipeImportText.value=''});
 function catalogDishForEditor(dish){return{...dish,time:Number(dish.cooking_time_minutes)||30,ingredients:cleanIngredients(dish.ingredients),recipe:window.WochentischRecipes.normalizeRecipe(dish.recipe),nutrition:cleanNutrition(dish.nutrition)}}
 function openDish(id='',{catalogDish=null,catalogCreate=false,defaultType='meal',importData=null}={}){

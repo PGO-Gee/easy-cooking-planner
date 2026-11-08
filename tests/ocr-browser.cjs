@@ -68,6 +68,12 @@ fs.mkdirSync(output,{recursive:true});
     assert.equal(await page.locator('.recipe-import-source pre').count(),1);
     assert.equal(await page.locator('#dish-import-source-text').textContent(),source);
     assert.equal(await page.evaluate(()=>state.dishes.length),0,'Draft must not save');
+    for(const [key,selector,count] of [['ingredients','#recipe-ingredient-rows .recipe-ingredient-row',10],['preparation','#recipe-step-rows .recipe-step-row',6]]){
+      await page.evaluate(key=>{dishWizardStep=dishWizardSteps().findIndex(step=>step.key===key);renderDishWizard()},key);
+      assert(await page.locator('.recipe-import-source').evaluate(el=>el.open));
+      assert.equal(await page.locator(selector+':visible').count(),count);
+      assert.equal(await page.locator('#dish-import-source-text').evaluate(el=>getComputedStyle(el).overflowY),'visible');
+    }
     await page.evaluate(()=>{dishWizardStep=dishWizardSteps().length-1;renderDishWizard();document.querySelector('#dish-form').requestSubmit()});
     await page.waitForFunction(()=>state.dishes.length===1);
     const saved=await page.evaluate(()=>state.dishes[0]);
