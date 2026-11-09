@@ -728,6 +728,53 @@
   transform: translateY(var(--meal-drop-shift, 0px));
 }
 
+.meal-week-targets {
+  position: fixed;
+  z-index: 1001;
+  inset-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
+  bottom: max(8px, env(safe-area-inset-bottom));
+  max-width: 440px;
+  margin-inline: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
+  text-align: center;
+}
+
+.meal-week-target-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(44px, 1fr));
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.meal-week-target {
+  display: grid;
+  place-items: center;
+  min-height: 44px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: var(--canvas);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.meal-week-target.is-source {
+  border: 2px dashed var(--muted);
+}
+
+.meal-week-target.is-target {
+  background: var(--mint);
+  border-color: var(--green);
+}
+
+@media (max-width: 440px) {
+  .meal-week-target-days { grid-template-columns: repeat(4, minmax(44px, 1fr)); }
+}
+
 .meal-drag-ghost {
   position: fixed !important;
   z-index: 1000;

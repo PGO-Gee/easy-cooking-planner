@@ -1539,6 +1539,7 @@ function clearMealDropPreview(drag){
 function clearMealDragVisuals(drag,{keepGhost=false}={}){
   if(drag?.scrollFrame)cancelAnimationFrame(drag.scrollFrame);
   if(drag?.touchTimer)clearTimeout(drag.touchTimer);
+  drag?.weekTargets?.remove();
   if(!keepGhost)drag?.ghost?.remove();
   drag?.meal?.classList.remove('is-dragging');
   drag?.meal?.removeAttribute('aria-grabbed');
@@ -1622,10 +1623,47 @@ function updateMealDragPosition(drag,clientX,clientY){
   if(drag.ghost){drag.ghost.style.left=`${clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${clientY-drag.grabOffsetY}px`}
   updateMealDropTarget(clientX,clientY);
 }
+function showMealWeekTargets(drag){
+  const panel=document.createElement('div'),label=document.createElement('strong'),days=document.createElement('div');
+  panel.className='meal-week-targets';
+  panel.setAttribute('aria-hidden','true');
+  label.textContent='Auf einen Tag ziehen';
+  days.className='meal-week-target-days';
+  rangeDates().forEach((date,index)=>{
+    const target=document.createElement('span');
+    target.className='meal-week-target';
+    target.dataset.dropDay=index;
+    target.classList.toggle('is-source',index===drag.sourceDay);
+    target.textContent=shortDays[dayIndex(date)];
+    days.append(target);
+  });
+  panel.append(label,days);
+  document.body.append(panel);
+  drag.weekTargets=panel;
+}
 function updateMealDropTarget(clientX,clientY){
   const drag=mealDragState,calendar=$('#calendar');
   if(!drag)return;
-  const hit=document.elementFromPoint(clientX,clientY),content=hit?.closest('.day-content');
+  const hit=document.elementFromPoint(clientX,clientY);
+  if(drag.weekTargets){
+    const overPanel=drag.weekTargets.contains(hit),target=overPanel?hit.closest('[data-drop-day]'):null;
+    const day=target?Number(target.dataset.dropDay):null;
+    // A stationary long press can reveal the panel directly under the finger.
+    drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
+    const active=drag.hasMoved&&day!==drag.sourceDay?target:null;
+    if(drag.activeWeekTarget!==active){
+      drag.activeWeekTarget?.classList.remove('is-target');
+      active?.classList.add('is-target');
+      drag.activeWeekTarget=active;
+    }
+    if(overPanel){
+      clearMealDropPreview(drag);
+      drag.targetDay=active?day:null;
+      drag.insertIndex=Infinity;
+      return;
+    }
+  }
+  const content=hit?.closest('.day-content');
   if(!content||!calendar.contains(content)){clearMealDropPreview(drag);drag.targetDay=null;return}
   const meals=[...content.querySelectorAll('.meal-card:not(.is-dragging)')],hovered=hit.closest('.meal-card');
   let visibleInsertIndex=meals.length;
@@ -1654,7 +1692,7 @@ function autoScrollMealDrag(){
   let speed=0;
   if(y<edge)speed=-Math.ceil(maximum*(edge-y)/edge);
   else if(y>window.innerHeight-edge)speed=Math.ceil(maximum*(y-(window.innerHeight-edge))/edge);
-  if(speed)window.scrollBy(0,speed);
+  if(speed&&!drag.weekTargets?.contains(document.elementFromPoint(drag.clientX,drag.clientY)))window.scrollBy(0,speed);
   updateMealDropTarget(drag.clientX,drag.clientY);
   drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
 }
@@ -1687,7 +1725,8 @@ function startMealTouchDrag(event){
   mealDragState=drag;
   drag.touchTimer=setTimeout(()=>{
     if(mealDragState!==drag)return;
-    createMealDragGhost(drag);drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
+    createMealDragGhost(drag);showMealWeekTargets(drag);
+    drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
   },320);
 }
 function moveMealTouchDrag(event){
@@ -1730,9 +1769,18 @@ function animateMealDrop(ghost,destination){
 function finishMealDrop(drag,cancelled=false){
   if(drag.dragging)suppressedMealOpenUntil=Date.now()+700;
   if(drag.dragging&&!cancelled)updateMealDropTarget(drag.clientX,drag.clientY);
+  const dates=drag.activeWeekTarget&&!cancelled?rangeDates():null;
+  const affectedDates=dates?[dates[drag.sourceDay],dates[drag.targetDay]]:null;
+  const before=affectedDates?snapshotPlanDays(affectedDates):null;
   const destination=drag.dragging&&!cancelled?moveMealToDropTarget(drag):null,dish=state.dishes.find(item=>item.id===drag.dishId);
   clearMealDragVisuals(drag,{keepGhost:Boolean(destination)});mealDragState=null;
-  if(destination){save();renderCalendar({droppedMeal:destination});animateMealDrop(drag.ghost,destination);const weekday=destination.date.toLocaleDateString('de-DE',{weekday:'long'});showToast(`${dish?.name||'Gericht'} auf ${weekday[0].toLocaleUpperCase('de-DE')}${weekday.slice(1)} verschoben.`)}
+  if(!destination)return;
+  const after=before?snapshotPlanDays(affectedDates):null;
+  save();renderCalendar({droppedMeal:destination});animateMealDrop(drag.ghost,destination);
+  const weekday=destination.date.toLocaleDateString('de-DE',{weekday:'long'});
+  showToast(`${dish?.name||'Gericht'} auf ${weekday} verschoben.`,before?{
+    actionLabel:'Rückgängig',duration:6500,onAction:()=>undoRestInsertion(before,after)
+  }:undefined);
 }
 function finishMealPointerDrag(event,cancelled=false){
   const drag=mealDragState;
@@ -1780,7 +1828,7 @@ function renderCalendarContent({shuffleAnimation=false,droppedMeal=null}={}){
   });
   $('#bottom-note').classList.toggle('hidden',state.noteHidden);updateShoppingNavCount();
 }
-function renderCalendar(options){renderCalendarContent(options);renderedCalendarSnapshot=calendarStateForRange(state)}
+function renderCalendar(options){cancelMealDrag();renderCalendarContent(options);renderedCalendarSnapshot=calendarStateForRange(state)}
 const mealCalendar=$('#calendar');
 let suppressedMealOpenUntil=0;
 function openMealCardFromEvent(event){
