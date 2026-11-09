@@ -1616,7 +1616,31 @@ function createMealDragGhost(drag){
   drag.dragging=true;drag.meal.classList.add('is-dragging');drag.meal.setAttribute('aria-grabbed','true');
   const rect=drag.meal.getBoundingClientRect(),style=getComputedStyle(drag.meal);
   drag.grabOffsetX=drag.startX-rect.left;drag.grabOffsetY=drag.startY-rect.top;
-  drag.ghost=drag.meal.cloneNode(true);drag.ghost.classList.remove('is-dragging');drag.ghost.classList.add('meal-drag-ghost');drag.ghost.setAttribute('aria-hidden','true');drag.ghost.querySelectorAll('button').forEach(button=>button.remove());drag.ghost.style.width=`${rect.width}px`;drag.ghost.style.height=`${rect.height}px`;drag.ghost.style.paddingTop=style.paddingTop;drag.ghost.style.background=style.background;drag.ghost.style.left=`${drag.clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${drag.clientY-drag.grabOffsetY}px`;drag.ghost.style.transformOrigin=`${drag.grabOffsetX}px ${drag.grabOffsetY}px`;document.body.append(drag.ghost);requestAnimationFrame(()=>drag.ghost?.classList.add('is-held'));
+  const ghost=drag.meal.cloneNode(true);
+  drag.ghost=ghost;
+  ghost.classList.remove('is-dragging');ghost.classList.add('meal-drag-ghost');
+  ghost.setAttribute('aria-hidden','true');
+  ghost.querySelectorAll('button').forEach(button=>button.remove());
+  ghost.style.background=style.background;
+  if(drag.touchGesture){
+    ghost.classList.add('is-touch-ghost');
+    ghost.style.setProperty('--meal-ghost-width',`${rect.width}px`);
+    ghost.style.setProperty('--meal-ghost-height',`${rect.height}px`);
+    ghost.style.setProperty('--meal-ghost-padding',style.paddingTop);
+    ghost.style.setProperty('--meal-grab-x',`${-100*drag.grabOffsetX/rect.width}%`);
+    ghost.style.setProperty('--meal-grab-y',`${-100*drag.grabOffsetY/rect.height}%`);
+    ghost.style.transformOrigin=`${100*drag.grabOffsetX/rect.width}% ${100*drag.grabOffsetY/rect.height}%`;
+    drag.grabOffsetX=0;drag.grabOffsetY=0;
+  }else{
+    ghost.style.width=`${rect.width}px`;ghost.style.height=`${rect.height}px`;
+    ghost.style.paddingTop=style.paddingTop;
+    ghost.style.transformOrigin=`${drag.grabOffsetX}px ${drag.grabOffsetY}px`;
+  }
+  ghost.style.left=`${drag.clientX-drag.grabOffsetX}px`;
+  ghost.style.top=`${drag.clientY-drag.grabOffsetY}px`;
+  document.body.append(ghost);
+  if(drag.touchGesture)ghost.getBoundingClientRect();
+  requestAnimationFrame(()=>ghost.classList.add('is-held'));
 }
 function updateMealDragPosition(drag,clientX,clientY){
   drag.clientX=clientX;drag.clientY=clientY;
