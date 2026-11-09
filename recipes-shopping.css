@@ -219,13 +219,14 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
   right: 0;
   bottom: calc(100% + 6px);
   left: 0;
-  max-height: min(48vh, 360px);
+  max-height: min(48vh, 360px, var(--shopping-suggestions-space, 360px));
   margin: 0;
   overflow: auto;
   overscroll-behavior: contain;
   border-radius: 14px;
   box-shadow: 0 12px 32px rgb(20 32 24 / 18%);
 }
+.shopping-item-suggestions.opens-below { top: calc(100% + 6px); bottom: auto; }
 .shopping-tile{touch-action:pan-y;user-select:none;-webkit-user-select:none}
 .shopping-tile *{user-select:none;-webkit-user-select:none}
 
