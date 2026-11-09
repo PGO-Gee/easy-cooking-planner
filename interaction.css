@@ -738,41 +738,47 @@
 
 .meal-week-targets {
   position: fixed;
-  z-index: 1001;
-  inset-inline: max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-right));
-  bottom: max(8px, env(safe-area-inset-bottom));
-  max-width: 440px;
-  margin-inline: auto;
-  padding: 8px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--paper);
+  z-index: 999;
+  inset-inline: 0;
+  top: var(--visual-viewport-top, 0px);
+  height: var(--visual-viewport-height, 100dvh);
+  container-type: size;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: max(8px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(8px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--canvas);
   color: var(--ink);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
-  text-align: center;
 }
 
-.meal-week-targets.is-at-top {
-  top: calc(var(--visual-viewport-top, 0px) + max(8px, env(safe-area-inset-top)));
-  bottom: auto;
+.meal-week-targets h2 {
+  margin: 0;
+  font-size: 16px;
+  text-align: center;
 }
 
 .meal-week-target-days {
   display: grid;
-  grid-template-columns: repeat(7, minmax(44px, 1fr));
-  gap: 6px;
-  margin-top: 6px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 5px;
+  width: min(100%, 560px);
+  align-self: center;
 }
 
 .meal-week-target {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 8px;
   min-height: 44px;
-  border: 2px solid transparent;
+  padding: 4px 10px;
+  border: 2px solid var(--line);
   border-radius: 8px;
-  background: var(--canvas);
+  background: var(--paper);
   font-size: 14px;
-  font-weight: 650;
 }
 
 .meal-week-target.is-source {
@@ -784,8 +790,12 @@
   border-color: var(--green);
 }
 
-@media (max-width: 440px) {
-  .meal-week-target-days { grid-template-columns: repeat(4, minmax(44px, 1fr)); }
+@container (max-height: 370px) {
+  .meal-week-target-days { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@container (max-height: 225px) {
+  .meal-week-target-days { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 .meal-drag-ghost {

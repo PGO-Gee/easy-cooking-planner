@@ -1624,23 +1624,24 @@ function updateMealDragPosition(drag,clientX,clientY){
   updateMealDropTarget(clientX,clientY);
 }
 function showMealWeekTargets(drag){
-  const panel=document.createElement('div'),label=document.createElement('strong'),days=document.createElement('div');
+  const panel=document.createElement('div'),label=document.createElement('h2'),days=document.createElement('div');
   panel.className='meal-week-targets';
   panel.setAttribute('aria-hidden','true');
   label.textContent='Auf einen Tag ziehen';
   days.className='meal-week-target-days';
-  rangeDates().forEach((date,index)=>{
+  planDaysInRange().forEach(({date,day,isRest},index)=>{
     const target=document.createElement('span');
+    const title=document.createElement('strong'),status=document.createElement('span');
     target.className='meal-week-target';
     target.dataset.dropDay=index;
     target.classList.toggle('is-source',index===drag.sourceDay);
-    target.textContent=shortDays[dayIndex(date)];
+    title.textContent=date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'numeric'});
+    status.textContent=isRest?'Resteabend':day.length===0?'Frei':day.length===1?'1 Gericht':`${day.length} Gerichte`;
+    target.append(title,status);
     days.append(target);
   });
   panel.append(label,days);
-  document.body.append(panel);
-  // Keep the targets clear of the initial grip without moving them mid-drag.
-  panel.classList.toggle('is-at-top',drag.startY>=panel.getBoundingClientRect().top-24);
+  $('#calendar').after(panel);
   drag.weekTargets=panel;
 }
 function updateMealDropTarget(clientX,clientY){
@@ -1650,7 +1651,7 @@ function updateMealDropTarget(clientX,clientY){
   if(drag.weekTargets){
     drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
     if(!drag.hasMoved)return;
-    const overPanel=drag.weekTargets.contains(hit),target=overPanel?hit.closest('[data-drop-day]'):null;
+    const target=drag.weekTargets.contains(hit)?hit.closest('[data-drop-day]'):null;
     const day=target?Number(target.dataset.dropDay):null;
     const active=day!==drag.sourceDay?target:null;
     if(drag.activeWeekTarget!==active){
@@ -1658,12 +1659,9 @@ function updateMealDropTarget(clientX,clientY){
       active?.classList.add('is-target');
       drag.activeWeekTarget=active;
     }
-    if(overPanel){
-      clearMealDropPreview(drag);
-      drag.targetDay=active?day:null;
-      drag.insertIndex=Infinity;
-      return;
-    }
+    drag.targetDay=active?day:null;
+    drag.insertIndex=Infinity;
+    return;
   }
   const content=hit?.closest('.day-content');
   if(!content||!calendar.contains(content)){clearMealDropPreview(drag);drag.targetDay=null;return}
@@ -1694,7 +1692,7 @@ function autoScrollMealDrag(){
   let speed=0;
   if(y<edge)speed=-Math.ceil(maximum*(edge-y)/edge);
   else if(y>window.innerHeight-edge)speed=Math.ceil(maximum*(y-(window.innerHeight-edge))/edge);
-  if(speed&&(!drag.weekTargets||drag.hasMoved&&!drag.weekTargets.contains(document.elementFromPoint(drag.clientX,drag.clientY))))window.scrollBy(0,speed);
+  if(speed)window.scrollBy(0,speed);
   updateMealDropTarget(drag.clientX,drag.clientY);
   drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
 }
@@ -1728,7 +1726,6 @@ function startMealTouchDrag(event){
   drag.touchTimer=setTimeout(()=>{
     if(mealDragState!==drag)return;
     createMealDragGhost(drag);showMealWeekTargets(drag);
-    drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
   },320);
 }
 function moveMealTouchDrag(event){
