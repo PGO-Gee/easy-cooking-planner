@@ -1243,5 +1243,5 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
   #dish-form.is-dish-edit-wizard .dialog-actions { justify-content: flex-end; }
   #dish-form.is-dish-edit-wizard #delete-dish { margin-right: auto; }
   .dish-keyboard-open #dish-form.is-dish-edit-wizard .dish-wizard-section,
-  .dish-keyboard-open #dish-form.is-dish-edit-wizard .recipe-servings-control { display: none; }
+  .dish-keyboard-open #dish-form.is-dish-edit-wizard .recipe-servings-control:not(:focus-within) { display: none; }
 }
