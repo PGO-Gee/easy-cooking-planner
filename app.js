@@ -1639,6 +1639,8 @@ function showMealWeekTargets(drag){
   });
   panel.append(label,days);
   document.body.append(panel);
+  // Keep the targets clear of the initial grip without moving them mid-drag.
+  panel.classList.toggle('is-at-top',drag.startY>=panel.getBoundingClientRect().top-24);
   drag.weekTargets=panel;
 }
 function updateMealDropTarget(clientX,clientY){
@@ -1646,11 +1648,11 @@ function updateMealDropTarget(clientX,clientY){
   if(!drag)return;
   const hit=document.elementFromPoint(clientX,clientY);
   if(drag.weekTargets){
+    drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
+    if(!drag.hasMoved)return;
     const overPanel=drag.weekTargets.contains(hit),target=overPanel?hit.closest('[data-drop-day]'):null;
     const day=target?Number(target.dataset.dropDay):null;
-    // A stationary long press can reveal the panel directly under the finger.
-    drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
-    const active=drag.hasMoved&&day!==drag.sourceDay?target:null;
+    const active=day!==drag.sourceDay?target:null;
     if(drag.activeWeekTarget!==active){
       drag.activeWeekTarget?.classList.remove('is-target');
       active?.classList.add('is-target');
@@ -1692,7 +1694,7 @@ function autoScrollMealDrag(){
   let speed=0;
   if(y<edge)speed=-Math.ceil(maximum*(edge-y)/edge);
   else if(y>window.innerHeight-edge)speed=Math.ceil(maximum*(y-(window.innerHeight-edge))/edge);
-  if(speed&&!drag.weekTargets?.contains(document.elementFromPoint(drag.clientX,drag.clientY)))window.scrollBy(0,speed);
+  if(speed&&(!drag.weekTargets||drag.hasMoved&&!drag.weekTargets.contains(document.elementFromPoint(drag.clientX,drag.clientY))))window.scrollBy(0,speed);
   updateMealDropTarget(drag.clientX,drag.clientY);
   drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
 }
@@ -1793,6 +1795,7 @@ function finishMealPointerDrag(event,cancelled=false){
 function finishMealTouchDrag(event,cancelled=false){
   const drag=mealDragState;
   if(!drag?.touchGesture)return;
+  if(drag.dragging&&event.cancelable)event.preventDefault();
   const touch=event.changedTouches?.[0];
   if(touch){drag.clientX=touch.clientX;drag.clientY=touch.clientY;if(drag.dragging&&drag.ghost){drag.ghost.style.left=`${touch.clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${touch.clientY-drag.grabOffsetY}px`}}
   finishMealDrop(drag,cancelled);
@@ -1850,6 +1853,9 @@ mealCalendar.addEventListener('touchmove',moveMealTouchDrag,{passive:false});
 mealCalendar.addEventListener('touchend',finishMealTouchDrag);
 mealCalendar.addEventListener('touchcancel',event=>finishMealTouchDrag(event,true));
 mealCalendar.addEventListener('contextmenu',event=>{if(event.target.closest?.('.meal-card'))event.preventDefault()});
+document.addEventListener('selectstart',event=>{
+  if(mealDragState||event.target.closest?.('#calendar .meal-card'))event.preventDefault();
+});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()}});
 window.addEventListener('pagehide',()=>{cancelMealDrag();mealActionPointerState=null;cancelPullRefresh()});
 window.addEventListener('blur',()=>{mealActionPointerState=null});

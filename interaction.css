@@ -625,9 +625,17 @@
   padding-top: 34px;
   cursor: grab;
   touch-action: pan-y;
+}
+
+.calendar-grid .meal-card,
+.calendar-grid .meal-card *,
+.meal-drag-ghost,
+.meal-drag-ghost *,
+.meal-week-targets,
+.meal-week-targets * {
   -webkit-touch-callout: none;
-  user-select: none;
   -webkit-user-select: none;
+  user-select: none;
 }
 
 .meal-card:active,
@@ -742,6 +750,11 @@
   color: var(--ink);
   box-shadow: 0 8px 24px rgb(0 0 0 / 24%);
   text-align: center;
+}
+
+.meal-week-targets.is-at-top {
+  top: calc(var(--visual-viewport-top, 0px) + max(8px, env(safe-area-inset-top)));
+  bottom: auto;
 }
 
 .meal-week-target-days {
