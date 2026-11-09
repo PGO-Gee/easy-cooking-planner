@@ -1443,41 +1443,42 @@ function renderDishIngredientSuggestions(){const input=$('#dish-ingredient-input
 function renderMainIngredientSuggestions(){const input=$('#dish-ingredient'),list=$('#dish-main-ingredient-suggestions'),query=mainIngredientKey(input.value);const matches=query?availableMainIngredients().filter(name=>mainIngredientKey(name).includes(query)).slice(0,8):[];renderIngredientOptions(list,matches,name=>{input.value=name;list.hidden=true;input.setAttribute('aria-expanded','false')});input.setAttribute('aria-expanded',String(matches.length>0))}
 function renderIngredientOptions(list,matches,onSelect){list.replaceChildren();matches.forEach(name=>{const option=document.createElement('button');option.type='button';option.className='pantry-suggestion';option.role='option';option.setAttribute('aria-selected','false');const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;option.append(icon,label);option.addEventListener('pointerdown',event=>event.preventDefault());option.addEventListener('click',()=>onSelect(name));list.append(option)});list.hidden=!matches.length}
 function addManualShoppingItem(value){const name=normalizeManualItem(value);if(!name)return;$('#shopping-item-input').value=name;$('#shopping-add-form').requestSubmit()}
+let shoppingViewportBeforeKeyboard=0;
 function positionShoppingSuggestions(){
   const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions');
   if(list.hidden)return;
   const viewport=window.visualViewport,top=viewport?.offsetTop||0,height=viewport?.height||window.innerHeight,rect=input.getBoundingClientRect();
-  const keyboardOpen=window.innerHeight-height>150;
-  // iOS can overlay an accessory bar above the visual keyboard. Prefer the
-  // space above the field while it is open, and reserve room for that bar.
-  const above=Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-(keyboardOpen?78:14));
-  const openBelow=keyboardOpen?above<44&&below>above:below>above&&above<180;
+  const docked=$('#shopping-view').classList.contains('shopping-keyboard-docked');
+  const above=Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-14);
+  const openBelow=!docked&&below>above&&above<180;
   list.classList.toggle('opens-below',openBelow);
   list.style.setProperty('--shopping-suggestions-space',`${Math.floor(openBelow?below:above)}px`);
 }
-// Keep the entire add form clear of the iOS keyboard accessory bar.
 function revealShoppingAddForm(){
-  const input=$('#shopping-item-input');
-  if(document.activeElement!==input||!window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-width: 1100px)').matches)return;
-  const viewport=window.visualViewport,form=$('#shopping-add-form');
-  if(!viewport||window.innerHeight-viewport.height<=150)return;
-  const safeBottom=viewport.offsetTop+viewport.height-88;
-  const overlap=form.getBoundingClientRect().bottom-safeBottom;
-  if(overlap>0)window.scrollBy({top:overlap,behavior:'instant'});
+  const input=$('#shopping-item-input'),screen=$('#shopping-view'),viewport=window.visualViewport;
+  const focused=document.activeElement===input;
+  const mobile=window.matchMedia('(max-width: 700px), (pointer: coarse) and (max-width: 1100px)').matches;
+  const keyboardOpen=focused&&mobile&&viewport&&Math.max(window.innerHeight,shoppingViewportBeforeKeyboard)-viewport.height>150;
+  screen.classList.toggle('shopping-keyboard-docked',Boolean(keyboardOpen));
+  if(keyboardOpen){
+    const form=$('#shopping-add-form');
+    form.style.setProperty('--shopping-dock-bottom',`${viewport.offsetTop+viewport.height-88}px`);
+    form.style.setProperty('--shopping-dock-left',`${viewport.offsetLeft}px`);
+    form.style.setProperty('--shopping-dock-width',`${viewport.width}px`);
+  }
   positionShoppingSuggestions();
 }
 const shoppingInput=$('#shopping-item-input');
 shoppingInput.addEventListener('focus',()=>{
-  $('#shopping-view').classList.add('shopping-input-focused');
+  shoppingViewportBeforeKeyboard=window.visualViewport?.height||window.innerHeight;
   requestAnimationFrame(revealShoppingAddForm);
-  // Safari can finish moving its visual viewport after the focus event.
   setTimeout(revealShoppingAddForm,400);
 });
-shoppingInput.addEventListener('blur',()=>$('#shopping-view').classList.remove('shopping-input-focused'));
+shoppingInput.addEventListener('blur',()=>{$('#shopping-view').classList.remove('shopping-keyboard-docked');shoppingViewportBeforeKeyboard=0});
+$('#shopping-add-form button[type="submit"]').addEventListener('pointerdown',event=>{if(document.activeElement===shoppingInput)event.preventDefault()});
 window.visualViewport?.addEventListener('resize',()=>requestAnimationFrame(revealShoppingAddForm));
+window.visualViewport?.addEventListener('scroll',()=>requestAnimationFrame(revealShoppingAddForm));
 window.addEventListener('scroll',positionShoppingSuggestions,true);
-window.visualViewport?.addEventListener('resize',positionShoppingSuggestions);
-window.visualViewport?.addEventListener('scroll',positionShoppingSuggestions);
 function renderShoppingItemSuggestions(){$('#shopping-add-status').hidden=true;const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions'),query=manualItemKey(input.value),catalog=[...(window.COMMON_MAIN_INGREDIENTS||[]),...state.dishes.flatMap(dish=>dish.ingredients||[])],values=new Map();catalog.forEach(raw=>{const name=normalizeManualItem(raw),key=manualItemKey(name);if(name&&key&&!values.has(key))values.set(key,name)});const matches=query?[...values.values()].filter(name=>manualItemKey(name).includes(query)).sort((a,b)=>a.localeCompare(b,'de-DE')).slice(0,8):[];renderIngredientOptions(list,matches,addManualShoppingItem);list.scrollTop=0;positionShoppingSuggestions();input.setAttribute('aria-expanded',String(matches.length>0))}
 function addPantryIngredient(value){const name=normalizeIngredient(value);if(!name)return;const key=ingredientKey(name);if(!pantryDraft.some(item=>ingredientKey(item)===key))pantryDraft.push(name);$('#pantry-input').value='';renderPantryEditor();$('#pantry-input').focus()}
 function openPantryPlanner(){const key=keyFor(mondayFor(rangeStart())),dialog=$('#pantry-dialog'),input=$('#pantry-input');pantryDraft=(state.pantryIngredients?.[key]||[]).slice();input.value='';try{if(!dialog.open)dialog.showModal();renderPantryEditor();requestAnimationFrame(()=>input.focus({preventScroll:true}))}catch(error){console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.')}}
