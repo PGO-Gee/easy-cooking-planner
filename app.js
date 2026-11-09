@@ -1449,7 +1449,7 @@ function positionShoppingSuggestions(){
   if(list.hidden)return;
   const viewport=window.visualViewport,top=viewport?.offsetTop||0,height=viewport?.height||window.innerHeight,rect=input.getBoundingClientRect();
   const docked=$('#shopping-view').classList.contains('shopping-keyboard-docked');
-  const above=Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-14);
+  const above=docked?Math.max(0,height-$('#shopping-add-form').offsetHeight-20):Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-14);
   const openBelow=!docked&&below>above&&above<180;
   list.classList.toggle('opens-below',openBelow);
   list.style.setProperty('--shopping-suggestions-space',`${Math.floor(openBelow?below:above)}px`);
@@ -1462,7 +1462,7 @@ function revealShoppingAddForm(){
   screen.classList.toggle('shopping-keyboard-docked',Boolean(keyboardOpen));
   if(keyboardOpen){
     const form=$('#shopping-add-form');
-    form.style.setProperty('--shopping-dock-bottom',`${viewport.offsetTop+viewport.height-88}px`);
+    form.style.setProperty('--shopping-dock-bottom',`${viewport.offsetTop+viewport.height-8}px`);
     form.style.setProperty('--shopping-dock-left',`${viewport.offsetLeft}px`);
     form.style.setProperty('--shopping-dock-width',`${viewport.width}px`);
   }
