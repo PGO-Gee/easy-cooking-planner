@@ -1447,7 +1447,11 @@ function positionShoppingSuggestions(){
   const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions');
   if(list.hidden)return;
   const viewport=window.visualViewport,top=viewport?.offsetTop||0,height=viewport?.height||window.innerHeight,rect=input.getBoundingClientRect();
-  const above=Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-14),openBelow=above<120&&below>above;
+  const keyboardOpen=window.innerHeight-height>150;
+  // iOS can overlay an accessory bar above the visual keyboard. Prefer the
+  // space above the field while it is open, and reserve room for that bar.
+  const above=Math.max(0,rect.top-top-14),below=Math.max(0,top+height-rect.bottom-(keyboardOpen?78:14));
+  const openBelow=keyboardOpen?above<44&&below>above:below>above&&above<180;
   list.classList.toggle('opens-below',openBelow);
   list.style.setProperty('--shopping-suggestions-space',`${Math.floor(openBelow?below:above)}px`);
 }
