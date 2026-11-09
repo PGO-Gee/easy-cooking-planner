@@ -2253,13 +2253,10 @@ let chooseDishDay=null,chooseDishDateKey=null,chooseDishOpener=null,restPreviewS
 function formatChooserDate(date){return date.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}
 function renderRestConfirmation({forceConfirm=false}={}){
   const dates=rangeDates(),index=dates.findIndex(date=>keyFor(date)===chooseDishDateKey);if(index<0){$('#choose-dialog').close();showToast('Der ausgewählte Tag ist nicht mehr im sichtbaren Zeitraum. Bitte erneut auswählen.');return}chooseDishDay=index;
-  const before=snapshotPlanDays(dates),selected=before.days[index],last=before.days.at(-1),preview=$('#choose-rest-preview'),confirm=$('#choose-rest-confirm');
+  const before=snapshotPlanDays(dates),selected=before.days[index],preview=$('#choose-rest-preview'),confirm=$('#choose-rest-confirm');
   restPreviewSnapshot=before;
   if(!selected.meals.length&&!forceConfirm){setRestDay(selected.date,true);save();const after=capturePlanDays(dates);$('#choose-dialog').close();renderCalendar();showToast('Als Resteabend markiert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>undoRestInsertion(before,after,index,index)});return}
-  const moved=before.days.slice(index+1).map((day,offset)=>{const source=before.days[index+offset],target=day;const names=source.meals.map(id=>state.dishes.find(dish=>dish.id===id)?.name||'Gericht');return `${formatChooserDate(source.date)} → ${formatChooserDate(target.date)}: ${[...names,...(source.isRest?['Resteabend']:[])].join(', ')||'frei'}`});
-  const dropped=last.meals.map(id=>state.dishes.find(dish=>dish.id===id)?.name||'Gericht');
-  const droppedText=[...dropped,...(last.isRest?['Resteabend']:[])];
-  preview.textContent=selected.meals.length?(index===dates.length-1?`Am ${formatChooserDate(selected.date)} fallen ${droppedText.join(', ')} aus dem Plan.`:`Verschiebung: ${moved.join('; ')}. Am letzten sichtbaren Tag fallen ${droppedText.length?droppedText.join(', '):'keine Gerichte'} aus dem Plan.`):`${formatChooserDate(selected.date)} ist inzwischen frei. Es wird nur der Resteabend eingetragen.`;
+  preview.textContent=selected.meals.length?(index===dates.length-1?'Der Resteabend ersetzt die geplanten Gerichte an diesem Tag.':'Die folgenden Tage rücken einen Tag weiter. Was am letzten Tag geplant war, entfällt.'):'Der Tag ist inzwischen frei. Nur der Resteabend wird eingetragen.';
   $('#choose-rest-commit').textContent=selected.meals.length?(index===dates.length-1?'Reste eintragen und Gerichte entfernen':'Reste eintragen und Plan verschieben'):'Resteabend eintragen';
   $('#choose-rest-action').hidden=true;$('#choose-rest-confirm').hidden=false;$('#choose-dish-type').hidden=true;$('#choose-dish-search').parentElement.hidden=true;$('#choose-dish-list').hidden=true;
   $('#choose-rest-commit').focus({preventScroll:true});
