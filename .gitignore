@@ -8,3 +8,4 @@ KOCHASSISTENT-PLAN.md
 !/supabase/migrations/
 /supabase/migrations/*
 !/supabase/migrations/20261107203423_baking_recipe_type.sql
+plan.md
