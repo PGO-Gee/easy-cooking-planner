@@ -1333,3 +1333,5 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 #dish-form.is-imported-ingredients .recipe-ingredient-name input:focus-visible { outline-color: #a8dabc; }
 .screenshot-import .screenshot-start { background: #347b65; border-color: #63a78c; color: #fff; }
 #dish-form.is-imported-ingredients .recipe-ingredient-row select { background-color: #18232f; border-color: #60758b; color: #e0e8f1; }
+
+.shopping-add-status { background: #233b32; border-color: #456657; color: #e0f1e3; }

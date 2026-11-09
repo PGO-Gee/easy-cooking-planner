@@ -209,7 +209,9 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
     bottom:8px;
   }
 }
-.shopping-add-form { align-items: flex-start; }
+.shopping-add-form { align-items: flex-start; flex-wrap: wrap; }
+.shopping-add-status { flex: 0 0 100%; padding: 10px 12px; border: 1px solid #cbdcc9; border-radius: 10px; background: #eff6ed; color: #304e36; font-size: 14px; line-height: 1.4; }
+.shopping-add-status[hidden] { display: none; }
 .shopping-item-suggest { position: relative; flex: 1; min-width: 0; }
 .shopping-add-form .shopping-item-suggest input { width: 100%; font-size: 16px; }
 .shopping-item-suggestions {

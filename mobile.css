@@ -935,7 +935,7 @@ html {
 
   .shopping-add-form {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     min-width: 0;
     gap: 8px;
     margin: 0 0 16px;
