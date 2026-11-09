@@ -1245,3 +1245,8 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
   .dish-keyboard-open #dish-form.is-dish-edit-wizard .dish-wizard-section,
   .dish-keyboard-open #dish-form.is-dish-edit-wizard .recipe-servings-control:not(:focus-within) { display: none; }
 }
+
+/* Leave scroll room for the shopping form above the iOS keyboard toolbar. */
+@media (max-width: 700px), (pointer: coarse) and (max-width: 1100px) {
+  .shopping-screen.shopping-input-focused { padding-bottom: calc(180px + env(safe-area-inset-bottom)); }
+}
