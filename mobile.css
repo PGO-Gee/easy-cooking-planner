@@ -769,7 +769,6 @@ html {
 }
 
 @media (max-width: 700px) {
-  .day-rest-action { min-height: 48px; font-size: 12px; }
   .rest-day-tile { min-height: 84px; gap: 10px; padding: 13px 24px 13px 13px; }
   .rest-day-copy strong { font-size: 13px; }
   .rest-day-copy small { font-size: 12px; }

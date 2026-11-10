@@ -772,12 +772,6 @@ body {
 .conflict-cloud-button:hover:not(:disabled) { background: linear-gradient(145deg, #6685ad, #4e6d94); }
 .conflict-cloud-button:focus-visible { outline-color: #91acd080; }
 
-.day-rest-action {
-  border-color: #4c4a3f;
-  background: linear-gradient(135deg, #34352f, #302d28);
-  color: #e2cda8;
-}
-.day-rest-action:hover { border-color: #766a52; background: #3d3930; }
 .rest-day-tile {
   border-color: #51483b;
   background: radial-gradient(circle at 8% 18%, #3b382e, transparent 55%), linear-gradient(145deg, #302e28, #292923);
@@ -793,6 +787,9 @@ body {
 .catalog-search input::placeholder { color: #8595a8; }
 .choose-search { border-color: #3a4a5e; background: #202c3a; color: #a5b1bf; }
 .choose-search input { color: #e7edf4; }
+.choose-confirm { border-color: #3a4a5e; background: #202c3a; }
+.choose-confirm h3 { color: #e7edf4; }
+.choose-confirm p { color: #bdc9d6; }
 .choose-search input::placeholder { color: #8595a8; }
 
 /* Keep the meal cards on one slate surface in dark mode as well. */

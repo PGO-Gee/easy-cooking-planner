@@ -390,27 +390,6 @@ h1,
 
 @media(max-width:700px){.side-bottom{display:block}.profile{justify-content:center;padding:12px 0 0}.profile-copy{display:none}}
 
-.day-rest-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  width: 100%;
-  min-height: 44px;
-  padding: 6px 8px;
-  border: 1px solid #eadfce;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #fffdf9, #faf4e9);
-  color: #806747;
-  font: 650 11px/1.25 var(--sans);
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background .16s ease, border-color .16s ease, transform .16s ease;
-}
-.day-rest-action:hover { border-color: #d9c4a5; background: #faf1e2; }
-.day-rest-action:active { transform: scale(.985); }
-.day-rest-action:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
-.day-rest-action-icon { font-size: 16px; line-height: 1; }
 .rest-day-tile {
   display: flex;
   align-items: center;
@@ -461,11 +440,6 @@ h1,
 .toast-action:hover,
 .toast-action:focus-visible { background: rgb(255 255 255 / 20%); }
 .toast-action:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .day-rest-action { transition: none; }
-  .day-rest-action:active { transform: none; }
-}
 
 /* A playful, fresh palette and a shared typeface across the app. */
 :root {
