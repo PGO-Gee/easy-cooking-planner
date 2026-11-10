@@ -29,12 +29,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Comic+Relief:wght@400;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20261103-2" />
-  <link rel="stylesheet" href="interaction.css?v=20261109-11" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261109-3" />
-  <link rel="stylesheet" href="auth.css?v=20261021-4" />
-  <link rel="stylesheet" href="mobile.css?v=20261109-6" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261109-3" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="styles.css?v=20261110-11" />
+  <link rel="stylesheet" href="interaction.css?v=20261110-11" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261110-10" />
+  <link rel="stylesheet" href="auth.css?v=20261110-1" />
+  <link rel="stylesheet" href="mobile.css?v=20261110-15" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261110-11" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -113,7 +113,7 @@
         <button type="button" id="starter-add" class="starter-tip" aria-label="Rezept ergänzen"><span class="starter-tip-icon" aria-hidden="true">＋</span><span class="starter-tip-copy"><b>Rezept ergänzen</b><span class="starter-tip-description">Füge weitere Rezepte zu deiner Liste hinzu.</span></span></button>
       </section>
       <section id="shopping-view" class="view shopping-screen hidden">
-        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><div class="shopping-screen-actions"><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button></div></div>
+        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><div class="shopping-screen-actions"><button type="button" id="shopping-history-open" class="secondary-button" aria-haspopup="dialog">Verlauf</button><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button></div></div>
         <div class="page-heading shopping-page-heading"><div><div class="eyebrow">WOCHENPLAN</div><h1>Einkaufszettel</h1><p id="shopping-period" class="subheading"></p></div></div>
         <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
         <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
@@ -141,7 +141,21 @@
   <dialog id="catalog-dialog"><section class="catalog-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GERICHTE ERWEITERN</div><h2>Standardkatalog</h2></div><button type="button" class="close-button" id="close-catalog" aria-label="Schließen">×</button></div><div class="recipe-type-switch" id="catalog-dish-type" role="group" aria-label="Rezeptart"><button type="button" data-type="meal" aria-pressed="true">Gerichte</button><button type="button" data-type="baking" aria-pressed="false">Backen</button></div><label class="catalog-search" for="catalog-search"><span aria-hidden="true">⌕</span><input id="catalog-search" type="search" autocomplete="off" placeholder="Gerichte suchen …"></label><p id="catalog-feedback" class="catalog-feedback" role="status" aria-live="polite" hidden></p><div id="catalog-list" class="choose-list"></div><div class="dialog-actions"><button type="button" class="secondary-button" id="catalog-add-all">Alles übernehmen</button></div></section></dialog>
   <dialog id="conflict-dialog" aria-labelledby="conflict-title"><section class="conflict-dialog-content"><div class="dialog-head"><div><div class="eyebrow">SYNCHRONISIERUNG</div><h2 id="conflict-title">Änderungen prüfen</h2></div><button type="button" class="close-button" id="close-conflicts" aria-label="Schließen">×</button></div><p class="conflict-intro">Auf diesem Gerät und in deinem Haushalt wurde derselbe Eintrag geändert. Wähle für jeden Konflikt eine Fassung oder übernimm für alle Konflikte die Haushaltsfassung.</p><div id="conflict-list" class="conflict-list"></div><div class="conflict-cloud-action"><p id="conflict-cloud-hint" class="conflict-cloud-hint" role="status" hidden></p><button id="conflict-cloud-all" class="conflict-cloud-button" type="button">Alle Haushaltsfassungen übernehmen</button></div></section></dialog>
   <dialog id="first-sync-dialog" aria-labelledby="first-sync-title"><section class="conflict-dialog-content"><div class="dialog-head"><div><div class="eyebrow">SYNCHRONISIERUNG</div><h2 id="first-sync-title">Ersten Abgleich wählen</h2></div></div><p class="conflict-intro">Für die Daten auf diesem Gerät ist kein gemeinsamer Ausgangsstand gespeichert. Wähle, welche Fassung du übernehmen möchtest. Die jeweils andere Fassung wird dabei ersetzt.</p><form method="dialog" class="conflict-choices"><button class="conflict-choice" value="cloud"><strong>Haushaltsfassung übernehmen</strong><span>Ersetzt die Daten auf diesem Gerät durch den Cloud-Stand.</span></button><button class="conflict-choice" value="local"><strong>Gerätefassung übernehmen</strong><span>Überträgt die Daten dieses Geräts in den Haushalt.</span></button><button class="conflict-choice" value="later"><strong>Später entscheiden</strong><span>Die lokalen Daten bleiben erhalten; es wird noch nichts hochgeladen.</span></button></form></section></dialog>
-  <dialog id="household-dialog"><section class="household-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GEMEINSAM PLANEN</div><h2>Dein Haushalt</h2></div><button type="button" class="close-button" id="household-close" aria-label="Schließen">×</button></div><p class="household-intro">Teile Gerichte, Wochenplan und Einkaufszettel mit anderen Personen.</p><section class="household-members-section"><h3>Mitglieder</h3><div id="household-members" class="household-members"><p class="household-loading">Wird geladen …</p></div></section><section class="household-invite-section"><h3>Person einladen</h3><p>Erstelle einen Code und teile ihn direkt. Er ist 10 Minuten gültig und kann einmal verwendet werden.</p><button type="button" class="primary-button" id="create-household-code">＋ Beitrittscode erstellen</button><div id="household-code-result" class="household-code-result" hidden><span>Beitrittscode</span><output id="household-code"></output><small>Der Code wird nach dem Schließen nicht erneut angezeigt.</small></div></section><form id="household-join-form" class="household-join-form"><label for="household-join-code">Mit Beitrittscode beitreten</label><div><input id="household-join-code" maxlength="8" autocomplete="off" placeholder="8-stelliger Code" required><button type="submit" class="secondary-button">Beitreten</button></div></form><p id="household-error" class="household-error" role="alert" hidden></p></section></dialog>
+  <dialog id="shopping-history-dialog" aria-labelledby="shopping-history-title">
+    <section class="shopping-history-content">
+      <div class="dialog-head">
+        <h2 id="shopping-history-title">Verlauf</h2>
+        <form method="dialog"><button class="close-button" aria-label="Schließen" autofocus>×</button></form>
+      </div>
+      <p id="shopping-history-status" role="status"></p>
+      <ul id="shopping-history-list" role="list"></ul>
+    </section>
+  </dialog>
+  <dialog id="household-dialog"><section class="household-dialog-content"><div class="dialog-head"><div><div class="eyebrow">GEMEINSAM PLANEN</div><h2>Dein Haushalt</h2></div><button type="button" class="close-button" id="household-close" aria-label="Schließen">×</button></div><p class="household-intro">Teile Gerichte, Wochenplan und Einkaufszettel mit anderen Personen.</p><section class="household-members-section"><h3>Mitglieder</h3><div id="household-members" class="household-members"><p class="household-loading">Wird geladen …</p></div></section><form id="household-name-form" class="household-join-form" hidden>
+    <label for="household-display-name">Dein Anzeigename</label>
+    <div><input id="household-display-name" autocomplete="nickname" maxlength="60"><button type="submit" class="secondary-button">Speichern</button></div>
+    <p id="household-name-status" role="status"></p>
+  </form><section class="household-invite-section"><h3>Person einladen</h3><p>Erstelle einen Code und teile ihn direkt. Er ist 10 Minuten gültig und kann einmal verwendet werden.</p><button type="button" class="primary-button" id="create-household-code">＋ Beitrittscode erstellen</button><div id="household-code-result" class="household-code-result" hidden><span>Beitrittscode</span><output id="household-code"></output><small>Der Code wird nach dem Schließen nicht erneut angezeigt.</small></div></section><form id="household-join-form" class="household-join-form"><label for="household-join-code">Mit Beitrittscode beitreten</label><div><input id="household-join-code" maxlength="8" autocomplete="off" placeholder="8-stelliger Code" required><button type="submit" class="secondary-button">Beitreten</button></div></form><p id="household-error" class="household-error" role="alert" hidden></p></section></dialog>
   <dialog id="install-dialog" aria-labelledby="install-title">
     <form method="dialog">
       <div class="dialog-head"><h2 id="install-title">Wochentisch installieren</h2></div>
@@ -170,7 +184,7 @@
   <script src="sync-api.js?v=2"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=2"></script>
-  <script src="app.js?v=20261109-11"></script>
+  <script src="app.js?v=20261110-18"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

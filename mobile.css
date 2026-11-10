@@ -307,6 +307,33 @@ html {
     touch-action: manipulation;
   }
 
+  .calendar-grid .meal-card:has(> .recipe-list-photo) {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    column-gap: 12px;
+    align-content: start;
+  }
+
+  .calendar-grid .meal-card > .recipe-list-photo {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: start;
+    margin-bottom: 0;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > :is(.meal-title, .meal-meta, .meal-nutrition) {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > .meal-title {
+    padding-right: 0;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > .meal-meta {
+    flex-wrap: wrap;
+  }
+
   .meal-label {
     font-size: 9px;
   }
@@ -1261,4 +1288,26 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
     border-top: 1px solid var(--line);
   }
   .shopping-keyboard-docked .shopping-item-suggestions { top: auto; bottom: calc(100% + 6px); }
+}
+@media (max-width: 700px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #choose-dialog[open] {
+    position: fixed;
+    top: calc(var(--visual-viewport-top, 0px) + 12px);
+    bottom: auto;
+    margin: 0 auto;
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  .choose-dialog-content {
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  #choose-dialog .choose-list {
+    flex: 0 0 auto;
+    max-height: min(55vh, 460px, max(132px, calc(var(--visual-viewport-height, 100dvh) - 180px)));
+  }
 }

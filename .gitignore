@@ -8,4 +8,6 @@ KOCHASSISTENT-PLAN.md
 !/supabase/migrations/
 /supabase/migrations/*
 !/supabase/migrations/20261107203423_baking_recipe_type.sql
+!/supabase/migrations/20261110201227_shopping_history.sql
+!/supabase/migrations/20261110203532_shopping_history_display_name.sql
 plan.md

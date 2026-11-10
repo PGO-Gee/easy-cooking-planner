@@ -645,6 +645,14 @@
   cursor: grabbing;
 }
 
+.meal-card > .recipe-list-photo {
+  width: 84px;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 6px;
+  pointer-events: none;
+}
+
 .meal-remove {
   z-index: 1;
 }
