@@ -2497,12 +2497,26 @@ async function invalidateRecipeProgress(dish){
   if(progress.fingerprint!==window.WochentischRecipes.fingerprint(dish)&&selectedRecipeDishId===dish.id){cookingProgress={...progress,stale:true};if(savedView()==='cooking')renderCooking()}
 }
 function plannedDishIds(){const ids=[],seen=new Set();rangeDates().forEach(date=>planForDate(date).forEach(id=>{if(state.dishes.some(d=>d.id===id)&&!seen.has(id)){ids.push(id);seen.add(id)}}));return ids}
+function recipePhoto(dish,{thumbnail=false}={}){
+  if(!dish.catalogSourceId||dish.type==='baking'||catalogDishNameKey(dish.name)!=='rotesthaicurrymithähnchenundreis')return null;
+  const photo=document.createElement('img');
+  photo.className=thumbnail?'recipe-list-photo':'recipe-detail-photo';
+  photo.alt='';
+  photo.width=thumbnail?168:960;
+  photo.height=thumbnail?126:720;
+  photo.decoding='async';
+  if(thumbnail)photo.loading='lazy';
+  photo.src=thumbnail?'./images/recipes/rotes-thai-curry-thumb.jpg':'./images/recipes/rotes-thai-curry.jpg';
+  return photo;
+}
 function recipeListCard(dish,{planned=false}={}){
   const button=document.createElement('button');button.type='button';button.className='recipe-list-card';
   const icon=document.createElement('span');icon.className='recipe-list-icon';icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
+  const photo=recipePhoto(dish,{thumbnail:true});
+  if(photo)photo.addEventListener('error',()=>photo.replaceWith(icon),{once:true});
   const copy=document.createElement('span');copy.className='recipe-list-copy';const name=document.createElement('strong');name.textContent=dish.name;
   const detail=document.createElement('small');detail.textContent=`${dish.time||30} Min. · ${dish.recipe?.steps?.length||0} Schritte`;
-  copy.append(name,detail);button.append(icon,copy);if(planned){const tag=document.createElement('span');tag.className='recipe-planned-tag';tag.textContent='Geplant';button.append(tag)}
+  copy.append(name,detail);button.append(photo||icon,copy);if(planned){const tag=document.createElement('span');tag.className='recipe-planned-tag';tag.textContent='Geplant';button.append(tag)}
   button.addEventListener('click',()=>openRecipe(dish.id,{from:'cooking'}));return button;
 }
 function renderCookingList(){
@@ -2546,6 +2560,11 @@ async function openRecipe(dishId,{from='cooking'}={}){
 function renderRecipeOverview(dish){
   const content=$('#cooking-content');content.replaceChildren();const back=document.createElement('button');back.type='button';back.className='secondary-button recipe-back';back.textContent=recipeDetailPreviousView==='week'?'← Wochenplan':'← Alle Gerichte';back.addEventListener('click',()=>returnFromRecipe());content.append(back);
   const header=document.createElement('div');header.className='recipe-detail-heading';const icon=document.createElement('span');icon.className='recipe-list-icon';icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';const title=document.createElement('div');const h=document.createElement('h2');h.textContent=dish.name;const meta=document.createElement('p');meta.textContent=`${dish.time||30} Min. · ${nutritionText(dish.nutrition)||'Nährwerte nicht angegeben'}`;title.append(h,meta);header.append(icon,title);content.append(header);
+  const photo=recipePhoto(dish);
+  if(photo){
+    photo.addEventListener('error',()=>photo.remove(),{once:true});
+    content.append(photo);
+  }
   const progress=cookingProgress,stale=progress&&!progress.completed&&progress.fingerprint!==window.WochentischRecipes.fingerprint(dish);
   if(stale){const warning=document.createElement('p');warning.className='recipe-stale-note';warning.textContent='Das Rezept wurde seit deinem letzten Start geändert. Bitte starte mit der neuen Fassung neu.';content.append(warning)}
   const ingredientPanel=document.createElement('section');ingredientPanel.className='recipe-overview-panel';const ingredientHead=document.createElement('div');ingredientHead.className='recipe-panel-heading';const ingredientTitle=document.createElement('h3');ingredientTitle.textContent='Zutaten';ingredientHead.append(ingredientTitle,recipePortionControl(dish));ingredientPanel.append(ingredientHead);appendRecipeIngredients(ingredientPanel,dish);content.append(ingredientPanel);
