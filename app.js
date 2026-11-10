@@ -2742,6 +2742,7 @@ async function openRecipe(dishId,{from='cooking'}={}){
   selectedRecipeDishId=dishId;cookingProgress=await loadCookingProgress(dishId);
   selectedCookServings=Math.max(1,Math.min(12,Number(cookingProgress?.servings)||Number(dish.recipe?.servings)||2));
   cookingStage='overview';setView('cooking',{render:false});renderCooking();
+  window.scrollTo(0,0);
 }
 function renderRecipeOverview(dish){
   const content=$('#cooking-content');content.replaceChildren();const back=document.createElement('button');back.type='button';back.className='secondary-button recipe-back';back.textContent=recipeDetailPreviousView==='week'?'← Wochenplan':'← Alle Gerichte';back.addEventListener('click',()=>returnFromRecipe());content.append(back);

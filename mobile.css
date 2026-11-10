@@ -307,6 +307,33 @@ html {
     touch-action: manipulation;
   }
 
+  .calendar-grid .meal-card:has(> .recipe-list-photo) {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    column-gap: 12px;
+    align-content: start;
+  }
+
+  .calendar-grid .meal-card > .recipe-list-photo {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    align-self: start;
+    margin-bottom: 0;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > :is(.meal-title, .meal-meta, .meal-nutrition) {
+    grid-column: 2;
+    overflow-wrap: anywhere;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > .meal-title {
+    padding-right: 0;
+  }
+
+  .calendar-grid .meal-card:has(> .recipe-list-photo) > .meal-meta {
+    flex-wrap: wrap;
+  }
+
   .meal-label {
     font-size: 9px;
   }
