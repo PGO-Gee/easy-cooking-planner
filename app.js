@@ -81,6 +81,14 @@ function syncVisualViewport(){
   document.documentElement.classList.toggle('dish-keyboard-open', window.innerHeight-viewport.height>150 && Boolean(document.querySelector('#dish-dialog[open] input:focus, #dish-dialog[open] textarea:focus')));
   const heightChanged=lastVisualViewportHeight!==viewport.height;lastVisualViewportHeight=viewport.height;
   const focused=document.activeElement;if(heightChanged&&document.documentElement.classList.contains('dish-keyboard-open')&&focused?.closest('#dish-dialog'))requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
+  if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
+}
+function revealChooserResults(){
+  const search=$('#choose-dish-search'),content=$('.choose-dialog-content'),result=$('#choose-dish-list .choose-item:not([hidden])');
+  if(!window.matchMedia('(max-width: 700px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse)').matches||document.activeElement!==search||!result)return;
+  const bounds=content.getBoundingClientRect(),searchBounds=search.getBoundingClientRect(),resultBounds=result.getBoundingClientRect();
+  const needed=Math.max(0,resultBounds.bottom-bounds.bottom+12);
+  content.scrollTop+=Math.min(needed,Math.max(0,searchBounds.top-bounds.top-8));
 }
 syncVisualViewport();
 window.visualViewport?.addEventListener('resize',syncVisualViewport);
@@ -2571,7 +2579,7 @@ function chooseDish(day){
     });
     const empty=document.createElement('p');empty.className='empty-state choose-no-results';empty.hidden=true;empty.textContent='Keine passenden Gerichte gefunden.';
     list.append(...entries.map(entry=>entry.button),empty);
-    const filter=()=>{const query=search.value.trim().toLocaleLowerCase('de-DE');let visible=0;for(const {dish,button} of entries){const haystack=[dish.name,dish.ingredient,...(dish.ingredients||[])].join(' ').toLocaleLowerCase('de-DE'),match=(dish.type==='baking'?'baking':'meal')===selectedRecipeType(filterType)&&haystack.includes(query);button.hidden=!match;if(match)visible++}empty.hidden=visible>0};
+    const filter=()=>{const query=search.value.trim().toLocaleLowerCase('de-DE');let visible=0;for(const {dish,button} of entries){const haystack=[dish.name,dish.ingredient,...(dish.ingredients||[])].join(' ').toLocaleLowerCase('de-DE'),match=(dish.type==='baking'?'baking':'meal')===selectedRecipeType(filterType)&&haystack.includes(query);button.hidden=!match;if(match)visible++}empty.hidden=visible>0;requestAnimationFrame(revealChooserResults)};
     search.oninput=filter;filterType.onclick=event=>{const button=event.target.closest('button[data-type]');if(button){setRecipeTypeFilter(filterType,button.dataset.type);filter()}};filter();
   }
   const dialog=$('#choose-dialog');if(!dialog.open)dialog.showModal();

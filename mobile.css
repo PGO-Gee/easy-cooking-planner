@@ -1289,3 +1289,22 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
   }
   .shopping-keyboard-docked .shopping-item-suggestions { top: auto; bottom: calc(100% + 6px); }
 }
+@media (max-width: 700px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #choose-dialog[open] {
+    position: fixed;
+    top: calc(var(--visual-viewport-top, 0px) + 12px);
+    bottom: auto;
+    margin: 0 auto;
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    box-sizing: border-box;
+  }
+
+  .choose-dialog-content {
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    box-sizing: border-box;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .choose-list { flex: 1 0 132px; }
+}
