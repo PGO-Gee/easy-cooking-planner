@@ -74,7 +74,17 @@ const catalogRecipePhotoFiles=new Map([
   ['Gulasch mit Reis','gulasch-mit-reis'],
   ['Kartoffelgratin','kartoffelgratin'],
   ['Hähnchenschenkel mit Ofenkartoffeln','haehnchenschenkel-mit-ofenkartoffeln'],
-  ['Teriyaki-Lachs mit Reis','teriyaki-lachs-mit-reis']
+  ['Teriyaki-Lachs mit Reis','teriyaki-lachs-mit-reis'],
+  ['Frikadellen mit Kartoffelpüree','frikadellen-mit-kartoffelpueree'],
+  ['Hühnerfrikassee mit Reis','huehnerfrikassee-mit-reis'],
+  ['Currywurst mit Pommes','currywurst-mit-pommes'],
+  ['Schweinebraten mit Semmelknödeln','schweinebraten-mit-semmelknoedeln'],
+  ['Bauernomelett mit Kartoffeln','bauernomelett-mit-kartoffeln'],
+  ['Fischstäbchen mit Kartoffelpüree','fischstaebchen-mit-kartoffelpueree'],
+  ['Kartoffelpuffer mit Apfelmus','kartoffelpuffer-mit-apfelmus'],
+  ['Butter Chicken mit Reis','butter-chicken-mit-reis'],
+  ['Gebratener Reis mit Hähnchen und Ei','gebratener-reis-mit-haehnchen-und-ei'],
+  ['Hähnchen-Woknudeln','haehnchen-woknudeln']
 ].map(([name,file])=>[catalogDishNameKey(name),file]));
 // Native dialogs usually lock page scrolling, but iOS Safari can still move the
 // document during touch gestures. Keep the page position fixed while any dialog is open.

@@ -3,7 +3,7 @@ const OCR_CACHE_NAME=`wochentisch-ocr-${WochentischOCRAssets.version}:${self.reg
 const ocrUrls=new Set(WochentischOCRAssets.files.map(path=>new URL(path,self.registration.scope).href));
 const CACHE_PREFIX = 'wochentisch-shell-';
 const CACHE_SCOPE = `:${self.registration.scope}`;
-const CACHE_NAME = `${CACHE_PREFIX}v113${CACHE_SCOPE}`;
+const CACHE_NAME = `${CACHE_PREFIX}v115${CACHE_SCOPE}`;
 const recipeImagePath = new URL('./images/recipes/', self.registration.scope).pathname;
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const SUPABASE_INTEGRITY = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
