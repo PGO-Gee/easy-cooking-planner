@@ -414,3 +414,38 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 #dish-form.is-imported-ingredients .recipe-ingredient-name input:focus-visible { outline: 2px solid #23654f; outline-offset: 2px; }
 
 #recipe-import-analyze:disabled { opacity: .5; cursor: default; }
+
+.shopping-screen-top { flex-wrap: wrap; }
+.shopping-screen-actions { margin-left: auto; }
+#shopping-history-open { min-height: 44px; }
+#shopping-history-dialog {
+  box-sizing: border-box;
+  max-height: calc(100vh - 32px);
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.shopping-history-content { padding: 16px 20px 20px; overflow-wrap: anywhere; }
+.shopping-history-content .dialog-head { align-items: center; margin-bottom: 8px; }
+.shopping-history-content .close-button { width: 44px; height: 44px; }
+#shopping-history-status { margin: 0; }
+#shopping-history-list { margin: 0; padding: 0; list-style: none; }
+#shopping-history-list li { padding: 12px 0; border-top: 1px solid var(--line); }
+#shopping-history-list time { display: block; font-size: 12px; }
+#shopping-history-list p { margin: 4px 0 0; }
+
+#shopping-shake-setting { margin-bottom: 16px; }
+#shopping-shake-toggle { min-height: 44px; max-width: 100%; white-space: normal; }
+#shopping-shake-state { margin-inline-start: 6px; font-weight: 700; }
+#shopping-undo-dialog {
+  box-sizing: border-box;
+  max-height: calc(var(--visual-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.shopping-undo-content { padding: 16px 20px 20px; overflow-wrap: anywhere; }
+.shopping-undo-content .dialog-head { margin-bottom: 8px; }
+#shopping-undo-message { margin: 0 0 16px; }
+.shopping-undo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.shopping-undo-actions button { min-height: 44px; }
+#toast.has-action .toast-message { overflow-wrap: anywhere; }
