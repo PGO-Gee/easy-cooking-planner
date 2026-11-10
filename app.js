@@ -84,7 +84,40 @@ const catalogRecipePhotoFiles=new Map([
   ['Kartoffelpuffer mit Apfelmus','kartoffelpuffer-mit-apfelmus'],
   ['Butter Chicken mit Reis','butter-chicken-mit-reis'],
   ['Gebratener Reis mit Hähnchen und Ei','gebratener-reis-mit-haehnchen-und-ei'],
-  ['Hähnchen-Woknudeln','haehnchen-woknudeln']
+  ['Hähnchen-Woknudeln','haehnchen-woknudeln'],
+  ["Apfelkuchen","apfelkuchen"],
+  ["Bienenstich","bienenstich"],
+  ["Blaubeermuffins","blaubeermuffins"],
+  ["Brownies","brownies"],
+  ["Buchweizen-Eintopf","buchweizen-eintopf"],
+  ["Burger und Kartoffel-Pommes","burger-und-kartoffel-pommes"],
+  ["Chili con Carne mit Reis","chili-con-carne-mit-reis"],
+  ["Fisch mit Kartoffeln","fisch-mit-kartoffeln"],
+  ["Gegrilltes Hühnchen mit Offengemüse","gegrilltes-huehnchen-mit-offengemuese"],
+  ["Hühnchen mit Kartoffeln","huehnchen-mit-kartoffeln"],
+  ["Hühnchen-Wraps","huehnchen-wraps"],
+  ["Käsekuchen","kaesekuchen"],
+  ["Linsen-Kürbis-Eintopf","linsen-kuerbis-eintopf"],
+  ["Linsensuppe","linsensuppe"],
+  ["Marmorkuchen","marmorkuchen"],
+  ["Miso-Ramen mit Hähnchen","miso-ramen-mit-haehnchen"],
+  ["Nudeln mit Fleisch und Gemüse","nudeln-mit-fleisch-und-gemuese"],
+  ["Nudelsuppe mit Würstchen","nudelsuppe-mit-wuerstchen"],
+  ["Ofenkartoffel mit Quark","ofenkartoffel-mit-quark"],
+  ["Pad Thai mit Hähnchen","pad-thai-mit-haehnchen"],
+  ["Pelmeni (russische Teigtaschen)","pelmeni-russische-teigtaschen"],
+  ["Pizza Prosciutto e funghi","pizza-prosciutto-e-funghi"],
+  ["Plov mit Hühnchen","plov-mit-huehnchen"],
+  ["Pommes und Chicken Nuggets","pommes-und-chicken-nuggets"],
+  ["Reis mit Hühnchen und Gemüse","reis-mit-huehnchen-und-gemuese"],
+  ["Reis-Bowl mit Salat","reis-bowl-mit-salat"],
+  ["Schokomuffins","schokomuffins"],
+  ["Schwarzwälder Kirschtorte","schwarzwaelder-kirschtorte"],
+  ["Spaghetti Bolognese","spaghetti-bolognese"],
+  ["Streuselkuchen","streuselkuchen"],
+  ["Thunfisch-Nudeln","thunfisch-nudeln"],
+  ["Tofu-Curry mit Reis","tofu-curry-mit-reis"],
+  ["Zitronenkuchen","zitronenkuchen"]
 ].map(([name,file])=>[catalogDishNameKey(name),file]));
 // Native dialogs usually lock page scrolling, but iOS Safari can still move the
 // document during touch gestures. Keep the page position fixed while any dialog is open.
@@ -2705,8 +2738,7 @@ async function invalidateRecipeProgress(dish){
 function plannedDishIds(){const ids=[],seen=new Set();rangeDates().forEach(date=>planForDate(date).forEach(id=>{if(state.dishes.some(d=>d.id===id)&&!seen.has(id)){ids.push(id);seen.add(id)}}));return ids}
 function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
   const sourceId=catalog?dish.id:dish.catalogSourceId;
-  const type=catalog?dish.recipe_type:dish.type;
-  if(!sourceId||type==='baking')return null;
+  if(!sourceId)return null;
   const file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
   if(!file)return null;
   const photo=document.createElement('img');
