@@ -1486,8 +1486,9 @@ function renderShoppingItemSuggestions(){$('#shopping-add-status').hidden=true;c
 function addPantryIngredient(value){const name=normalizeIngredient(value);if(!name)return;const key=ingredientKey(name);if(!pantryDraft.some(item=>ingredientKey(item)===key))pantryDraft.push(name);$('#pantry-input').value='';renderPantryEditor();$('#pantry-input').focus()}
 function openPantryPlanner(){const key=keyFor(mondayFor(rangeStart())),dialog=$('#pantry-dialog'),input=$('#pantry-input');pantryDraft=(state.pantryIngredients?.[key]||[]).slice();input.value='';try{if(!dialog.open)dialog.showModal();renderPantryEditor();requestAnimationFrame(()=>input.focus({preventScroll:true}))}catch(error){console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.')}}
 function renderPantryEditor(){const selected=$('#pantry-selected'),input=$('#pantry-input'),list=$('#pantry-suggestions'),query=ingredientKey(input.value);selected.replaceChildren();$('#pantry-selected-count').textContent=pantryDraft.length;$('#pantry-empty-selection').hidden=pantryDraft.length>0;pantryDraft.forEach(name=>{const chip=document.createElement('span');chip.className='pantry-chip';const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;const remove=document.createElement('button');remove.type='button';remove.className='pantry-chip-remove';remove.setAttribute('aria-label',`${name} entfernen`);remove.textContent='×';remove.addEventListener('click',()=>{pantryDraft=pantryDraft.filter(item=>ingredientKey(item)!==ingredientKey(name));renderPantryEditor()});chip.append(icon,label,remove);selected.append(chip)});const matches=query?availablePantryIngredients().filter(name=>ingredientKey(name).includes(query)&&!pantryDraft.some(item=>ingredientKey(item)===ingredientKey(name))).slice(0,8):[];list.replaceChildren();matches.forEach(name=>{const option=document.createElement('button');option.type='button';option.className='pantry-suggestion';option.role='option';option.setAttribute('aria-selected','false');const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;option.append(icon,label);option.addEventListener('pointerdown',event=>event.preventDefault());option.addEventListener('click',()=>addPantryIngredient(name));list.append(option)});list.hidden=!matches.length;input.setAttribute('aria-expanded',String(matches.length>0));input.removeAttribute('aria-activedescendant')}
-function makePlan(start,pantry=[],pinnedDays=new Set(),pinnedDishIds=new Set(),fixedDays=[]){
+function makePlan(start,pantry=[],pinnedDays=new Set(),pinnedDishIds=new Set(),fixedDays=[],currentPlan=[]){
   const dishes=shuffle(state.dishes.filter(dish=>dish.type!=='baking'&&!pinnedDishIds.has(dish.id)));
+  const currentDishIds=new Set(currentPlan.flat());
   const dishesById=new Map(state.dishes.map(dish=>[dish.id,dish]));
   const history=Array.from({length:7},(_,index)=>{
     const date=new Date(start);
@@ -1506,8 +1507,10 @@ function makePlan(start,pantry=[],pinnedDays=new Set(),pinnedDishIds=new Set(),f
   let variants=[{days:[],used:new Set(),score:0}];
   for(let day=0;day<7;day++){
     if(pinnedDays.has(day)){variants.forEach(v=>v.days.push([]));continue}
-    const historyScores=new Map(dishes.map(dish=>{
-      let score=0;
+    const currentDayIds=new Set(currentPlan[day]);
+    const baseScores=new Map(dishes.map(dish=>{
+      // Prefer new recipes, then a different day for recipes that return.
+      let score=(currentDishIds.has(dish.id)?6:0)+(currentDayIds.has(dish.id)?3:0);
       for(let index=0;index<history.length-day;index++){
         const distance=day+index+1;
         const weight=distance===1?6:distance===2?2:1;
@@ -1527,7 +1530,7 @@ function makePlan(start,pantry=[],pinnedDays=new Set(),pinnedDishIds=new Set(),f
       if(missing.length>=Math.min(remainingSlots,dishes.length-used.size)&&missing.length)candidates=candidates.filter(d=>missing.includes(d.id));
       if(!candidates.length){next.push({days:[...variant.days,[]],used,score:variant.score});continue}
       for(const dish of candidates){
-        let score=variant.score+historyScores.get(dish.id);
+        let score=variant.score+baseScores.get(dish.id);
         for(let other=0;other<7;other++){
           const distance=Math.abs(day-other);if(distance<1||distance>2)continue;
           const neighbors=other<day?(fixedDays[other]||[]).concat(variant.days[other].map(id=>dishesById.get(id))):(fixedDays[other]||[]);
@@ -1546,7 +1549,7 @@ function replaceRangePlan(pantry){
   const dates=rangeDates(),plans=dates.map(date=>planForDate(date)),pinFlags=dates.map(date=>pinnedMealsForDate(date)),pinnedDays=new Set(),pinnedDishIds=new Set();
   pinFlags.forEach((flags,index)=>{plans[index].forEach((id,mealIndex)=>{if(flags[mealIndex]&&state.dishes.find(d=>d.id===id)?.type!=='baking'){pinnedDays.add(index);pinnedDishIds.add(id)}})});
   const fixedDays=plans.map((day,index)=>day.filter((id,mealIndex)=>pinFlags[index][mealIndex]).map(id=>state.dishes.find(d=>d.id===id)).filter(d=>d&&d.type!=='baking'));
-  const generated=makePlan(dates[0],pantry,pinnedDays,pinnedDishIds,fixedDays),weekKeys=[...new Set(dates.map(date=>keyFor(mondayFor(date))))],resetKeysByWeek={};
+  const generated=makePlan(dates[0],pantry,pinnedDays,pinnedDishIds,fixedDays,plans),weekKeys=[...new Set(dates.map(date=>keyFor(mondayFor(date))))],resetKeysByWeek={};
   dates.forEach((date,index)=>{const weekKey=keyFor(mondayFor(date));resetKeysByWeek[weekKey]??=new Set();shoppingKeysForPlan([plans[index].filter(id=>state.dishes.find(d=>d.id===id)?.type!=='baking'),generated[index]]).forEach(key=>resetKeysByWeek[weekKey].add(key))});
   state.shoppingChecks??={};state.hiddenShoppingItems??={};state.pantryIngredients??={};
   weekKeys.forEach(weekKey=>{

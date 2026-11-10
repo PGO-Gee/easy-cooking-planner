@@ -94,3 +94,13 @@ test('history scores the seventh day but skips older meals and baking', () => {
   c.state.plans['2026-11-02'][0] = ['fish'];
   assert.equal(c.makePlan(start, [], pinnedDays)[0][0], 'soup');
 });
+
+test('remixing prefers unused recipes and moves returning recipes to different days', () => {
+  const dishes = Array.from({length:10}, (_, i) => ({id:`dish-${i}`, ingredients:[`ingredient-${i}`]}));
+  const current = dishes.slice(0,7).map(dish => [dish.id]);
+  const c = setup(dishes, current);
+  c.replaceRangePlan([]);
+  const generated = c.state.plans[week].map(day => day[0]);
+  assert.ok(dishes.slice(7).every(dish => generated.includes(dish.id)));
+  assert.ok(generated.every((id, day) => id !== current[day][0]));
+});
