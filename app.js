@@ -1432,7 +1432,8 @@ function calendarStateForRange(value){
         const dish=dishesById.get(id);
         return{id,pinned:Boolean(pins[index]),dish:dish?{
           name:dish.name,ingredient:dish.ingredient||'Lieblingsgericht',time:dish.time||25,
-          emoji:dish.emoji||emojiMap[dish.ingredient]||'🍽️',nutrition:nutritionText(dish.nutrition)
+          emoji:dish.emoji||emojiMap[dish.ingredient]||'🍽️',nutrition:nutritionText(dish.nutrition),
+          catalogSourceId:dish.catalogSourceId||null,type:dish.type
         }:null};
       })
     };
@@ -1803,6 +1804,16 @@ function renderCalendarContent({shuffleAnimation=false,droppedMeal=null}={}){
       meal.querySelector('.meal-time').textContent=`◷ ${dish.time||25} min`;
       meal.querySelector('.meal-ingredient').textContent=dish.ingredient||'Lieblingsgericht';
       meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-name').title=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;
+      const photo=recipePhoto(dish,{thumbnail:true});
+      if(photo){
+        const icon=meal.querySelector('.meal-icon'),title=meal.querySelector('.meal-title');
+        icon.classList.add('hidden');
+        photo.addEventListener('error',()=>{
+          photo.remove();
+          icon.classList.remove('hidden');
+        },{once:true});
+        title.before(photo);
+      }
       content.append(meal);
     });
     if(!isRest){const restAction=document.createElement('button');restAction.type='button';restAction.className='day-rest-action';restAction.innerHTML='<span class="day-rest-action-icon" aria-hidden="true">🥡</span><span>Reste</span>';restAction.setAttribute('aria-label',`Resteabend für ${date.toLocaleDateString('de-DE',{weekday:'long'})} markieren${day.length?', den Plan um einen Tag verschieben':''}`);restAction.title=day.length?'Resteabend eintragen und den Folgeplan weiterschieben':'Als Resteabend markieren';restAction.addEventListener('click',()=>markRestDay(i));content.append(restAction)}
@@ -1849,7 +1860,10 @@ function renderDishesContent(){
   for(const dish of dishes){
     const row=document.createElement('div');row.className='dish-row';row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-label',`${dish.name} bearbeiten`);
     row.innerHTML='<div class="dish-icon"></div><div class="dish-copy"><b></b><small><span class="dish-time"></span> <span style="padding:0 5px;color:#d0d5cc">·</span> <span class="dish-ingredient"></span></small><small class="dish-nutrition"></small><small class="dish-ingredients-preview"></small></div><span class="dish-tag"></span><span class="row-edit" aria-hidden="true">···</span>';
-    row.querySelector('.dish-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
+    const icon=row.querySelector('.dish-icon');
+    icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
+    const thumbnail=recipeThumbnail(dish,icon);
+    if(thumbnail!==icon)icon.replaceWith(thumbnail);
     row.querySelector('.dish-copy b').textContent=dish.name;
     row.querySelector('.dish-time').textContent=`◷ ${dish.time||25} Min.`;
     row.querySelector('.dish-ingredient').textContent=dish.ingredient||'Ohne Angabe';
@@ -2391,7 +2405,7 @@ function chooseDish(day){
       const icon=document.createElement('span');icon.className='choose-icon';icon.textContent=d.emoji||emojiMap[d.ingredient]||'🍽️';
       const copy=document.createElement('span');copy.className='choose-copy';const name=document.createElement('b');name.textContent=d.name;
       const details=document.createElement('small');details.textContent=`${d.time||25} Min. · ${d.type==='baking'?'Backen':(d.ingredient||'Gericht')}`;
-      copy.append(name,details);button.append(icon,copy);
+      copy.append(name,details);button.append(recipeThumbnail(d,icon),copy);
       button.addEventListener('click',()=>{reopenShoppingIngredients(targetDate,d);const pins=ensurePinnedMealsForDate(targetDate);ensurePlanForDate(targetDate).push(d.id);pins.push(false);setRestDay(targetDate,false);save();$('#choose-dialog').close();renderCalendar()});
       entries.push({dish:d,button});
     });
@@ -2434,7 +2448,7 @@ function renderCatalogDishes(dishes,{offline=false}={}){
     const icon=document.createElement('span');icon.className='choose-icon';icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
     const copy=document.createElement('span');copy.className='choose-copy';const name=document.createElement('b');name.textContent=dish.name;
     const details=document.createElement('small');details.textContent=alreadyAdded?(queued?'Vorgemerkt · wird synchronisiert':'Bereits hinzugefügt'):`${dish.recipe_type==='baking'?'Backen':(dish.ingredient||'Gericht')} · ${dish.cooking_time_minutes||30} Min.`;
-    copy.append(name,details);button.append(icon,copy);
+    copy.append(name,details);button.append(recipeThumbnail(dish,icon,{catalog:true}),copy);
     button.addEventListener('click',()=>{if(adoptCatalogDish(dish)){renderCatalogDishes(dishes,{offline:!navigator.onLine});showCatalogFeedback(`${dish.name} ist vorgemerkt und wird synchronisiert.`)}});
     button.hidden=!filtered.includes(dish);entries.push({dish,button});
   });
@@ -2497,8 +2511,10 @@ async function invalidateRecipeProgress(dish){
   if(progress.fingerprint!==window.WochentischRecipes.fingerprint(dish)&&selectedRecipeDishId===dish.id){cookingProgress={...progress,stale:true};if(savedView()==='cooking')renderCooking()}
 }
 function plannedDishIds(){const ids=[],seen=new Set();rangeDates().forEach(date=>planForDate(date).forEach(id=>{if(state.dishes.some(d=>d.id===id)&&!seen.has(id)){ids.push(id);seen.add(id)}}));return ids}
-function recipePhoto(dish,{thumbnail=false}={}){
-  if(!dish.catalogSourceId||dish.type==='baking'||catalogDishNameKey(dish.name)!=='rotesthaicurrymithähnchenundreis')return null;
+function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
+  const sourceId=catalog?dish.id:dish.catalogSourceId;
+  const type=catalog?dish.recipe_type:dish.type;
+  if(!sourceId||type==='baking'||catalogDishNameKey(dish.name)!=='rotesthaicurrymithähnchenundreis')return null;
   const photo=document.createElement('img');
   photo.className=thumbnail?'recipe-list-photo':'recipe-detail-photo';
   photo.alt='';
@@ -2509,14 +2525,18 @@ function recipePhoto(dish,{thumbnail=false}={}){
   photo.src=thumbnail?'./images/recipes/rotes-thai-curry-thumb.jpg':'./images/recipes/rotes-thai-curry.jpg';
   return photo;
 }
+function recipeThumbnail(dish,fallback,{catalog=false}={}){
+  const photo=recipePhoto(dish,{thumbnail:true,catalog});
+  if(!photo)return fallback;
+  photo.addEventListener('error',()=>fallback?photo.replaceWith(fallback):photo.remove(),{once:true});
+  return photo;
+}
 function recipeListCard(dish,{planned=false}={}){
   const button=document.createElement('button');button.type='button';button.className='recipe-list-card';
   const icon=document.createElement('span');icon.className='recipe-list-icon';icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
-  const photo=recipePhoto(dish,{thumbnail:true});
-  if(photo)photo.addEventListener('error',()=>photo.replaceWith(icon),{once:true});
   const copy=document.createElement('span');copy.className='recipe-list-copy';const name=document.createElement('strong');name.textContent=dish.name;
   const detail=document.createElement('small');detail.textContent=`${dish.time||30} Min. · ${dish.recipe?.steps?.length||0} Schritte`;
-  copy.append(name,detail);button.append(photo||icon,copy);if(planned){const tag=document.createElement('span');tag.className='recipe-planned-tag';tag.textContent='Geplant';button.append(tag)}
+  copy.append(name,detail);button.append(recipeThumbnail(dish,icon),copy);if(planned){const tag=document.createElement('span');tag.className='recipe-planned-tag';tag.textContent='Geplant';button.append(tag)}
   button.addEventListener('click',()=>openRecipe(dish.id,{from:'cooking'}));return button;
 }
 function renderCookingList(){
@@ -2626,7 +2646,9 @@ function renderCatalogAdmin(){
   const list=$('#catalog-admin-list'),query=$('#catalog-admin-search').value.trim().toLocaleLowerCase('de-DE');$('#catalog-admin-add').disabled=!navigator.onLine;list.replaceChildren();
   const entries=adminCatalogDishes.filter(dish=>String(dish.name||'').toLocaleLowerCase('de-DE').includes(query));
   if(!entries.length){const empty=document.createElement('p');empty.className='empty-state';empty.textContent=adminCatalogDishes.length?'Keine passenden Gerichte gefunden.':'Noch keine Standardgerichte vorhanden.';list.append(empty);if(!navigator.onLine){const note=document.createElement('p');note.className='catalog-offline-note';note.textContent='Offline wird der zuletzt gespeicherte Katalog angezeigt. Hinzufügen und Bearbeiten ist nur online möglich.';list.prepend(note)}return}
-  entries.forEach(dish=>{const row=document.createElement('article');row.className='catalog-admin-row';const copy=document.createElement('div');const name=document.createElement('h2');name.textContent=dish.name;const meta=document.createElement('p');meta.textContent=`${dish.cooking_time_minutes||30} Min. · Version ${dish.version||1}`;copy.append(name,meta);const button=document.createElement('button');button.type='button';button.className='secondary-button';button.textContent='Bearbeiten';button.disabled=!navigator.onLine;button.addEventListener('click',()=>openDish('',{catalogDish:dish}));row.append(copy,button);list.append(row)});
+  entries.forEach(dish=>{const row=document.createElement('article');row.className='catalog-admin-row';const copy=document.createElement('div');const name=document.createElement('h2');name.textContent=dish.name;const meta=document.createElement('p');meta.textContent=`${dish.cooking_time_minutes||30} Min. · Version ${dish.version||1}`;const photo=recipeThumbnail(dish,null,{catalog:true});
+    if(photo)copy.append(photo);
+    copy.append(name,meta);const button=document.createElement('button');button.type='button';button.className='secondary-button';button.textContent='Bearbeiten';button.disabled=!navigator.onLine;button.addEventListener('click',()=>openDish('',{catalogDish:dish}));row.append(copy,button);list.append(row)});
   if(!navigator.onLine){const note=document.createElement('p');note.className='catalog-offline-note';note.textContent='Offline wird der zuletzt gespeicherte Katalog angezeigt. Hinzufügen und Bearbeiten ist nur online möglich.';list.prepend(note)}
 }
 async function loadCatalogAdmin(){
