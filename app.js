@@ -1123,10 +1123,42 @@ async function loadHouseholdMembers(){
   });
   if(!data?.length)list.innerHTML='<p class="household-loading">Noch keine Mitglieder gefunden.</p>';
 }
+const householdNameForm=$('#household-name-form'),householdNameInput=$('#household-display-name');
+const householdNameStatus=$('#household-name-status');
+async function loadHouseholdDisplayName(){
+  if(!authClient||!navigator.onLine)return;
+  const {data,error}=await authClient.auth.getSession();
+  const user=data?.session?.user;
+  if(error||!user||user.id!==currentUserId||!$('#household-dialog').open)return;
+  const name=user.user_metadata?.display_name;
+  householdNameInput.value=typeof name==='string'?name.trim().slice(0,60):'';
+  householdNameForm.hidden=false;
+}
+householdNameForm.addEventListener('submit',async event=>{
+  event.preventDefault();
+  const button=householdNameForm.querySelector('button'),scope=authScope;
+  const name=householdNameInput.value.trim();
+  householdNameStatus.textContent='';
+  button.disabled=true;householdNameInput.readOnly=true;
+  try{
+    if(!authClient||!navigator.onLine)throw new Error('offline');
+    const {error}=await authClient.auth.updateUser({data:{display_name:name||null}});
+    if(error)throw error;
+    if(scope!==authScope)return;
+    householdNameInput.value=name;
+    householdNameStatus.textContent='Gespeichert.';
+  }catch(error){
+    if(scope===authScope)householdNameStatus.textContent='Name konnte nicht gespeichert werden.';
+  }finally{
+    button.disabled=false;householdNameInput.readOnly=false;
+  }
+});
 $('#household-open').addEventListener('click',async()=>{
   closeProfileActionsMenu({restoreFocus:true});if(compactNavigationQuery.matches)closeMobileMenu();
   householdError('');$('#household-code-result').hidden=true;$('#household-code').textContent='';
+  householdNameForm.hidden=true;householdNameStatus.textContent='';
   $('#household-dialog').showModal();
+  void loadHouseholdDisplayName().catch(error=>console.error(error));
   try{await loadHouseholdMembers()}catch(error){if(navigator.onLine)console.error(error);householdError(navigator.onLine?'Mitglieder konnten gerade nicht geladen werden.':'Haushaltsverwaltung ist offline nicht verfügbar.')}
 });
 $('#household-close').addEventListener('click',()=>$('#household-dialog').close());
@@ -2224,31 +2256,22 @@ function renderShoppingListContent(){
 function renderShoppingList(){renderShoppingListContent();renderedShoppingSnapshot=shoppingStateForView(state)}
 function openShoppingList(){$('#shopping-add-status').hidden=true;setView('shopping');renderShoppingList()}
 const shoppingCheckUndoDuration=10000;
-const shoppingUndoDialog=$('#shopping-undo-dialog');
-const shoppingShakeToggle=$('#shopping-shake-toggle');
 let pendingShoppingCheckUndo=null;
-let shoppingShakeConfirmation=null;
-let shoppingShakeEnabled=false;
-let shoppingShakeImpulse=null;
 
 function offerShoppingCheckUndo(details){
   if($('#shopping-view').classList.contains('hidden'))return;
   const action={...details,expiresAt:Date.now()+shoppingCheckUndoDuration};
   pendingShoppingCheckUndo=action;
-  shoppingShakeImpulse=null;
   showToast(`${action.name} abgehakt.`,{
     actionLabel:'Rückgängig',
     duration:shoppingCheckUndoDuration,
     onAction:()=>undoShoppingCheck(action)
   });
 }
-function canUndoShoppingCheck(action){
-  return action&&action===pendingShoppingCheckUndo&&action.scope===authScope&&action.householdId===currentHouseholdId
-    && !$('#shopping-view').classList.contains('hidden')
-    && action.changedWeeks.every(week=>shoppingItemChecked(week,action.key)&&!state.hiddenShoppingItems?.[week]?.includes(action.key));
-}
-function undoShoppingCheck(action,{confirmed=false}={}){
-  if(!canUndoShoppingCheck(action)||(!confirmed&&Date.now()>=action.expiresAt))return;
+function undoShoppingCheck(action){
+  if(action!==pendingShoppingCheckUndo||Date.now()>=action.expiresAt||action.scope!==authScope||action.householdId!==currentHouseholdId)return;
+  if($('#shopping-view').classList.contains('hidden'))return;
+  if(!action.changedWeeks.every(week=>shoppingItemChecked(week,action.key)&&!state.hiddenShoppingItems?.[week]?.includes(action.key)))return;
   pendingShoppingCheckUndo=null;
   for(const week of action.changedWeeks){
     const checks=state.shoppingChecks[week];
@@ -2262,63 +2285,6 @@ function undoShoppingCheck(action,{confirmed=false}={}){
   save();renderShoppingList();
   showToast(`${action.name} ist wieder auf der Liste.`);
 }
-function detectShoppingShake(event){
-  const action=pendingShoppingCheckUndo,now=Date.now();
-  if(!action||now>=action.expiresAt||document.hidden||document.querySelector('dialog[open]')
-    ||document.activeElement?.closest('input, textarea, [contenteditable=true]'))return;
-  if(!canUndoShoppingCheck(action))return;
-  const axes=['x','y','z'];
-  const hasAcceleration=axes.every(axis=>Number.isFinite(event.acceleration?.[axis]));
-  const acceleration=hasAcceleration?event.acceleration:event.accelerationIncludingGravity;
-  if(!axes.every(axis=>Number.isFinite(acceleration?.[axis])))return;
-  const threshold=hasAcceleration?12:17;
-  const previous=shoppingShakeImpulse;
-  if(previous&&now-previous.time<=450&&Math.sign(acceleration[previous.axis])===-previous.sign
-    && Math.abs(acceleration[previous.axis])>=threshold){
-    shoppingShakeImpulse=null;
-    shoppingShakeConfirmation=action;
-    $('#shopping-undo-message').textContent=`${action.name} wieder auf die Einkaufsliste setzen?`;
-    shoppingUndoDialog.showModal();
-    return;
-  }
-  const axis=axes.reduce((largest,next)=>Math.abs(acceleration[next])>Math.abs(acceleration[largest])?next:largest);
-  if(Math.abs(acceleration[axis])>=threshold)shoppingShakeImpulse={axis,sign:Math.sign(acceleration[axis]),time:now};
-}
-async function toggleShoppingShake(){
-  if(shoppingShakeEnabled){
-    window.removeEventListener('devicemotion',detectShoppingShake);
-    shoppingShakeEnabled=false;
-    shoppingShakeImpulse=null;
-  }else{
-    shoppingShakeToggle.disabled=true;
-    try{
-      const motion=window.DeviceMotionEvent;
-      if(typeof motion.requestPermission==='function'&&await motion.requestPermission()!=='granted'){
-        showToast('Zugriff auf Bewegungssensoren wurde nicht erlaubt.');
-        return;
-      }
-      window.addEventListener('devicemotion',detectShoppingShake);
-      shoppingShakeEnabled=true;
-    }catch{
-      showToast('Bewegungssensoren sind gerade nicht verfügbar.');
-    }finally{
-      shoppingShakeToggle.disabled=false;
-    }
-  }
-  shoppingShakeToggle.setAttribute('aria-pressed',String(shoppingShakeEnabled));
-  $('#shopping-shake-state').textContent=shoppingShakeEnabled?'An':'Aus';
-}
-$('#shopping-shake-setting').hidden=!(window.isSecureContext&&window.DeviceMotionEvent&&navigator.maxTouchPoints>0);
-shoppingShakeToggle.addEventListener('click',toggleShoppingShake);
-$('#shopping-undo-cancel').addEventListener('click',()=>shoppingUndoDialog.close());
-$('#shopping-undo-confirm').addEventListener('click',()=>{
-  const action=shoppingShakeConfirmation;
-  shoppingShakeConfirmation=null;
-  shoppingUndoDialog.close();
-  undoShoppingCheck(action,{confirmed:true});
-});
-shoppingUndoDialog.addEventListener('close',()=>{if(!shoppingUndoDialog.open)shoppingShakeConfirmation=null});
-
 let shoppingHistoryLoad=0;
 async function openShoppingHistory(){
   const dialog=$('#shopping-history-dialog'),status=$('#shopping-history-status'),list=$('#shopping-history-list');

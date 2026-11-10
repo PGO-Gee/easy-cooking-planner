@@ -59,3 +59,9 @@
 .household-member-row { color: #43566b; }
 .household-code-result output { color: #4e6d94; }
 .password-sign-in-button { font-family: var(--sans); }
+
+#household-name-form { margin: 14px 0; }
+#household-display-name { min-height: 44px; font-size: 16px; letter-spacing: normal; }
+#household-name-form button { min-height: 44px; }
+#household-name-status { margin: 6px 0 0; font-size: 13px; }
+#household-name-status:empty { display: none; }

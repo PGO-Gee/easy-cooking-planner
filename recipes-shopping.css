@@ -434,18 +434,4 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 #shopping-history-list time { display: block; font-size: 12px; }
 #shopping-history-list p { margin: 4px 0 0; }
 
-#shopping-shake-setting { margin-bottom: 16px; }
-#shopping-shake-toggle { min-height: 44px; max-width: 100%; white-space: normal; }
-#shopping-shake-state { margin-inline-start: 6px; font-weight: 700; }
-#shopping-undo-dialog {
-  box-sizing: border-box;
-  max-height: calc(var(--visual-viewport-height, 100dvh) - max(12px, env(safe-area-inset-top)) - max(12px, env(safe-area-inset-bottom)));
-  overflow: auto;
-  overscroll-behavior: contain;
-}
-.shopping-undo-content { padding: 16px 20px 20px; overflow-wrap: anywhere; }
-.shopping-undo-content .dialog-head { margin-bottom: 8px; }
-#shopping-undo-message { margin: 0 0 16px; }
-.shopping-undo-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.shopping-undo-actions button { min-height: 44px; }
 #toast.has-action .toast-message { overflow-wrap: anywhere; }
