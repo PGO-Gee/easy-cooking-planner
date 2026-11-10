@@ -1306,5 +1306,8 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
     overscroll-behavior: contain;
   }
 
-  .choose-list { flex: 1 0 132px; }
+  #choose-dialog .choose-list {
+    flex: 0 0 auto;
+    max-height: min(55vh, 460px, max(132px, calc(var(--visual-viewport-height, 100dvh) - 180px)));
+  }
 }

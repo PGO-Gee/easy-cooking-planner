@@ -68,6 +68,14 @@ let recipeDetailPreviousView='week';
 let cookingProgress=null;
 let selectedCookServings=2;
 function catalogDishNameKey(value){return String(value||'').trim().toLocaleLowerCase('de-DE').replace(/[^\p{L}\p{N}]+/gu,'')}
+const catalogRecipePhotoFiles=new Map([
+  ['Rotes Thai-Curry mit Hähnchen und Reis','rotes-thai-curry'],
+  ['Schnitzel mit Pommes','schnitzel-mit-pommes'],
+  ['Gulasch mit Reis','gulasch-mit-reis'],
+  ['Kartoffelgratin','kartoffelgratin'],
+  ['Hähnchenschenkel mit Ofenkartoffeln','haehnchenschenkel-mit-ofenkartoffeln'],
+  ['Teriyaki-Lachs mit Reis','teriyaki-lachs-mit-reis']
+].map(([name,file])=>[catalogDishNameKey(name),file]));
 // Native dialogs usually lock page scrolling, but iOS Safari can still move the
 // document during touch gestures. Keep the page position fixed while any dialog is open.
 let dialogScrollLockCount=0;
@@ -2688,7 +2696,9 @@ function plannedDishIds(){const ids=[],seen=new Set();rangeDates().forEach(date=
 function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
   const sourceId=catalog?dish.id:dish.catalogSourceId;
   const type=catalog?dish.recipe_type:dish.type;
-  if(!sourceId||type==='baking'||catalogDishNameKey(dish.name)!=='rotesthaicurrymithähnchenundreis')return null;
+  if(!sourceId||type==='baking')return null;
+  const file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
+  if(!file)return null;
   const photo=document.createElement('img');
   photo.className=thumbnail?'recipe-list-photo':'recipe-detail-photo';
   photo.alt='';
@@ -2696,7 +2706,7 @@ function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
   photo.height=thumbnail?126:720;
   photo.decoding='async';
   if(thumbnail)photo.loading='lazy';
-  photo.src=thumbnail?'./images/recipes/rotes-thai-curry-thumb.jpg':'./images/recipes/rotes-thai-curry.jpg';
+  photo.src=`./images/recipes/${file}${thumbnail?'-thumb':''}.jpg?v=2`;
   return photo;
 }
 function recipeThumbnail(dish,fallback,{catalog=false}={}){
