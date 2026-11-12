@@ -3,7 +3,7 @@ const OCR_CACHE_NAME=`wochentisch-ocr-${WochentischOCRAssets.version}:${self.reg
 const ocrUrls=new Set(WochentischOCRAssets.files.map(path=>new URL(path,self.registration.scope).href));
 const CACHE_PREFIX = 'wochentisch-shell-';
 const CACHE_SCOPE = `:${self.registration.scope}`;
-const CACHE_NAME = `${CACHE_PREFIX}v120${CACHE_SCOPE}`;
+const CACHE_NAME = `${CACHE_PREFIX}v122${CACHE_SCOPE}`;
 // Recipe URLs carry their own version; app updates must not evict these images.
 const IMAGE_CACHE_NAME = `wochentisch-recipe-images-v1${CACHE_SCOPE}`;
 const recipeImagePath = new URL('./images/recipes/', self.registration.scope).pathname;

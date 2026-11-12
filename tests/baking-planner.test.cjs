@@ -5,16 +5,18 @@ const vm = require('node:vm');
 
 // Exercise the actual planner with a small in-memory week, without app boot or a network.
 const source = fs.readFileSync(require.resolve('../app.js'), 'utf8');
+const catalog = fs.readFileSync(require.resolve('../ingredient-catalog.js'), 'utf8');
+const matching = source.slice(source.indexOf('function ingredientKey('), source.indexOf('function availablePantryIngredients('));
 const planner = source.slice(source.indexOf('function makePlan('), source.indexOf('function formatRange('));
 const calendar = source.slice(source.indexOf('function mondayFor('), source.indexOf('function ensurePlanForDate('));
 const start = new Date(2026, 10, 9);
 const week = '2026-11-09';
 function setup(dishes, days = [], pins = []) {
   const state = { dishes, plans: { [week]: Array.from({ length: 7 }, (_, i) => (days[i] || []).slice()) }, pinnedMeals: { [week]: Array.from({ length: 7 }, (_, i) => (pins[i] || []).slice()) }, shoppingChecks: {}, hiddenShoppingItems: {}, pantryIngredients: {}, restDays: {} };
-  const ctx = { state, start, pinnedMealsForDate: date => state.pinnedMeals[ctx.keyFor(ctx.mondayFor(date))]?.[ctx.dayIndex(date)] || [],
-    ingredientKey: x => ({kartoffel:'kartoffeln'}[x.toLowerCase()] || x.toLowerCase()), ingredientMatches: (a,b) => a === b, manualItemKey: x => x, cleanHiddenShoppingItems: x => x || [], setRestDay: () => {}, save: () => {} };
+  const ctx = { state, start, window: {}, pinnedMealsForDate: date => state.pinnedMeals[ctx.keyFor(ctx.mondayFor(date))]?.[ctx.dayIndex(date)] || [],
+    manualItemKey: x => ctx.window.WochentischIngredients.manualKey(x), cleanHiddenShoppingItems: x => x || [], setRestDay: () => {}, save: () => {} };
   vm.createContext(ctx);
-  vm.runInContext(calendar + '\n' + planner + '\nrangeStart = () => new Date(start); Math.random = () => 0.999;', ctx);
+  vm.runInContext(catalog + '\n' + matching + '\n' + calendar + '\n' + planner + '\nrangeStart = () => new Date(start); Math.random = () => 0.999;', ctx);
   return ctx;
 }
 const cake = { id: 'cake', type: 'baking', ingredient: 'Apfel', ingredients: ['Mehl'] };
@@ -59,6 +61,52 @@ test('meal planning keeps pantry prioritization and avoids repeating dishes', ()
   const generated = Array.from(c.makePlan(start, ['Karotte']), day => day[0]);
   assert.ok(generated.includes('soup'));
   for (let i = 1; i < generated.length; i++) assert.notEqual(generated[i], generated[i - 1]);
+});
+
+test('pantry salmon requires a fillet recipe with more candidates than available slots', () => {
+  const dishes = Array.from({length: 8}, (_, i) => ({id: `other-${i}`, ingredients: [`other-${i}`]}));
+  dishes.push({id: 'salmon', ingredients: ['Lachsfilet']});
+  const c = setup(dishes);
+  const pinnedDays = new Set([1, 2, 3, 4, 5, 6]);
+  assert.equal(c.makePlan(start, [], pinnedDays)[0][0], 'other-0');
+  assert.equal(c.makePlan(start, ['Lachs'], pinnedDays)[0][0], 'salmon');
+});
+
+test('pantry salmon checks exact fillet shopping keys while preserving recipe names', () => {
+  const dishes = [{id: 'salmon', ingredients: ['Lachsfilet']}, {id: 'smoked', ingredients: ['Räucherlachs']}, {id: 'pollock', ingredients: ['Seelachsfilet']}];
+  const c = setup(dishes);
+  c.replaceRangePlan(['Lachs']);
+  assert.deepEqual(Array.from(c.state.dishes[0].ingredients), ['Lachsfilet']);
+  assert.deepEqual({...c.state.shoppingChecks[week]}, {lachsfilet: true});
+  c.replaceRangePlan([]);
+  assert.equal(c.state.shoppingChecks[week]?.lachsfilet, undefined);
+});
+
+test('a specific cheese prioritizes its own recipe and never checks another cheese', () => {
+  const dishes = [{id: 'mozzarella', ingredients: ['Mozzarella']}, {id: 'parmesan', ingredients: ['Parmesan']}];
+  const c = setup(dishes);
+  const pinnedDays = new Set([1, 2, 3, 4, 5, 6]);
+  assert.equal(c.makePlan(start, ['Parmesan'], pinnedDays)[0][0], 'parmesan');
+  c.replaceRangePlan(['Parmesan']);
+  assert.deepEqual({...c.state.shoppingChecks[week]}, {parmesan: true});
+  c.replaceRangePlan(['Käse']);
+  assert.deepEqual({...c.state.shoppingChecks[week]}, {parmesan: true, mozzarella: true});
+});
+
+test('normalizing existing dishes recovers precise names from full recipes only', () => {
+  const c = setup([]);
+  c.window.WochentischRecipes = require('../recipe-model.js');
+  c.cleanIngredients = c.window.WochentischIngredients.unique;
+  c.cleanNutrition = value => value;
+  vm.runInContext(source.slice(source.indexOf('function normalizeState('), source.indexOf('async function initializeOfflineData(')), c);
+  const original = {plans: {}, dishes: [
+    {id: 'recipe', ingredients: ['Käse', 'Reis', 'Rindfleisch'], recipe: {ingredients: [{name: 'Mozzarella'}, {name: 'Basmatireis'}, {name: 'Rinderfilet'}]}},
+    {id: 'legacy', ingredients: ['Käse', 'Reis', 'Rindfleisch']}
+  ]};
+  const normalized = c.normalizeState(original);
+  assert.deepEqual(Array.from(normalized.dishes[0].ingredients), ['Mozzarella', 'Basmatireis', 'Rinderfilet']);
+  assert.deepEqual(Array.from(normalized.dishes[1].ingredients), ['Käse', 'Reis', 'Rindfleisch']);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.normalizeState(normalized))), JSON.parse(JSON.stringify(normalized)));
 });
 
 test('shared potatoes are separated and fixed meals influence both sides', () => {
