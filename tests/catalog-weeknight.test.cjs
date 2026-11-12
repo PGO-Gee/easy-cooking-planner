@@ -9,6 +9,12 @@ const source = fs.readFileSync(path.join(root, 'app.js'), 'utf8');
 const seed = fs.readFileSync(path.join(root, 'supabase/catalog-weeknight-additions.sql'), 'utf8');
 const ingredientContext = {window:{}};
 vm.runInNewContext(fs.readFileSync(path.join(root, 'ingredient-catalog.js'), 'utf8'), ingredientContext);
+ingredientContext.window.WochentischRecipes = require('../recipe-model.js');
+ingredientContext.cleanIngredients = ingredientContext.window.WochentischIngredients.unique;
+ingredientContext.cleanNutrition = value => value;
+ingredientContext.newId = () => 'local-id';
+ingredientContext.emojiMap = {};
+vm.runInNewContext(source.split('\n').find(line => line.startsWith('function catalogDishToLocalDish(')), ingredientContext);
 const key = name => name.trim().toLocaleLowerCase('de-DE').replace(/[^\p{L}\p{N}]+/gu, '');
 
 test('new catalogue meals have complete recipes, consistent shopping lists and unique names', () => {
@@ -23,7 +29,9 @@ test('new catalogue meals have complete recipes, consistent shopping lists and u
     assert.ok(row.recipe.steps.length >= 3);
     assert.ok(row.recipe.steps.every(s => s.length > 20 && s.length <= 1200));
     assert.ok(row.recipe.ingredients.every(i => i.name && (i.amount === null || i.amount > 0)));
-    assert.deepEqual(row.ingredients, Array.from(ingredientContext.window.WochentischIngredients.unique(row.recipe.ingredients.map(i => i.name))));
+    // Older seeds collapsed cheese/meat/rice names. Adoption must derive the
+    // preserved shopping names from the full recipe rather than that projection.
+    assert.deepEqual(Array.from(ingredientContext.catalogDishToLocalDish(row).ingredients), Array.from(ingredientContext.window.WochentischIngredients.unique(row.recipe.ingredients.map(i => i.name))));
     assert.deepEqual(Object.keys(row.nutrition).sort(), ['carbs','fat','kcal','protein']);
     assert.ok(Object.values(row.nutrition).every(n => Number.isFinite(n) && n > 0));
     const n = row.nutrition;

@@ -87,34 +87,50 @@
   addAliases('Zitronen', ['Zitrone']);
   addAliases('Limetten', ['Limette']);
 
-  // Group meat cuts and preparations by animal. Broths and mixed/unspecified
-  // products remain separate because they are not equivalent shopping items.
-  addAliases('Rindfleisch', [
-    'Rind', 'Rinderfilet', 'Rinder-Patty', 'Rinderpatty', 'Rinderhackfleisch',
-    'Rinderhack', 'Rindergulasch', 'Rindersteak', 'Rinderbraten', 'Rinderrouladen',
-    'Rindergeschnetzeltes', 'Rinderschulter', 'Rinderhüfte'
-  ]);
-  addAliases('Schweinefleisch', [
-    'Schwein', 'Schweinefilet', 'Schweineschnitzel', 'Schweinebraten',
-    'Schweinehackfleisch', 'Schweinehack', 'Schweinesteak', 'Schweinenacken',
-    'Schweinenackensteak', 'Schweinebauch', 'Bacon', 'Speck', 'Kasseler', 'Prosciutto'
-  ]);
-  addAliases('Hähnchen', [
-    'Huhn', 'Hühnchen', 'Hähnchenbrust', 'Hähnchenbrustfilet', 'Hähnchenfilet',
-    'Hühnchenfilet', 'Hähnchenschenkel', 'Hähnchenkeule', 'Hähnchenflügel',
-    'Hähnchenstreifen', 'Chicken', 'Chicken Nuggets'
-  ]);
-  addAliases('Pute', ['Putenbrust', 'Putenfilet', 'Putenschnitzel', 'Putenkeule', 'Putenhack']);
-  addAliases('Ente', ['Entenbrust', 'Entenfilet', 'Entenschenkel']);
-
-  addAliases('Reis', ['Basmatireis', 'Jasminreis', 'Risottoreis', 'Vollkornreis']);
-  addAliases('Käse', [
-    'Feta', 'Mozzarella', 'Parmesan', 'Gouda', 'Emmentaler', 'Cheddar',
-    'Hirtenkäse', 'Halloumi', 'Ziegenkäse', 'Frischkäse',
-    'Doppelrahmfrischkäse', 'Hüttenkäse', 'Mascarpone', 'Ricotta', 'Bergkäse',
-    'Edamer', 'Butterkäse', 'Gorgonzola', 'Blauschimmelkäse', 'Burrata',
-    'Pecorino', 'Grana Padano', 'Provolone', 'Ziegenfrischkäse'
-  ]);
+  // Only names for the same product are storage aliases. Cuts, rice varieties
+  // and cheese varieties retain their own names; pantry matching is separate.
+  [
+    ['Blaubeeren', 'Heidelbeere', 'Heidelbeeren'],
+    ['Frühlingszwiebeln', 'Lauchzwiebel', 'Lauchzwiebeln'],
+    ['Lauch', 'Porree'], ['Rote Bete', 'Rote Beete'],
+    ['Chilischoten', 'Chili', 'Chilis'], ['Rucola', 'Rauke'],
+    ['Weißkohl', 'Weisskohl', 'Weißkraut'], ['Wirsing', 'Wirsingkohl'],
+    ['Pak Choi', 'Pak-Choi', 'Pakchoi'],
+    ['Shiitake', 'Shiitakepilz', 'Shiitakepilze', 'Shiitake-Pilze'],
+    ['Garnelen', 'Shrimp', 'Shrimps'], ['Sardellen', 'Anchovis'],
+    ['Rindfleisch', 'Rind'], ['Schweinefleisch', 'Schwein'],
+    ['Lammfleisch', 'Lamm'], ['Hähnchen', 'Huhn', 'Hühnchen', 'Chicken'],
+    ['Hähnchenbrust', 'Hähnchenbrüste', 'Hühnchenbrust'],
+    ['Hähnchenbrustfilet', 'Hähnchenbrustfilets', 'Hühnchenbrustfilet'],
+    ['Hähnchenschenkel', 'Hähnchenkeule', 'Hähnchenkeulen'],
+    ['Hähnchenflügel', 'Hähnchenflügeln'],
+    ['Rinderhackfleisch', 'Rinderhack'], ['Schweinehackfleisch', 'Schweinehack'],
+    ['Rinderpatty', 'Rinder-Patty', 'Rinderpatties'],
+    ['Putenhackfleisch', 'Putenhack'],
+    ['Putenbrust', 'Putenbrüste'], ['Putenschnitzel', 'Putenschnitzeln'],
+    ['Entenschenkel', 'Entenkeule', 'Entenkeulen'],
+    ['Sahne', 'Schlagsahne', 'Schlagrahm', 'Rahm'],
+    ['Saure Sahne', 'Sauerrahm'], ['Naturjoghurt', 'Joghurt', 'Naturjogurt', 'Jogurt'],
+    ['Crème fraîche', 'Creme fraiche'], ['Crème légère', 'Creme legere'],
+    ['Hüttenkäse', 'Körniger Frischkäse'],
+    ['Paniermehl', 'Semmelbrösel', 'Semmelmehl'],
+    ['Pasta', 'Nudeln', 'Nudel', 'Teigwaren'], ['Spaghetti', 'Spagetti'],
+    ['Langkornreis', 'Langkorn-Reis'], ['Vollkornreis', 'Naturreis'],
+    ['Tortilla-Wraps', 'Wrap', 'Wraps', 'Tortillawraps'],
+    ['Weißbrot', 'Weissbrot'], ['Toastbrot', 'Toast'],
+    ['Bratwurst', 'Bratwürste'],
+    ['Burgerbrötchen', 'Burgerbun', 'Burgerbuns'],
+    ['Lorbeerblätter', 'Lorbeerblatt'], ['Muskatnuss', 'Muskat'],
+    ['Sojasauce', 'Sojasoße'], ['Fischsauce', 'Fischsoße'],
+    ['Miso', 'Misopaste', 'Miso-Paste'], ['Tahini', 'Tahin', 'Sesampaste'],
+    ['Mayonnaise', 'Mayo'],
+    ['Gehackte Tomaten', 'Stückige Tomaten', 'Tomatenstücke'],
+    ['Passierte Tomaten', 'Passata', 'Tomatenpassata'],
+    ['Kokosraspeln', 'Kokosraspel'], ['Haferflocken', 'Haferflocke'],
+    ['Chiliflocken', 'Chiliflocke'], ['Chilipulver', 'Chili-Pulver'],
+    ['Zimt', 'Zimtpulver'], ['Puderzucker', 'Staubzucker'],
+    ['Backkakao', 'Ungesüßtes Kakaopulver']
+  ].forEach(([canonical, ...variants]) => addAliases(canonical, variants));
 
   function normalize(value) {
     const name = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
@@ -124,6 +140,95 @@
 
   function key(value) {
     return normalize(value).toLocaleLowerCase('de-DE');
+  }
+
+  // Close product forms can match without rewriting recipe/shopping names.
+  const pantryGroups = new Map();
+  const pantryNames = new Set();
+  [
+    ['Lachs', 'Lachsfilet', 'Lachsfilets'],
+    ['Kabeljau', 'Kabeljaufilet', 'Kabeljaufilets'],
+    ['Seelachs', 'Seelachsfilet', 'Seelachsfilets'],
+    ['Thunfisch', 'Thunfischfilet', 'Thunfischfilets'],
+    ['Forellen', 'Forellenfilet', 'Forellenfilets'],
+    ['Hähnchenbrust', 'Hähnchenbrustfilet', 'Hähnchenfilet', 'Hähnchenfilets', 'Hühnchenfilet'],
+    ['Putenbrust', 'Putenbrustfilet', 'Putenfilet', 'Putenfilets'],
+    ['Entenbrust', 'Entenbrustfilet', 'Entenfilet', 'Entenfilets'],
+    ['Rinderfilet', 'Rinderfilets'], ['Schweinefilet', 'Schweinefilets'],
+    ['Lammfilet', 'Lammfilets'], ['Schweineschnitzel', 'Schweineschnitzeln'],
+    ['Hähnchenstreifen', 'Hähnchengeschnetzeltes'],
+    ['Rindergeschnetzeltes', 'Rindfleischstreifen'],
+    ['Tomaten', 'Kirschtomaten', 'Kirschtomate', 'Cherrytomaten', 'Cocktailtomaten', 'Rispentomaten', 'Fleischtomaten'],
+    ['Paprika', 'Paprikaschote', 'Paprikaschoten', 'Rote Paprika', 'Gelbe Paprika', 'Grüne Paprika', 'Spitzpaprika'],
+    ['Gurken', 'Salatgurke', 'Salatgurken'],
+    ['Kartoffeln', 'Speisekartoffeln'],
+    ['Karotten', 'TK-Karotten'],
+    ['Grüne Bohnen', 'TK-Bohnen', 'TK-Grüne Bohnen'],
+    ['Erdbeeren', 'TK-Erdbeeren'], ['Himbeeren', 'TK-Himbeeren'],
+    ['Blaubeeren', 'TK-Blaubeeren', 'TK-Heidelbeeren'],
+    ['Blattspinat', 'Spinat', 'Babyspinat', 'TK-Spinat', 'TK-Blattspinat'],
+    ['Erbsen', 'TK-Erbsen', 'Tiefkühlerbsen'],
+    ['Brokkoli', 'Brokkoliröschen', 'TK-Brokkoli'],
+    ['Blumenkohl', 'Blumenkohlröschen', 'TK-Blumenkohl'],
+    ['Champignons', 'Weiße Champignons', 'Braune Champignons'],
+    ['Mais', 'Dosenmais', 'Zuckermais'],
+    ['Knoblauch', 'Knoblauchzehe', 'Knoblauchzehen'],
+    ['Ingwer', 'Ingwerwurzel'],
+    ['Zitronen', 'Bio-Zitrone', 'Bio-Zitronen'],
+    ['Limetten', 'Bio-Limette', 'Bio-Limetten'],
+    ['Haferflocken', 'Zarte Haferflocken', 'Kernige Haferflocken'],
+    ['Frischkäse', 'Doppelrahmfrischkäse', 'Naturfrischkäse'],
+    ['Quark', 'Speisequark', 'Magerquark'],
+    ['Weizenmehl', 'Mehl Type 405', 'Weizenmehl Type 405', 'Weizenmehl Type 550'],
+    ['Dinkelmehl', 'Dinkelmehl Type 630'],
+    ['Backkakao', 'Kakaopulver'],
+    ['Salz', 'Tafelsalz', 'Speisesalz'],
+    ['Pfeffer', 'Schwarzer Pfeffer', 'Schwarze Pfefferkörner']
+  ].forEach(([canonical, ...variants]) => {
+    [canonical, ...variants].forEach(name => {
+      pantryGroups.set(key(name), key(canonical));
+      pantryNames.add(name);
+    });
+  });
+
+  function pantryKey(value) {
+    const ingredientKey = key(value);
+    return pantryGroups.get(ingredientKey) || ingredientKey;
+  }
+
+  // A general ingredient can match its explicitly listed varieties, but two
+  // different varieties never match merely because they share a category.
+  const pantryCategories = new Map();
+  [
+    ['Käse', 'Feta', 'Mozzarella', 'Parmesan', 'Gouda', 'Emmentaler', 'Cheddar',
+      'Hirtenkäse', 'Halloumi', 'Ziegenkäse', 'Frischkäse', 'Hüttenkäse',
+      'Mascarpone', 'Ricotta', 'Bergkäse', 'Edamer', 'Butterkäse', 'Gorgonzola',
+      'Blauschimmelkäse', 'Burrata', 'Pecorino', 'Grana Padano', 'Provolone', 'Ziegenfrischkäse', 'Hartkäse'],
+    ['Hartkäse', 'Parmesan', 'Pecorino', 'Grana Padano', 'Bergkäse'],
+    ['Mehl', 'Weizenmehl', 'Dinkelmehl', 'Vollkornmehl'],
+    ['Öl', 'Rapsöl', 'Olivenöl', 'Sesamöl', 'Kokosöl', 'Sonnenblumenöl'],
+    ['Kürbisse', 'Hokkaido', 'Hokkaidokürbis', 'Butternut', 'Butternutkürbis'],
+    ['Currypaste', 'Rote Currypaste', 'Grüne Currypaste', 'Gelbe Currypaste'],
+    ['Tomaten aus der Dose', 'Gehackte Tomaten', 'Geschälte Tomaten'],
+    ['Linsen', 'Rote Linsen', 'Berglinsen', 'Tellerlinsen', 'Belugalinsen'],
+    ['Reis', 'Basmatireis', 'Jasminreis', 'Langkornreis', 'Risottoreis', 'Vollkornreis'],
+    ['Pasta', 'Spaghetti', 'Penne', 'Fusilli', 'Bandnudeln', 'Makkaroni', 'Kritharaki', 'Suppennudeln'],
+    ['Rindfleisch', 'Rinderfilet', 'Rinderpatty', 'Rinderhackfleisch', 'Rindergulasch',
+      'Rindersteak', 'Rinderbraten', 'Rinderrouladen', 'Rindergeschnetzeltes', 'Rinderschulter', 'Rinderhüfte'],
+    ['Schweinefleisch', 'Schweinefilet', 'Schweineschnitzel', 'Schweinebraten',
+      'Schweinehackfleisch', 'Schweinesteak', 'Schweinenacken', 'Schweinenackensteak', 'Schweinebauch'],
+    ['Hähnchen', 'Hähnchenbrust', 'Hähnchenschenkel', 'Hähnchenflügel', 'Hähnchenstreifen'],
+    ['Pute', 'Putenbrust', 'Putenschnitzel', 'Putenkeule', 'Putenhackfleisch'],
+    ['Ente', 'Entenbrust', 'Entenschenkel'],
+    ['Lammfleisch', 'Lammfilet', 'Lammkeule', 'Lammkotelett', 'Lammkoteletts', 'Lammhackfleisch']
+  ].forEach(([category, ...variants]) => {
+    pantryCategories.set(pantryKey(category), new Set(variants.map(pantryKey)));
+    [category, ...variants].forEach(name => pantryNames.add(name));
+  });
+
+  function pantryMatches(available, required) {
+    const a = pantryKey(available), b = pantryKey(required);
+    return Boolean(a && b && (a === b || pantryCategories.get(a)?.has(b) || pantryCategories.get(b)?.has(a)));
   }
 
   function manualName(value) {
@@ -209,11 +314,12 @@
     'Weizenmehl','Dinkelmehl','Vollkornmehl','Speisestärke','Backpulver','Natron','Trockenhefe','Frische Hefe','Paniermehl','Panko','Haferflocken','Weißbrot','Toastbrot','Baguettes','Brötchen','Tortilla-Wraps','Blätterteig','Pizzateig','Filoteig','Lasagneplatten','Semmelbrösel','Semmelknödel',
     'Reis','Couscous','Bulgur','Quinoa','Hirse','Polenta','Hafer','Graupen','Spaghetti','Penne','Fusilli','Bandnudeln','Makkaroni','Gnocchi','Mie-Nudeln','Reisnudeln','Glasnudeln','Ramen-Nudeln','Soba-Nudeln','Udon-Nudeln',
     'Rapsöl','Olivenöl','Sesamöl','Kokosöl','Sonnenblumenöl','Essig','Balsamico','Apfelessig','Sojasauce','Tamari','Fischsauce','Worcestersauce','Tomatenmark','Passierte Tomaten','Gehackte Tomaten','Tomaten aus der Dose','Kokosmilch','Gemüsebrühe','Hühnerbrühe','Rinderbrühe','Senf','Mayonnaise','Ketchup','Pesto','Tahini','Erdnussbutter','Ahornsirup','Honig','Marmelade','Gemüsefond','Miso','Apfelmus',
-    'Salz','Pfeffer','Paprikapulver','Geräuchertes Paprikapulver','Currypulver','Kreuzkümmel','Kurkuma','Chiliflocken','Cayennepfeffer','Zimt','Muskatnuss','Oregano','Thymian','Rosmarin','Basilikum','Petersilie','Schnittlauch','Dill','Koriander','Minze','Lorbeerblätter','Italienische Kräuter','Kräuter der Provence','Currypaste','Vanillezucker','Zucker','Brauner Zucker','Puderzucker','Kakaopulver','Backkakao','Schokolade','Zartbitterschokolade','Mandeln','Walnüsse','Cashewkerne','Erdnüsse','Pinienkerne','Sonnenblumenkerne','Kürbiskerne','Sesam','Leinsamen','Chiasamen','Rosinen','Kokosraspeln'
+    'Salz','Pfeffer','Paprikapulver','Geräuchertes Paprikapulver','Currypulver','Kreuzkümmel','Kurkuma','Chiliflocken','Cayennepfeffer','Zimt','Muskatnuss','Oregano','Thymian','Rosmarin','Basilikum','Petersilie','Schnittlauch','Dill','Koriander','Minze','Lorbeerblätter','Italienische Kräuter','Kräuter der Provence','Currypaste','Vanillezucker','Zucker','Brauner Zucker','Puderzucker','Kakaopulver','Backkakao','Schokolade','Zartbitterschokolade','Mandeln','Walnüsse','Cashewkerne','Erdnüsse','Pinienkerne','Sonnenblumenkerne','Kürbiskerne','Sesam','Leinsamen','Chiasamen','Rosinen','Kokosraspeln',
+    ...aliasNames, ...pantryNames
   ]);
 
   window.WochentischIngredients = Object.freeze({
-    normalize, key, unique, normalizeQuantities, normalizeChecks, normalizeKeys,
+    normalize, key, pantryKey, pantryMatches, unique, normalizeQuantities, normalizeChecks, normalizeKeys,
     normalizeStateIngredients, manualName, manualKey
   });
   window.COMMON_INGREDIENTS = canonicalIngredients;
