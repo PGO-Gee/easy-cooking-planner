@@ -3,7 +3,9 @@ const OCR_CACHE_NAME=`wochentisch-ocr-${WochentischOCRAssets.version}:${self.reg
 const ocrUrls=new Set(WochentischOCRAssets.files.map(path=>new URL(path,self.registration.scope).href));
 const CACHE_PREFIX = 'wochentisch-shell-';
 const CACHE_SCOPE = `:${self.registration.scope}`;
-const CACHE_NAME = `${CACHE_PREFIX}v116${CACHE_SCOPE}`;
+const CACHE_NAME = `${CACHE_PREFIX}v118${CACHE_SCOPE}`;
+// Recipe URLs carry their own version; app updates must not evict these images.
+const IMAGE_CACHE_NAME = `wochentisch-recipe-images-v1${CACHE_SCOPE}`;
 const recipeImagePath = new URL('./images/recipes/', self.registration.scope).pathname;
 const SUPABASE_SCRIPT = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
 const SUPABASE_INTEGRITY = 'sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
@@ -71,9 +73,26 @@ self.addEventListener('message', event => {
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
     const names = await caches.keys();
-    await Promise.all(names.filter(name =>
+    const oldShellCaches = names.filter(name =>
       name === 'wochentisch-shell-v57' ||
-      (name.startsWith(CACHE_PREFIX) && name.endsWith(CACHE_SCOPE) && name !== CACHE_NAME)).map(name => caches.delete(name)));
+      (name.startsWith(CACHE_PREFIX) && name.endsWith(CACHE_SCOPE) && name !== CACHE_NAME));
+    // Preserve already downloaded photos when moving them out of the shell cache.
+    for (const name of oldShellCaches) {
+      try {
+        const imageCache = await caches.open(IMAGE_CACHE_NAME);
+        const oldCache = await caches.open(name);
+        for (const request of await oldCache.keys()) {
+          const url = new URL(request.url);
+          if (url.origin !== self.location.origin || !url.pathname.startsWith(recipeImagePath)) continue;
+          if (await imageCache.match(request)) continue;
+          const response = await oldCache.match(request);
+          if (response) await imageCache.put(request, response);
+        }
+        await caches.delete(name);
+      } catch {
+        // Keep the old cache if storage is full; activation must still succeed.
+      }
+    }
     await self.clients.claim();
   })());
 });
@@ -86,12 +105,14 @@ self.addEventListener('fetch', event => {
   if (url.origin === self.location.origin) {
     if (request.destination === 'image' && url.pathname.startsWith(recipeImagePath)) {
       event.respondWith((async () => {
-        const cache = await caches.open(CACHE_NAME).catch(() => null);
+        const cache = await caches.open(IMAGE_CACHE_NAME).catch(() => null);
         const cached = await cache?.match(request).catch(() => null);
         if (cached) return cached;
         const response = await fetch(request);
         if (response.ok && response.headers.get('content-type')?.startsWith('image/')) {
-          await cache?.put(request, response.clone()).catch(() => {});
+          // Return the network stream immediately; storing a clone consumes the
+          // entire body and must not delay displaying the image.
+          event.waitUntil(cache?.put(request, response.clone()).catch(() => {}) || Promise.resolve());
         }
         return response;
       })());

@@ -1,0 +1,1186 @@
+-- Generated from catalog-weeknight-recipes.json by build-weeknight-catalog.py.
+-- 13 new meals; Buchweizen-Eintopf already exists and is retained unchanged.
+-- Recipe quantities serve two; nutrition is an estimate per portion.
+-- Assumptions: Kathriki = Kritharaki; Schlemmer-Filet = Bordelaise (380 g / two).
+-- Requires the existing recipe catalogue migrations, including recipe_type.
+-- Repeated execution preserves existing catalogue entries and household copies.
+insert into public.catalog_dishes
+  (name, ingredient, cooking_time_minutes, emoji, ingredients, nutrition, recipe_type, recipe)
+select name, ingredient, cooking_time_minutes, emoji, ingredients, nutrition, recipe_type, recipe
+from jsonb_to_recordset($catalog$
+[
+  {
+    "name": "Gnocchi-Auflauf",
+    "normalized_name": "gnocchiauflauf",
+    "ingredient": "Vegetarisch",
+    "cooking_time_minutes": 35,
+    "emoji": "🧀",
+    "nutrition": {
+      "kcal": 740,
+      "protein": 23,
+      "fat": 28,
+      "carbs": 96
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Gnocchi",
+          "amount": 500,
+          "unit": "g",
+          "note": "aus dem Kühlregal"
+        },
+        {
+          "name": "Passierte Tomaten",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 150,
+          "unit": "g",
+          "note": "Kirschtomaten"
+        },
+        {
+          "name": "Sahne",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Mozzarella",
+          "amount": 125,
+          "unit": "g",
+          "note": "mit mikrobiellem Lab"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Italienische Kräuter",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Ofen auf 200 °C Ober-/Unterhitze vorheizen. Zwiebel und Knoblauch fein würfeln, Kirschtomaten halbieren und Mozzarella klein zupfen.",
+        "Öl in einem Topf erhitzen, Zwiebel 3 Minuten anschwitzen und Knoblauch kurz mitdünsten. Passierte Tomaten, Sahne und Kräuter zugeben, 5 Minuten köcheln lassen und mit Salz und Pfeffer abschmecken.",
+        "Ungekochte Kühlregal-Gnocchi mit Sauce und Kirschtomaten in einer Auflaufform mischen. Mozzarella darauf verteilen und 20–25 Minuten backen, bis die Gnocchi weich und der Käse goldbraun sind."
+      ]
+    },
+    "ingredients": [
+      "Gnocchi",
+      "Passierte Tomaten",
+      "Tomaten",
+      "Sahne",
+      "Käse",
+      "Zwiebeln",
+      "Knoblauch",
+      "Olivenöl",
+      "Italienische Kräuter",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Iglo Schlemmer-Filet mit Reis",
+    "normalized_name": "igloschlemmerfiletmitreis",
+    "ingredient": "Fisch",
+    "cooking_time_minutes": 50,
+    "emoji": "🐟",
+    "nutrition": {
+      "kcal": 560,
+      "protein": 30,
+      "fat": 18,
+      "carbs": 68
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Iglo Schlemmer-Filet",
+          "amount": 380,
+          "unit": "g",
+          "note": "tiefgekühlt; angenommen: à la Bordelaise, eine Packung für zwei"
+        },
+        {
+          "name": "Reis",
+          "amount": 150,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "für das Reiswasser"
+        }
+      ],
+      "steps": [
+        "Schlemmer-Filet unaufgetaut nach der Anleitung auf der konkreten Packung im vorgeheizten Backofen zubereiten. Je nach Variante etwa 35–45 Minuten Backzeit einplanen; die Packungsangabe für Temperatur und Dauer geht vor.",
+        "Etwa 20 Minuten vor Ende der Fischgarzeit den Reis in leicht gesalzenem Wasser nach Packungsangabe garen und abgießen.",
+        "Prüfen, dass der Fisch vollständig durchgegart und die Kruste goldbraun ist. Das Filet in zwei Portionen teilen und mit dem Reis servieren."
+      ]
+    },
+    "ingredients": [
+      "Iglo Schlemmer-Filet",
+      "Reis",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Spätzle-Pfanne",
+    "normalized_name": "spätzlepfanne",
+    "ingredient": "Vegetarisch",
+    "cooking_time_minutes": 25,
+    "emoji": "🍳",
+    "nutrition": {
+      "kcal": 610,
+      "protein": 23,
+      "fat": 26,
+      "carbs": 71
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Spätzle",
+          "amount": 400,
+          "unit": "g",
+          "note": "vorgegart, aus dem Kühlregal"
+        },
+        {
+          "name": "Champignons",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Frühlingszwiebeln",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Käse",
+          "amount": 80,
+          "unit": "g",
+          "note": "gerieben, mit mikrobiellem Lab"
+        },
+        {
+          "name": "Butter",
+          "amount": 20,
+          "unit": "g"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Champignons in Scheiben und Paprika in kleine Stücke schneiden. Frühlingszwiebeln in Ringe schneiden; etwas Grün zum Bestreuen beiseitelegen.",
+        "Die Hälfte der Butter in einer großen Pfanne erhitzen. Champignons und Paprika 6–8 Minuten braten. Frühlingszwiebeln kurz mitbraten und das Gemüse aus der Pfanne nehmen.",
+        "Restliche Butter erhitzen und die vorgegarten Spätzle 5–7 Minuten goldbraun braten. Gemüse wieder zugeben, Käse unterheben und bei kleiner Hitze schmelzen lassen. Mit Salz und Pfeffer abschmecken und mit dem Frühlingszwiebelgrün bestreuen."
+      ]
+    },
+    "ingredients": [
+      "Spätzle",
+      "Champignons",
+      "Paprika",
+      "Frühlingszwiebeln",
+      "Käse",
+      "Butter",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Nudel-Hähnchen-Pfanne",
+    "normalized_name": "nudelhähnchenpfanne",
+    "ingredient": "Hühnchen",
+    "cooking_time_minutes": 30,
+    "emoji": "🍝",
+    "nutrition": {
+      "kcal": 730,
+      "protein": 52,
+      "fat": 23,
+      "carbs": 79
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Penne",
+          "amount": 200,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Hähnchenbrust",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zucchini",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Sahne",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 100,
+          "unit": "ml",
+          "note": "zubereitet"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Penne in Salzwasser nach Packungsangabe bissfest garen. Paprika und Zucchini klein schneiden, Zwiebel und Knoblauch würfeln. Hähnchen in mundgerechte Stücke schneiden; danach Hände, Brett und Messer reinigen.",
+        "Öl in einer großen Pfanne erhitzen. Hähnchen mit Paprikapulver, Salz und Pfeffer würzen und 5–6 Minuten rundum anbraten. Gemüse und Zwiebel zugeben und 5 Minuten mitbraten, Knoblauch kurz mitdünsten.",
+        "Brühe und Sahne angießen und 5–7 Minuten köcheln lassen, bis das Hähnchen vollständig durchgegart ist. Abgegossene Penne unterheben, kurz erhitzen und abschmecken."
+      ]
+    },
+    "ingredients": [
+      "Penne",
+      "Hähnchen",
+      "Paprika",
+      "Zucchini",
+      "Zwiebeln",
+      "Knoblauch",
+      "Sahne",
+      "Gemüsebrühe",
+      "Rapsöl",
+      "Paprikapulver",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Chicken Wings mit Kartoffeln und Salat",
+    "normalized_name": "chickenwingsmitkartoffelnundsalat",
+    "ingredient": "Hühnchen",
+    "cooking_time_minutes": 60,
+    "emoji": "🍗",
+    "nutrition": {
+      "kcal": 780,
+      "protein": 44,
+      "fat": 40,
+      "carbs": 61
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Hähnchenflügel",
+          "amount": 700,
+          "unit": "g",
+          "note": "mit Knochen, natur"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Salat",
+          "amount": 100,
+          "unit": "g",
+          "note": "Blattsalat"
+        },
+        {
+          "name": "Gurken",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 150,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 2,
+          "unit": "EL"
+        },
+        {
+          "name": "Essig",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Senf",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 2,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Ofen auf 200 °C Umluft vorheizen. Kartoffeln waschen und in Spalten schneiden. Flügel trocken tupfen, nicht abwaschen; danach Hände und Arbeitsgeräte reinigen.",
+        "Je einen halben Esslöffel Öl mit der Hälfte des Paprikapulvers, Salz und Pfeffer mischen. Kartoffeln und Flügel jeweils getrennt damit würzen und nebeneinander mit Abstand auf einem Blech verteilen.",
+        "40–45 Minuten backen und nach der Hälfte wenden. Flügel müssen bis zum Knochen vollständig durchgegart sein; bei Bedarf länger backen. Kartoffeln sollen weich und gebräunt sein.",
+        "Währenddessen Salat waschen und trocknen, Gurke und Tomaten schneiden. Restlichen Esslöffel Öl mit Essig, Senf, Salz und Pfeffer verrühren. Salat erst kurz vor dem Servieren damit mischen und zu Wings und Kartoffeln reichen."
+      ]
+    },
+    "ingredients": [
+      "Hähnchen",
+      "Kartoffeln",
+      "Salat",
+      "Gurken",
+      "Tomaten",
+      "Rapsöl",
+      "Essig",
+      "Senf",
+      "Paprikapulver",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Lachsfilet mit Kartoffeln und Spinat",
+    "normalized_name": "lachsfiletmitkartoffelnundspinat",
+    "ingredient": "Fisch",
+    "cooking_time_minutes": 35,
+    "emoji": "🐟",
+    "nutrition": {
+      "kcal": 650,
+      "protein": 39,
+      "fat": 32,
+      "carbs": 48
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Lachs",
+          "amount": 300,
+          "unit": "g",
+          "note": "zwei Filets, frisch oder vollständig aufgetaut"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 500,
+          "unit": "g"
+        },
+        {
+          "name": "Blattspinat",
+          "amount": 300,
+          "unit": "g",
+          "note": "tiefgekühlt"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Sahne",
+          "amount": 50,
+          "unit": "ml"
+        },
+        {
+          "name": "Butter",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Zitronen",
+          "amount": 0.5,
+          "unit": "Stück"
+        },
+        {
+          "name": "Muskatnuss",
+          "amount": null,
+          "unit": "",
+          "note": "eine Prise"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Kartoffeln schälen, in gleich große Stücke schneiden und in Salzwasser 18–20 Minuten weich kochen. Zwiebel und Knoblauch fein würfeln.",
+        "Butter in einem Topf schmelzen, Zwiebel und Knoblauch 3 Minuten dünsten. Spinat mit einem kleinen Schuss Wasser zugeben und zugedeckt nach Packungsangabe erhitzen. Sahne einrühren, kurz köcheln lassen und mit Muskat, Salz und Pfeffer würzen.",
+        "Lachs trocken tupfen und würzen. Öl in einer Pfanne erhitzen, Filets je nach Dicke etwa 4–5 Minuten je Seite bei mittlerer Hitze braten, bis sie vollständig durchgegart sind. Mit Zitronensaft beträufeln und mit abgegossenen Kartoffeln und Spinat servieren."
+      ]
+    },
+    "ingredients": [
+      "Lachs",
+      "Kartoffeln",
+      "Blattspinat",
+      "Zwiebeln",
+      "Knoblauch",
+      "Sahne",
+      "Butter",
+      "Rapsöl",
+      "Zitronen",
+      "Muskatnuss",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Spinat-Nudeln",
+    "normalized_name": "spinatnudeln",
+    "ingredient": "Vegetarisch",
+    "cooking_time_minutes": 25,
+    "emoji": "🥬",
+    "nutrition": {
+      "kcal": 640,
+      "protein": 22,
+      "fat": 26,
+      "carbs": 79
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Penne",
+          "amount": 200,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Blattspinat",
+          "amount": 300,
+          "unit": "g",
+          "note": "tiefgekühlt"
+        },
+        {
+          "name": "Sahne",
+          "amount": 100,
+          "unit": "ml"
+        },
+        {
+          "name": "Hartkäse",
+          "amount": 40,
+          "unit": "g",
+          "note": "gerieben, vegetarisch mit mikrobiellem Lab"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Muskatnuss",
+          "amount": null,
+          "unit": "",
+          "note": "eine Prise"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Penne nach Packungsangabe in Salzwasser bissfest kochen. Vor dem Abgießen eine Tasse Nudelwasser auffangen.",
+        "Zwiebel und Knoblauch fein würfeln und im Öl 3 Minuten dünsten. Tiefgekühlten Spinat mit einem Schuss Nudelwasser zugeben und zugedeckt nach Packungsangabe erhitzen.",
+        "Sahne einrühren und 2–3 Minuten köcheln lassen. Nudeln und Hartkäse untermischen; bei Bedarf mit etwas Nudelwasser cremig rühren. Mit Muskat, Salz und Pfeffer abschmecken."
+      ]
+    },
+    "ingredients": [
+      "Penne",
+      "Blattspinat",
+      "Sahne",
+      "Hartkäse",
+      "Zwiebeln",
+      "Knoblauch",
+      "Olivenöl",
+      "Muskatnuss",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Thunfisch-Nudel-Auflauf",
+    "normalized_name": "thunfischnudelauflauf",
+    "ingredient": "Fisch",
+    "cooking_time_minutes": 40,
+    "emoji": "🐟",
+    "nutrition": {
+      "kcal": 790,
+      "protein": 48,
+      "fat": 24,
+      "carbs": 94
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Penne",
+          "amount": 200,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Thunfisch",
+          "amount": 150,
+          "unit": "g",
+          "note": "im eigenen Saft, Abtropfgewicht"
+        },
+        {
+          "name": "Gehackte Tomaten",
+          "amount": 400,
+          "unit": "g"
+        },
+        {
+          "name": "Mais",
+          "amount": 140,
+          "unit": "g",
+          "note": "Abtropfgewicht"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Sahne",
+          "amount": 50,
+          "unit": "ml"
+        },
+        {
+          "name": "Käse",
+          "amount": 100,
+          "unit": "g",
+          "note": "gerieben"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Oregano",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Ofen auf 200 °C Ober-/Unterhitze vorheizen. Penne in Salzwasser 2 Minuten kürzer als auf der Packung angegeben kochen und abgießen. Thunfisch und Mais abtropfen lassen.",
+        "Zwiebel und Knoblauch fein würfeln und im Öl 3 Minuten dünsten. Tomaten, Sahne und Oregano zugeben und 5 Minuten köcheln lassen. Thunfisch und Mais unterheben, salzen und pfeffern.",
+        "Nudeln und Sauce in einer Auflaufform mischen und mit Käse bestreuen. 20 Minuten backen, bis der Auflauf durchgehend heiß und die Oberfläche goldbraun ist."
+      ]
+    },
+    "ingredients": [
+      "Penne",
+      "Thunfisch",
+      "Gehackte Tomaten",
+      "Mais",
+      "Zwiebeln",
+      "Knoblauch",
+      "Sahne",
+      "Käse",
+      "Olivenöl",
+      "Oregano",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Kritharaki mit Buttergemüse und Würstchen",
+    "normalized_name": "kritharakimitbuttergemüseundwürstchen",
+    "ingredient": "Schwein",
+    "cooking_time_minutes": 25,
+    "emoji": "🌭",
+    "nutrition": {
+      "kcal": 780,
+      "protein": 27,
+      "fat": 34,
+      "carbs": 90
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Kritharaki",
+          "amount": 200,
+          "unit": "g",
+          "note": "griechische Reisnudeln aus Weizen; Trockengewicht"
+        },
+        {
+          "name": "Buttergemüse",
+          "amount": 300,
+          "unit": "g",
+          "note": "tiefgekühlt, inklusive Kräuterbutter"
+        },
+        {
+          "name": "Wiener Würstchen",
+          "amount": 200,
+          "unit": "g",
+          "note": "aus Schweinefleisch"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 100,
+          "unit": "ml",
+          "note": "zubereitet"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Bedarf"
+        }
+      ],
+      "steps": [
+        "Kritharaki in leicht gesalzenem Wasser nach Packungsangabe bissfest kochen und abgießen.",
+        "Buttergemüse mit der Brühe in eine große Pfanne geben und nach Packungsangabe zugedeckt garen. Zwischendurch umrühren; die enthaltene Kräuterbutter schmilzt dabei.",
+        "Würstchen in Scheiben schneiden, mit den Kritharaki zum Gemüse geben und 3–5 Minuten bei mittlerer Hitze vollständig erhitzen. Mit Pfeffer und bei Bedarf wenig Salz abschmecken."
+      ]
+    },
+    "ingredients": [
+      "Kritharaki",
+      "Buttergemüse",
+      "Wiener Würstchen",
+      "Gemüsebrühe",
+      "Pfeffer",
+      "Salz"
+    ]
+  },
+  {
+    "name": "Garnelen-Tomaten-Spaghetti",
+    "normalized_name": "garnelentomatenspaghetti",
+    "ingredient": "Fisch",
+    "cooking_time_minutes": 25,
+    "emoji": "🍤",
+    "nutrition": {
+      "kcal": 580,
+      "protein": 39,
+      "fat": 13,
+      "carbs": 77
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Spaghetti",
+          "amount": 200,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Garnelen",
+          "amount": 300,
+          "unit": "g",
+          "note": "roh, geschält und entdarmt; aufgetaut"
+        },
+        {
+          "name": "Tomaten",
+          "amount": 300,
+          "unit": "g",
+          "note": "Kirschtomaten"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 2,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Olivenöl",
+          "amount": 1.5,
+          "unit": "EL"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Basilikum",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Spaghetti in Salzwasser nach Packungsangabe bissfest garen. Vor dem Abgießen eine Tasse Nudelwasser auffangen. Tomaten halbieren, Knoblauch fein hacken und Garnelen trocken tupfen.",
+        "Öl in einer großen Pfanne erhitzen. Garnelen 2–3 Minuten je Seite braten, bis sie innen undurchsichtig und vollständig gar sind, dann herausnehmen.",
+        "Knoblauch und Tomatenmark kurz im Bratöl anschwitzen. Tomaten zugeben und 5–7 Minuten schmoren lassen. Mit etwas Nudelwasser zu einer Sauce rühren.",
+        "Spaghetti und Garnelen unterheben und kurz erhitzen. Basilikum grob zupfen, darüberstreuen und mit Salz und Pfeffer abschmecken."
+      ]
+    },
+    "ingredients": [
+      "Spaghetti",
+      "Garnelen",
+      "Tomaten",
+      "Knoblauch",
+      "Olivenöl",
+      "Tomatenmark",
+      "Basilikum",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Reistopf mit Buttergemüse",
+    "normalized_name": "reistopfmitbuttergemüse",
+    "ingredient": "Vegetarisch",
+    "cooking_time_minutes": 30,
+    "emoji": "🍚",
+    "nutrition": {
+      "kcal": 440,
+      "protein": 10,
+      "fat": 12,
+      "carbs": 73
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Reis",
+          "amount": 160,
+          "unit": "g",
+          "note": "Langkornreis, Trockengewicht"
+        },
+        {
+          "name": "Buttergemüse",
+          "amount": 400,
+          "unit": "g",
+          "note": "tiefgekühlt, mit vegetarischer Kräuterbutter"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Gemüsebrühe",
+          "amount": 400,
+          "unit": "ml",
+          "note": "zubereitet"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Petersilie",
+          "amount": 5,
+          "unit": "g"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Bedarf"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Zwiebel fein würfeln. Öl in einem Topf erhitzen und die Zwiebel 3 Minuten glasig dünsten. Reis kurz mitdünsten und die heiße Brühe angießen.",
+        "Aufkochen und zugedeckt bei kleiner Hitze zunächst 8 Minuten garen. Buttergemüse samt Kräuterbutter unterrühren und weitere 10–12 Minuten zugedeckt sanft garen, bis Reis und Gemüse weich sind. Die Reis- und Gemüsepackungsangaben berücksichtigen und bei Bedarf etwas Wasser ergänzen.",
+        "Topf vom Herd nehmen und 3 Minuten ziehen lassen. Reis auflockern, mit Salz und Pfeffer abschmecken und mit gehackter Petersilie bestreuen."
+      ]
+    },
+    "ingredients": [
+      "Reis",
+      "Buttergemüse",
+      "Zwiebeln",
+      "Gemüsebrühe",
+      "Rapsöl",
+      "Petersilie",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Nudeln mit Käse-Schinken-Soße",
+    "normalized_name": "nudelnmitkäseschinkensoße",
+    "ingredient": "Schwein",
+    "cooking_time_minutes": 25,
+    "emoji": "🧀",
+    "nutrition": {
+      "kcal": 780,
+      "protein": 38,
+      "fat": 32,
+      "carbs": 85
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Penne",
+          "amount": 200,
+          "unit": "g",
+          "note": "Trockengewicht"
+        },
+        {
+          "name": "Schinken",
+          "amount": 150,
+          "unit": "g",
+          "note": "Kochschinken"
+        },
+        {
+          "name": "Käse",
+          "amount": 80,
+          "unit": "g",
+          "note": "Gouda, gerieben"
+        },
+        {
+          "name": "Milch",
+          "amount": 200,
+          "unit": "ml"
+        },
+        {
+          "name": "Sahne",
+          "amount": 50,
+          "unit": "ml"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Butter",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Weizenmehl",
+          "amount": 10,
+          "unit": "g"
+        },
+        {
+          "name": "Muskatnuss",
+          "amount": null,
+          "unit": "",
+          "note": "eine Prise"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Bedarf"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Penne nach Packungsangabe in Salzwasser bissfest kochen. Zwiebel fein würfeln, Kochschinken in Streifen schneiden.",
+        "Butter in einem Topf schmelzen und Zwiebel 3 Minuten dünsten. Mehl einrühren, kurz anschwitzen und Milch nach und nach unter Rühren angießen. Sahne zugeben und 5 Minuten sanft köcheln lassen.",
+        "Hitze reduzieren, Käse in der Sauce schmelzen lassen und Schinken darin vollständig erhitzen. Mit Muskat, Pfeffer und wenig Salz abschmecken. Abgegossene Nudeln unterheben und servieren."
+      ]
+    },
+    "ingredients": [
+      "Penne",
+      "Schinken",
+      "Käse",
+      "Milch",
+      "Sahne",
+      "Zwiebeln",
+      "Butter",
+      "Weizenmehl",
+      "Muskatnuss",
+      "Salz",
+      "Pfeffer"
+    ]
+  },
+  {
+    "name": "Gulaschsuppe",
+    "normalized_name": "gulaschsuppe",
+    "ingredient": "Rind",
+    "cooking_time_minutes": 120,
+    "emoji": "🍲",
+    "nutrition": {
+      "kcal": 550,
+      "protein": 43,
+      "fat": 20,
+      "carbs": 49
+    },
+    "recipe_type": "meal",
+    "recipe": {
+      "servings": 2,
+      "ingredients": [
+        {
+          "name": "Rindergulasch",
+          "amount": 350,
+          "unit": "g",
+          "note": "in kleinen Würfeln"
+        },
+        {
+          "name": "Kartoffeln",
+          "amount": 300,
+          "unit": "g"
+        },
+        {
+          "name": "Paprika",
+          "amount": 1,
+          "unit": "Stück"
+        },
+        {
+          "name": "Zwiebeln",
+          "amount": 2,
+          "unit": "Stück"
+        },
+        {
+          "name": "Knoblauch",
+          "amount": 1,
+          "unit": "Zehen"
+        },
+        {
+          "name": "Gehackte Tomaten",
+          "amount": 200,
+          "unit": "g"
+        },
+        {
+          "name": "Tomatenmark",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Rinderbrühe",
+          "amount": 700,
+          "unit": "ml",
+          "note": "zubereitet"
+        },
+        {
+          "name": "Rapsöl",
+          "amount": 1,
+          "unit": "EL"
+        },
+        {
+          "name": "Paprikapulver",
+          "amount": 2,
+          "unit": "TL",
+          "note": "edelsüß"
+        },
+        {
+          "name": "Majoran",
+          "amount": 1,
+          "unit": "TL"
+        },
+        {
+          "name": "Kümmel",
+          "amount": 0.5,
+          "unit": "TL",
+          "note": "gemahlen"
+        },
+        {
+          "name": "Salz",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        },
+        {
+          "name": "Pfeffer",
+          "amount": null,
+          "unit": "",
+          "note": "nach Geschmack"
+        }
+      ],
+      "steps": [
+        "Zwiebeln und Knoblauch fein würfeln. Rindfleisch trocken tupfen und bei Bedarf in etwa 2 cm große Würfel schneiden. Öl in einem großen Topf erhitzen und Fleisch portionsweise kräftig anbraten, dann herausnehmen.",
+        "Zwiebeln im selben Topf 5 Minuten braten. Knoblauch und Tomatenmark kurz mitrösten. Topf kurz von der Hitze nehmen, Paprikapulver einrühren und direkt mit Brühe ablöschen, damit das Pulver nicht verbrennt.",
+        "Fleisch, Tomaten, Majoran und Kümmel zugeben. Zugedeckt bei kleiner Hitze etwa 70 Minuten schmoren. Währenddessen Kartoffeln schälen und würfeln, Paprika in kleine Stücke schneiden.",
+        "Kartoffeln und Paprika zur Suppe geben und weitere 20–25 Minuten köcheln lassen, bis das Fleisch zart und die Kartoffeln weich sind. Bei Bedarf länger garen und etwas Wasser nachgießen. Mit Salz und Pfeffer abschmecken."
+      ]
+    },
+    "ingredients": [
+      "Rindfleisch",
+      "Kartoffeln",
+      "Paprika",
+      "Zwiebeln",
+      "Knoblauch",
+      "Gehackte Tomaten",
+      "Tomatenmark",
+      "Rinderbrühe",
+      "Rapsöl",
+      "Paprikapulver",
+      "Majoran",
+      "Kümmel",
+      "Salz",
+      "Pfeffer"
+    ]
+  }
+]
+$catalog$::jsonb) as dish(
+  name text, normalized_name text, ingredient text, cooking_time_minutes integer,
+  emoji text, ingredients jsonb, nutrition jsonb, recipe_type text, recipe jsonb
+)
+on conflict (normalized_name) do nothing
+returning name;

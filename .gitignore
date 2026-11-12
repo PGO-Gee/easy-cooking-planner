@@ -5,6 +5,9 @@ KOCHASSISTENT-PLAN.md
 /supabase
 !/supabase/
 /supabase/*
+!/supabase/catalog-weeknight-recipes.json
+!/supabase/catalog-weeknight-additions.sql
+!/supabase/build-weeknight-catalog.py
 !/supabase/migrations/
 /supabase/migrations/*
 !/supabase/migrations/20261107203423_baking_recipe_type.sql

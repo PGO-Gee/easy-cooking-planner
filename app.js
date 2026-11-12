@@ -69,6 +69,19 @@ let cookingProgress=null;
 let selectedCookServings=2;
 function catalogDishNameKey(value){return String(value||'').trim().toLocaleLowerCase('de-DE').replace(/[^\p{L}\p{N}]+/gu,'')}
 const catalogRecipePhotoFiles=new Map([
+  ["Gnocchi-Auflauf","gnocchi-auflauf"],
+  ["Iglo Schlemmer-Filet mit Reis","iglo-schlemmer-filet-mit-reis"],
+  ["Spätzle-Pfanne","spaetzle-pfanne"],
+  ["Nudel-Hähnchen-Pfanne","nudel-haehnchen-pfanne"],
+  ["Chicken Wings mit Kartoffeln und Salat","chicken-wings-mit-kartoffeln-und-salat"],
+  ["Lachsfilet mit Kartoffeln und Spinat","lachsfilet-mit-kartoffeln-und-spinat"],
+  ["Spinat-Nudeln","spinat-nudeln"],
+  ["Thunfisch-Nudel-Auflauf","thunfisch-nudel-auflauf"],
+  ["Kritharaki mit Buttergemüse und Würstchen","kritharaki-mit-buttergemuese-und-wuerstchen"],
+  ["Garnelen-Tomaten-Spaghetti","garnelen-tomaten-spaghetti"],
+  ["Reistopf mit Buttergemüse","reistopf-mit-buttergemuese"],
+  ["Nudeln mit Käse-Schinken-Soße","nudeln-mit-kaese-schinken-sosse"],
+  ["Gulaschsuppe","gulaschsuppe"],
   ['Rotes Thai-Curry mit Hähnchen und Reis','rotes-thai-curry'],
   ['Schnitzel mit Pommes','schnitzel-mit-pommes'],
   ['Gulasch mit Reis','gulasch-mit-reis'],
@@ -1995,7 +2008,7 @@ function renderCalendarContent({shuffleAnimation=false,droppedMeal=null}={}){
       meal.querySelector('.meal-time').textContent=`◷ ${dish.time||25} min`;
       meal.querySelector('.meal-ingredient').textContent=dish.ingredient||'Lieblingsgericht';
       meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-name').title=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;
-      const photo=recipePhoto(dish,{thumbnail:true});
+      const photo=recipePhoto(dish,{thumbnail:true,loading:'eager'});
       if(photo){
         const icon=meal.querySelector('.meal-icon'),title=meal.querySelector('.meal-title');
         icon.classList.add('hidden');
@@ -2736,7 +2749,7 @@ async function invalidateRecipeProgress(dish){
   if(progress.fingerprint!==window.WochentischRecipes.fingerprint(dish)&&selectedRecipeDishId===dish.id){cookingProgress={...progress,stale:true};if(savedView()==='cooking')renderCooking()}
 }
 function plannedDishIds(){const ids=[],seen=new Set();rangeDates().forEach(date=>planForDate(date).forEach(id=>{if(state.dishes.some(d=>d.id===id)&&!seen.has(id)){ids.push(id);seen.add(id)}}));return ids}
-function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
+function recipePhoto(dish,{thumbnail=false,catalog=false,loading=thumbnail?'lazy':'eager'}={}){
   const sourceId=catalog?dish.id:dish.catalogSourceId;
   if(!sourceId)return null;
   const file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
@@ -2747,7 +2760,8 @@ function recipePhoto(dish,{thumbnail=false,catalog=false}={}){
   photo.width=thumbnail?168:960;
   photo.height=thumbnail?126:720;
   photo.decoding='async';
-  if(thumbnail)photo.loading='lazy';
+  photo.loading=loading;
+  if(!thumbnail)photo.fetchPriority='high';
   photo.src=`./images/recipes/${file}${thumbnail?'-thumb':''}.jpg?v=2`;
   return photo;
 }

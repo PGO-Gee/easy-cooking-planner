@@ -64,3 +64,11 @@ Getestete Umgebungen und bekannte Erkennungsfehler:
 ## Backrezepte
 
 Die Migration `20261107203423_baking_recipe_type.sql` vor der Veröffentlichung der zugehörigen App-Version auf die Datenbank anwenden. Sie ergänzt die Rezeptart für Haushalts- und Katalogrezepte und fügt zehn Backrezepte zum Standardkatalog hinzu. Bereits vorhandene Rezepte bleiben Gerichte. Backrezepte erscheinen erst nach Übernahme in die eigene Sammlung im Wochenplan und werden beim Mischen erhalten.
+
+## Weitere Alltagsgerichte
+
+`supabase/catalog-weeknight-recipes.json` enthält 13 zusätzliche Gerichte mit Rezeptmengen für zwei Portionen, Zubereitung, Dauer, Hauptkategorie und geschätzten Nährwerten pro Portion. „Kathriki“ wurde als Kritharaki (griechische Reisnudeln aus Weizen) interpretiert; beim Iglo Schlemmer-Filet ist Bordelaise mit 380 g für zwei Portionen angenommen. Die konkrete Packungsanleitung hat Vorrang. Die Nährwerte variieren mit Produkt und Portionsgröße.
+
+`python3 supabase/build-weeknight-catalog.py` erzeugt daraus `supabase/catalog-weeknight-additions.sql`. Dieses Datenskript nach den vorhandenen Katalogmigrationen im Supabase SQL Editor ausführen. Es überspringt bereits vorhandene Namen und erhält bestehende Katalogeinträge und Haushaltskopien. Buchweizen-Eintopf ist bereits vollständig vorhanden und wird nicht erneut angelegt. Die zusätzlichen Einträge werden nicht durch das ältere `catalog_additions.sql` erzeugt.
+
+Die zugehörigen KI-generierten JPEGs liegen einschließlich kleiner Vorschaubilder in `images/recipes/`; die App ordnet sie über ihre normalisierten Gerichtsnamen zu. Herkunft und vollständige Bildprompts stehen in `images/recipes/weeknight-image-prompts.json`. Datenskript und statische Bilddateien müssen für eine neue Instanz beide bereitgestellt werden.
