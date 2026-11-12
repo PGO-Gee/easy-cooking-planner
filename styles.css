@@ -441,6 +441,23 @@ h1,
 .toast-action:focus-visible { background: rgb(255 255 255 / 20%); }
 .toast-action:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
+/* Load the same local faces online and offline. The short block period avoids
+   painting a system font before the preloaded app font is ready. */
+@font-face {
+  font-family: "Comic Relief";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./fonts/comic-relief/ComicRelief-Regular.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Comic Relief";
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url("./fonts/comic-relief/ComicRelief-Bold.ttf") format("truetype");
+}
+
 /* A playful, fresh palette and a shared typeface across the app. */
 :root {
   --sans: "Comic Relief", system-ui, sans-serif;
