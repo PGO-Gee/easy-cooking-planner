@@ -28,12 +28,12 @@
   </style>
   <link rel="preload" href="./fonts/comic-relief/ComicRelief-Regular.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="./fonts/comic-relief/ComicRelief-Bold.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="styles.css?v=20261114-2" />
-  <link rel="stylesheet" href="interaction.css?v=20261114-2" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261114-2" />
+  <link rel="stylesheet" href="styles.css?v=20261112-1" />
+  <link rel="stylesheet" href="interaction.css?v=20261110-11" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261110-10" />
   <link rel="stylesheet" href="auth.css?v=20261110-1" />
-  <link rel="stylesheet" href="mobile.css?v=20261114-2" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261114-1" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="mobile.css?v=20261110-15" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261110-11" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -99,9 +99,9 @@
         </nav>
       </section>
       <section id="week-view" class="view">
-        <div class="page-heading"><div><h1>Wochenplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading" id="week-period"></p></div></div>
-        <details class="plan-menu"><summary>☷ Planen</summary><div class="week-toolbar"><button type="button" id="mobile-settings" class="secondary-button">Profil und Einstellungen</button><button id="mix-btn" class="primary-button"><span>⤨</span> 7 Tage neu mischen</button><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorherige 7 Tage">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste 7 Tage">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Rezepte geplant</span></span><button class="secondary-button" id="shopping-btn"><span>☷</span> Einkaufszettel</button></div></div>
-        </details><div class="week-layout"><div id="calendar" class="calendar-grid"></div><aside id="week-preview" class="week-preview" aria-live="polite"></aside></div>
+        <div class="page-heading"><div><div class="eyebrow">ESSENSPLAN</div><h1>Dein Essensplan<span class="heading-period" id="heading-period"></span></h1><p class="subheading">Plane deine Gerichte für die nächsten 7 Tage.</p></div><button id="mix-btn" class="primary-button"><span>⤨</span> 7 Tage neu mischen</button></div>
+        <div class="week-toolbar"><div class="week-switch"><button class="arrow-button" id="prev-week" aria-label="Vorherige 7 Tage">‹</button><button class="week-date" id="week-date"></button><button class="arrow-button" id="next-week" aria-label="Nächste 7 Tage">›</button><button class="today-button" id="today-btn">Heute</button></div><div class="toolbar-actions"><span class="plan-meta"><i></i><span id="plan-meta">7 Rezepte geplant</span></span><button class="secondary-button" id="shopping-btn"><span>☷</span> Einkaufszettel</button></div></div>
+        <div id="calendar" class="calendar-grid"></div>
         <div id="bottom-note" class="bottom-note"><span>Fixiere Gerichte mit 📌, damit sie beim Neuplanen bleiben. Prägende Zutaten werden möglichst abwechslungsreich über die Woche verteilt.</span><button id="note-close" aria-label="Hinweis schließen">×</button></div>
       </section>
       <section id="dishes-view" class="view hidden">
@@ -112,12 +112,12 @@
         <button type="button" id="starter-add" class="starter-tip" aria-label="Rezept ergänzen"><span class="starter-tip-icon" aria-hidden="true">＋</span><span class="starter-tip-copy"><b>Rezept ergänzen</b><span class="starter-tip-description">Füge weitere Rezepte zu deiner Liste hinzu.</span></span></button>
       </section>
       <section id="shopping-view" class="view shopping-screen hidden">
-        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button></div>
+        <div class="shopping-screen-top"><button type="button" id="shopping-back" class="secondary-button">← Wochenplan</button><div class="shopping-screen-actions"><button type="button" id="shopping-history-open" class="secondary-button" aria-haspopup="dialog">Verlauf</button><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button></div></div>
         <div class="page-heading shopping-page-heading"><div><div class="eyebrow">WOCHENPLAN</div><h1>Einkaufszettel</h1><p id="shopping-period" class="subheading"></p></div></div>
-        <form id="shopping-add-form" class="shopping-add-form"><div id="shopping-add-status" class="shopping-add-status" role="status" aria-live="polite" hidden></div><label for="shopping-item-input">Artikel ergänzen</label><div id="shopping-add-controls"><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel eingeben …" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button" aria-label="Artikel hinzufügen">＋ Hinzufügen</button></div></form><details class="list-menu"><summary>☷ Liste</summary><div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-history-open" class="secondary-button" aria-haspopup="dialog">Verlauf</button><button type="button" id="shopping-clear" class="secondary-button" aria-label="Einkaufsliste leeren">Liste leeren</button></div>
-        </details><button type="button" id="shopping-overview" class="shopping-overview hidden">Filter zurücksetzen ×</button><p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
-        <div class="shopping-sections"><section class="shopping-section"><h2>Einkaufsliste <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Schon eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-title">Schon eingekauft</span><span id="shopping-done-count" class="shopping-disclosure-count"></span><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
-
+        <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
+        <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
+        <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Schon eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-title">Schon eingekauft</span><span id="shopping-done-count" class="shopping-disclosure-count"></span><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
+        <form id="shopping-add-form" class="shopping-add-form"><div id="shopping-add-status" class="shopping-add-status" role="status" aria-live="polite" hidden></div><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel eingeben …" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
       </section>
       <section id="cooking-view" class="view cooking-screen hidden" aria-labelledby="cooking-title">
         <div class="page-heading"><div><div class="eyebrow">SCHRITT FÜR SCHRITT</div><h1 id="cooking-title">Zubereiten</h1><p class="subheading">Wähle ein geplantes oder eigenes Gericht.</p></div></div>
@@ -183,7 +183,7 @@
   <script src="sync-api.js?v=2"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=2"></script>
-  <script src="app.js?v=20261114-2"></script>
+  <script src="app.js?v=20261112-2"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

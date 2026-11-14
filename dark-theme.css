@@ -1332,7 +1332,3 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 #dish-form.is-imported-ingredients .recipe-ingredient-row select { background-color: #18232f; border-color: #60758b; color: #e0e8f1; }
 
 .shopping-add-status { background: #233b32; border-color: #456657; color: #e0f1e3; }
-
-/* Dunkle Variante der Wochenliste. */
-.week-layout .day-card.is-selected { background: #2b3b50; border-color: #7195bc; }
-.week-layout .is-rest-day { background: #293e32; color: #b9d8c3; }

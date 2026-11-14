@@ -441,27 +441,3 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
 #shopping-history-list p { margin: 4px 0 0; }
 
 #toast.has-action .toast-message { overflow-wrap: anywhere; }
-
-/* Einkaufsliste: kompakte Zeilen, sichtbarer Filter und weiterhin editierbare Mengen. */
-html body .shopping-screen-top { display:none; }
-html body .shopping-page-heading { margin-bottom:20px; padding-right:104px; }
-html body .shopping-page-heading .subheading { display:block; color:var(--muted); margin-top:5px; }
-html body .shopping-screen .list-menu { top:27px; right:0; }
-html body .shopping-screen .shopping-screen-tools { gap:10px; }
-html body .shopping-screen .shopping-screen-tools > button { width:100%; min-height:44px; justify-content:flex-start; }
-html body .shopping-screen #shopping-add-form { display:flex; flex-direction:column; align-items:stretch; flex-wrap:nowrap; gap:7px; }
-html body #shopping-add-form > label { font-weight:700; font-size:13px; color:var(--ink); }
-html body #shopping-add-controls { display:flex; gap:8px; width:100%; min-width:0; }
-html body #shopping-add-controls .shopping-item-suggest { flex:1 1 auto; min-width:0; position:relative; }
-html body #shopping-add-controls .primary-button { flex:0 0 auto; }
-html body .shopping-screen #shopping-overview { display:inline-flex; align-items:center; min-height:44px; padding:0 14px; border-radius:22px; background:var(--mint); color:var(--green); margin:0 0 14px; }
-html body .shopping-screen #shopping-overview.hidden { display:none; }
-html body .shopping-screen .shopping-sections { grid-template-columns:minmax(0,1fr); max-width:720px; }
-html body .shopping-screen .shopping-section h2 { align-items:center; justify-content:space-between; }
-html body .shopping-screen .shopping-section h2 span { color:var(--muted); font-size:12px; }
-html body .shopping-screen .shopping-tile-shell { min-height:56px; }
-html body .shopping-screen .shopping-tile-shell .shopping-tile-copy { align-self:center; padding:0; }
-html body .shopping-screen .shopping-tile-shell .shopping-quantity { height:auto; border:0; background:transparent; color:var(--muted); }
-html body .shopping-screen .shopping-tile-shell .shopping-quantity button { width:44px; height:44px; background:transparent; }
-html body .shopping-screen .shopping-tile-shell .shopping-tile.is-checked + .shopping-tile-meal-hint + .shopping-quantity output { text-decoration:line-through; color:var(--muted); }
-@media(max-width:700px) { html body .shopping-screen .list-menu { top:20px; } html body #shopping-add-controls .primary-button { width:48px; } }
