@@ -1,5 +1,6 @@
 const test=require('node:test'),assert=require('node:assert/strict');
-const {focusPlanEntry}=require('../ui.js');
+const {focusPlanEntry,accountInitials}=require('../ui.js');
+test('account initials use first and last display-name parts with a neutral empty fallback',()=>{assert.equal(accountInitials(' Paul Müller '),'PM');assert.equal(accountInitials('paul'),'P');assert.equal(accountInitials('anna-maria müller'),'AM');assert.equal(accountInitials(''),'')});
 const days=[{date:'2026-11-13',day:['past']},{date:'2026-11-14',day:['today','cake']},{date:'2026-11-15',day:['next']}];
 test('focus prefers today and the first of multiple planned recipes',()=>{assert.deepEqual(focusPlanEntry(days,'2026-11-14'),{id:'today',day:1,meal:0,date:'2026-11-14'})});
 test('focus chooses the next planned date when today is free',()=>{assert.equal(focusPlanEntry([{date:'2026-11-14',day:[]},days[2]],'2026-11-14').id,'next')});

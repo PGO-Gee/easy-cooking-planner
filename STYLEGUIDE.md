@@ -30,7 +30,7 @@ Eine moderne, persönliche Kochplaner-App mit ruhigen Flächen, echten Gerichtsb
 | Wochenaktionen | Ein beschrifteter **Planen**-Button mit Regler-Symbol |
 | Weitere Aktionen | Über das Wochenmenü erreichbar; keine separate Button-Reihe über den Gerichten |
 | Gerichtsbilder | Vorhandene Bilder aus dem Projekt verwenden, auch in kompakten Zeilen |
-| Resteabend | Kompakte grüne Zeile mit Datum, „Resteabend“ und Rücklauf-Symbol |
+| Resteabend | Kompakte grüne Zeile mit Datum, zentriertem „Reste“ und Rücklauf-Symbol |
 | Navigation | Wochenplan, Gerichte, Zubereiten, Einkauf; Icons mit sichtbaren Beschriftungen |
 
 Die aktuellen mobilen und ausgewählten Desktop-Referenzen beginnen direkt mit dem Screen-Titel. Frühere Entwürfe mit zusätzlichem App-Namen im Header sind überholt.
@@ -49,9 +49,9 @@ Wochenplan                       [≡ Planen]
 Das Zeichen im Schema steht für ein Regler-Symbol, nicht für ein zusätzliches Menü-Icon.
 
 - Genau ein Screen-Titel. Kein zusätzlicher Marken-Header innerhalb der Hauptscreens.
-- Im Wochenplan keine Profil-Schaltfläche, Datumspfeile und Aktionsleiste zusätzlich im Header.
+- Oberhalb der Screens bleibt ein kleiner Kontokreis mit den Initialen des Anzeigenamens erreichbar. Er öffnet Profil/Haushalt, Theme und weitere vorhandene Kontoeinstellungen. Ohne Namen erscheint ein neutrales Profilsymbol.
 - **Planen** bleibt sichtbar beschriftet. Ein alleinstehendes „…“ ist für diesen Einstieg zu unklar.
-- Das Wochenmenü enthält die Wochenwahl und „7 Tage mischen“. Profil und Einstellungen stehen dort als getrennte Gruppe.
+- Das Wochenmenü enthält nur die Wochenwahl und „7 Tage mischen“, in einer abgerundeten, klar gegliederten Fläche. Profil und Einstellungen liegen im gemeinsamen Kontomenü.
 - Vorräte werden innerhalb von „7 Tage mischen“ ausgewählt oder übersprungen, bevor der Plan erstellt wird. Ein separater Menüpunkt „Vorräte wählen“ entfällt. Fixierte Gerichte bleiben beim Mischen erhalten.
 - Ein geöffnetes Menü hat einen deckenden Hintergrund, klare Einträge und erreichbare Touch-Ziele. Es bleibt innerhalb des verfügbaren Bildschirms.
 - Auf anderen Screens richtet sich die Hauptaktion nach der Aufgabe: etwa „Rezept hinzufügen“ oder „Bearbeiten“. „Planen“ wird nicht pauschal auf jeden Screen übertragen.
@@ -163,7 +163,7 @@ Mobil wird das erste geplante Gericht ab heute im sichtbaren Zeitraum hervorgeho
 Der Resteabend ist eine geplante Entscheidung und erhält einen eigenen Aufbau:
 
 - Kompakte, sanft grüne Zeile an ihrer chronologischen Position, etwa 44 px hoch.
-- Links das kurze Datum, etwa **Mi, 18.**, mittig **Resteabend**, rechts das Rücklauf-Symbol.
+- Links das kurze Datum, etwa **Mi, 18.**, horizontal und vertikal mittig **Reste**, rechts das Rücklauf-Symbol.
 - Auf schmalen Screens möglichst einzeilig; keine zusätzliche Unterzeile oder eigenes Icon-Feld. Bei vergrößerter Schrift darf die Zeile wachsen, statt Inhalte abzuschneiden.
 - Kein Gerichtsfoto, keine Zubereitungszeit und keine Portionsangabe.
 - Keine Gestaltung wie ein fehlgeschlagenes oder unvollständiges Gericht.
@@ -212,7 +212,7 @@ Ausgewählt ist die **Wochenliste mit Gerichtsvorschau**. Das Wochenraster bleib
 
 ### Aufbau des Wochenplans
 
-- Links eine schmale, deckende Seitenleiste: Wochenplan, Gerichte, Zubereiten und Einkauf. Profil und Einstellungen stehen unten, getrennt von der Hauptnavigation. Der aktive Bereich ist blau und sanft hinterlegt.
+- Links eine schmale, deckende Seitenleiste: Wochenplan, Gerichte, Zubereiten und Einkauf. Der gemeinsame Kontokreis steht auch am Desktop oberhalb des Inhalts. Der aktive Bereich ist blau und sanft hinterlegt.
 - Seitenleiste ungefähr 200 px breit bei großen Desktop-Ansichten und 172 px bei 1024 px Breite. Der Hauptbereich hat etwa 32 px horizontalen Abstand, bei 1024 px etwa 24 px.
 - Der Header enthält „Wochenplan“, darunter den Zeitraum, rechts **Planen**. Kein zusätzlicher Marken-Header und keine parallele Reihe für Misch- oder Vorratsaktionen.
 - Darunter zwei Bereiche im Verhältnis ungefähr 45 : 55 mit etwa 20–26 px Abstand: Wochenliste links, Gerichtsvorschau rechts. Bei 1024 px bleiben beide nebeneinander und ohne horizontales Scrollen nutzbar.

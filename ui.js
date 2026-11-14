@@ -5,7 +5,23 @@ function focusPlanEntry(days,today,validIds){
   const localKey=date=>typeof date==='string'?date:[date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');
   return candidates.find(entry=>localKey(entry.date)>=localKey(today))||candidates[0]||null;
 }
-if(typeof module!=='undefined')module.exports={focusPlanEntry};
+function accountInitials(name){const words=String(name||'').trim().split(/[\s._-]+/u).filter(Boolean);return words.length?[words[0],...(words.length>1?[words[words.length-1]]:[])].map(word=>Array.from(word)[0]).join('').toLocaleUpperCase('de-DE').slice(0,4):''}
+if(typeof module!=='undefined')module.exports={focusPlanEntry,accountInitials};
+
+function updateAccountIdentity(user){
+  const userId=user?.id||currentUserId;let name='';
+  if(user){const display=user.user_metadata?.display_name;name=(typeof display==='string'&&display.trim())||String(user.email||'').split('@')[0];if(userId)try{localStorage.setItem(`wochentisch-display-name:${userId}`,name)}catch{}}
+  else if(userId)try{name=localStorage.getItem(`wochentisch-display-name:${userId}`)||''}catch{}
+  const avatar=document.getElementById('account-avatar');if(avatar){avatar.replaceChildren(accountInitials(name)?document.createTextNode(accountInitials(name)):uiIcon('profile'));avatar.setAttribute('aria-label',name?`Konto und Einstellungen für ${name}`:'Konto und Einstellungen');avatar.title=name||'Dein Konto'}
+  const heading=document.getElementById('account-name');if(heading)heading.textContent=name||'Dein Konto';
+}
+function galleryPhoto(dish,fallback,index){
+  const photo=recipePhoto(dish,{thumbnail:true,loading:index<4?'eager':'lazy'});if(!photo)return fallback;
+  const original=photo.src,file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
+  photo.src=`./images/recipes/${file}-card.webp?v=1`;photo.width=384;photo.height=288;photo.decoding='async';
+  if(index<2)photo.fetchPriority='high';
+  photo.addEventListener('error',()=>{photo.src=original;photo.addEventListener('error',()=>photo.replaceWith(fallback),{once:true})},{once:true});return photo;
+}
 
 const uiIcons={
   week:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2m4 0h2"/>',
@@ -53,7 +69,7 @@ function enhanceWeekView(days){
     const dayHead=card.querySelector('.day-head');dayHead.replaceChildren();
     const dayButton=uiButton(days[index].date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric'}),()=>{uiSelectedDay=index;uiSelectedMeal=0;if(uiDesktop())renderWeekPreview();else chooseDish(index)},{className:'day-select'});
     dayButton.setAttribute('aria-label',`${formatChooserDate(days[index].date)} auswählen`);dayHead.append(dayButton);
-    const rest=card.querySelector('.rest-day-tile');if(rest){rest.replaceChildren(document.createTextNode('Resteabend'),uiIcon('rest'));rest.addEventListener('click',()=>{uiSelectedDay=index;uiSelectedMeal=0;if(uiDesktop())renderWeekPreview();else chooseDish(index)});rest.tabIndex=0;rest.role='button';rest.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();rest.click()}})}
+    const rest=card.querySelector('.rest-day-tile');if(rest){const label=document.createElement('span');label.textContent='Reste';rest.replaceChildren(label,uiIcon('rest'));rest.addEventListener('click',()=>{uiSelectedDay=index;uiSelectedMeal=0;if(uiDesktop())renderWeekPreview();else chooseDish(index)});rest.tabIndex=0;rest.role='button';rest.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();rest.click()}})}
     if(card.classList.contains('empty-day')){const add=card.querySelector('.add-meal');add.replaceChildren(document.createTextNode('Nicht geplant'),uiIcon('plus'));if(uiDesktop()){add.onclick=event=>{event.stopImmediatePropagation();uiSelectedDay=index;uiSelectedMeal=0;renderWeekPreview()};add.addEventListener('click',add.onclick,{capture:true})}}
     card.querySelectorAll('.meal-card').forEach((meal,mealIndex)=>{
       const dish=state.dishes.find(d=>d.id===meal.dataset.dishId);if(!dish)return;
@@ -117,25 +133,30 @@ function enhanceCookingStep(){
   const content=$('#cooking-content');content.className='cooking-step-content';const ingredients=content.querySelector('.cook-ingredients-details');if(ingredients){const details=document.createElement('details');details.className='cook-ingredients-details';details.open=uiDesktop();const summary=document.createElement('summary');summary.textContent='Zutaten griffbereit';details.append(summary,...ingredients.childNodes);ingredients.replaceWith(details)}syncDesignNavigation();
 }
 function syncDesignNavigation(){
+  updateAccountIdentity();
   const actual=savedView(),active=actual==='cooking'&&cookingStage==='overview'?recipeDetailPreviousView:actual;
   document.querySelectorAll('.nav-item,.mobile-nav button').forEach(button=>{const selected=button.dataset.view===active;button.classList.toggle('active',selected);if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current')});
   document.documentElement.dataset.view=actual;document.documentElement.dataset.cookingStage=cookingStage;
 }
-function openShoppingAssociation(tile,labels){
+let shoppingAssociationTimeout=0;
+function openShoppingAssociation(tile,labels,{autoDismiss=false}={}){
+  clearTimeout(shoppingAssociationTimeout);
   const dialog=uiDialog('shopping-association','Zugeordnete Gerichte');dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());
   const list=document.createElement('ul');labels.forEach(label=>{const li=document.createElement('li');li.textContent=label;list.append(li)});dialog.append(list);dialog.showModal();
+  if(autoDismiss)shoppingAssociationTimeout=setTimeout(()=>{if(dialog.open)dialog.close()},3000);
+  dialog.addEventListener('close',()=>clearTimeout(shoppingAssociationTimeout),{once:true});
 }
 function wireShoppingAssociation(tile,labels){
-  let timer=0,start=null,suppressUntil=0;const cancel=()=>{clearTimeout(timer);timer=0;start=null};const show=()=>{cancel();suppressUntil=Date.now()+900;openShoppingAssociation(tile,labels)};
-  tile.addEventListener('pointerdown',event=>{cancel();if(event.button!==0)return;start={x:event.clientX,y:event.clientY};timer=setTimeout(show,500)});
+  let timer=0,start=null,suppressUntil=0,suppressClick=false;const cancel=()=>{clearTimeout(timer);timer=0;start=null};const show=(autoDismiss=false)=>{cancel();suppressClick=autoDismiss;suppressUntil=Date.now()+900;openShoppingAssociation(tile,labels,{autoDismiss})};
+  tile.addEventListener('pointerdown',event=>{cancel();if(event.button!==0)return;suppressClick=false;start={x:event.clientX,y:event.clientY};timer=setTimeout(()=>show(true),500)});
   tile.addEventListener('pointermove',event=>{if(start&&Math.hypot(start.x-event.clientX,start.y-event.clientY)>8)cancel()});
   ['pointerup','pointercancel','lostpointercapture'].forEach(type=>tile.addEventListener(type,cancel));
   const scrollCancel=()=>cancel();window.addEventListener('scroll',scrollCancel,{capture:true,passive:true});
   // Abort the global listener when a list rerender removes this tile.
   tile._disposeAssociation=()=>{cancel();window.removeEventListener('scroll',scrollCancel,true)};
-  tile.addEventListener('click',event=>{if(Date.now()<suppressUntil){event.preventDefault();event.stopImmediatePropagation()}},true);
+  tile.addEventListener('click',event=>{if(suppressClick||Date.now()<suppressUntil){suppressClick=false;event.preventDefault();event.stopImmediatePropagation()}},true);
   tile.addEventListener('contextmenu',event=>{event.preventDefault();show()});
-  tile.addEventListener('keydown',event=>{if(event.key==='Enter'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();show()}});
+  tile.addEventListener('keydown',event=>{if(event.key===' ')suppressClick=false;if(event.key==='Enter'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();show()}});
 }
 function enhanceShoppingList(){
   const open=$('#shopping-open'),done=$('#shopping-done');
@@ -173,13 +194,13 @@ function initializeDesign(){
   const nav=document.createElement('nav');nav.className='mobile-nav';nav.setAttribute('aria-label','Hauptnavigation');
   [['week','Wochenplan'],['dishes','Gerichte'],['cooking','Zubereiten'],['shopping','Einkauf']].forEach(([view,label])=>{const button=uiButton(label,()=>{if(view==='cooking'){void saveCookingProgress();cookingStage='list';selectedRecipeDishId=''}setView(view);window.scrollTo(0,0)},{icon:view,className:'mobile-nav-item'});button.dataset.view=view;nav.append(button);const desktop=$(`#sidebar .nav-item[data-view="${view}"]`);desktop.replaceChildren(uiIcon(view),document.createTextNode(label));if(view==='cooking')desktop.addEventListener('click',event=>{event.stopImmediatePropagation();void saveCookingProgress();cookingStage='list';selectedRecipeDishId='';setView('cooking');closeMobileMenu()},{capture:true});});
   // Counters remain as compatibility targets for the existing state renderer.
-  const counters=document.createElement('div');counters.hidden=true;['nav-count','dish-count','shopping-nav-count'].forEach(id=>{if(!document.getElementById(id)){const node=document.createElement('span');node.id=id;counters.append(node)}});document.body.append(counters);$('.app-shell').append(nav);
-  const account=uiDialog('account-dialog','Einstellungen');const accountMenu=$('#profile-actions-menu');account.append(accountMenu);accountMenu.hidden=false;
+  const counters=document.createElement('div');counters.hidden=true;['nav-count','dish-count','shopping-nav-count'].forEach(id=>{if(!document.getElementById(id)){const node=document.createElement('span');node.id=id;counters.append(node)}});document.body.append(counters);const dock=document.createElement('div');dock.className='mobile-nav-dock';dock.append(nav);$('.app-shell').append(dock);
+  const account=uiDialog('account-dialog','Dein Konto');const accountMenu=$('#profile-actions-menu');const accountName=document.createElement('p');accountName.id='account-name';accountName.className='account-name';account.append(accountName,accountMenu);accountMenu.hidden=false;
   const openAccount=()=>{accountMenu.hidden=false;account.showModal()};account.addEventListener('click',event=>{if(event.target.closest('.profile-action,.nav-item'))account.close()});
   const admin=$('#catalog-admin-nav');accountMenu.append(admin);
-  $('.side-bottom').append(uiButton('Profil',()=>$('#household-open').click(),{icon:'profile'}),uiButton('Einstellungen',openAccount,{icon:'sliders'}));
+  const accountBar=document.createElement('div');accountBar.className='account-bar';const avatar=uiButton('',openAccount,{className:'account-avatar'});avatar.id='account-avatar';avatar.setAttribute('aria-haspopup','dialog');accountBar.append(avatar);$('.main-content').prepend(accountBar);$('#household-open').querySelector('span:last-child').textContent='Profil & Haushalt';updateAccountIdentity();
   const weekHeading=$('#week-view .page-heading');weekHeading.querySelector('h1').firstChild.textContent='Wochenplan';const period=document.createElement('p');period.className='subheading';period.id='week-period';weekHeading.querySelector('.subheading').replaceWith(period);
-  const plan=uiMenu('Planen','plan-menu');weekHeading.append(plan.details);const toolbar=$('#week-view .week-toolbar');plan.panel.append(toolbar,$('#mix-btn'),uiButton('Profil',()=>{plan.details.open=false;$('#household-open').click()},{icon:'profile'}),uiButton('Einstellungen',()=>{plan.details.open=false;openAccount()},{icon:'sliders'}));
+  const plan=uiMenu('Planen','plan-menu');weekHeading.append(plan.details);const toolbar=$('#week-view .week-toolbar');const planHeading=document.createElement('div');planHeading.className='plan-menu-heading';planHeading.textContent='Deine Wochenplanung';$('#mix-btn').replaceChildren(uiIcon('sliders'),document.createTextNode('7 Tage mischen'));plan.panel.append(planHeading,toolbar,$('#mix-btn'));
   plan.panel.addEventListener('click',event=>{if(event.target.closest('button')&&!event.target.closest('.week-switch'))plan.details.open=false});
   const layout=document.createElement('div');layout.className='week-layout';$('#calendar').before(layout);const preview=document.createElement('section');preview.id='week-preview';preview.setAttribute('aria-label','Ausgewählter Tag');layout.append($('#calendar'),preview);
   $('#dishes-view h1').firstChild.textContent='Gerichte';$('#dishes-type').before($('#search-dishes').closest('.search-box'));$('#dishes-view').append($('#catalog-btn'));$('#catalog-btn').textContent='Standardkatalog entdecken';$('#add-dish-btn').replaceChildren(uiIcon('plus'),document.createTextNode('Hinzufügen'));

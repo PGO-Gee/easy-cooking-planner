@@ -12,3 +12,4 @@ test('the offline shell contains all local script and stylesheet entry points',(
     assert(fs.existsSync(path.join(root,asset)),asset+' must exist');assert(shell.includes(`'./${asset.replace(/^\.\//,'')}'`),asset+' must be cached');
   }
 });
+test('all recipe photos have a substantially smaller gallery image',()=>{for(const name of fs.readdirSync(path.join(root,'images/recipes')).filter(name=>name.endsWith('.jpg')&&!name.endsWith('-thumb.jpg'))){const original=path.join(root,'images/recipes',name),card=original.replace(/\.jpg$/,'-card.webp');assert(fs.existsSync(card),name);assert(fs.statSync(card).size<fs.statSync(original).size*.5,name+' card should save at least half the original transfer')}});
