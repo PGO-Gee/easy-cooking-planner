@@ -2,7 +2,7 @@
 
 Stand: 14. November 2026 · Mobil: **Fokus / Wochenmenü** · Desktop: **Wochenliste mit Gerichtsvorschau**
 
-Dieser Guide hält die gemeinsam abgestimmte Gestaltung fest und dient als Grundlage für die nächsten Screens. Er beschreibt das Zielbild; die bestehende App ist noch nicht auf dieses Design umgestellt. Bestehende Funktionen bleiben bei der Gestaltung berücksichtigt. Die iPhone-first-Vorgaben aus `AGENTS.md` gelten zusätzlich.
+Dieser Guide hält die gemeinsam abgestimmte Gestaltung fest. Die App setzt sie seit dem UI-Umbau vom 14. November 2026 um; ergänzende Funktionen und weitere Desktop-Ansichten sind daraus abgeleitet. Den tatsächlich geprüften Stand und Grenzen dokumentiert der [UI-Testbericht](tests/UI-TESTREPORT.md). Die iPhone-first-Vorgaben aus `AGENTS.md` gelten zusätzlich.
 
 Die zugehörigen [Screenshots und die interaktive Vorschau](docs/ui-reference/2026-11-14/README.md) sind als datierter Referenzstand im Projekt gespeichert.
 Für den Desktop-Wochenplan gilt die separat gesicherte [ausgewählte Wochenliste mit Vorschau und Screenshots](docs/ui-reference/2026-11-14-desktop/README.md).
@@ -59,7 +59,7 @@ Das Zeichen im Schema steht für ein Regler-Symbol, nicht für ein zusätzliches
 
 ## 4. Farben
 
-Die Werte stammen aus dem gewählten Mockup. Sie sind Zielwerte für semantische Farbrollen und noch keine Änderung an den produktiven Stylesheets.
+Die Werte stammen aus dem gewählten Mockup und bilden die semantischen Farbrollen der App.
 
 | Rolle | Hell | Dunkel | Verwendung |
 | --- | --- | --- | --- |
@@ -138,7 +138,7 @@ Der äußere Smartphone-Rahmen, die zentrierte Vorschau und die große Bühnenh�
 - Text nicht über das Foto legen; die Lesbarkeit bleibt unabhängig vom Bildmotiv.
 - In der bisherigen Vorschau ist das Foto ungefähr doppelt so breit wie hoch. Bei unterschiedlichen Breiten die Bildproportion bewahren und den Ausschnitt sinnvoll anpassen.
 
-Welches Gericht hervorgehoben wird, ist noch offen. Die Vorschau verwendet Montag als Beispieldatensatz. Eine Regel wie „heutiges“ oder „nächstes Gericht“ wird vor der Umsetzung festgelegt.
+Mobil wird das erste geplante Gericht ab heute im sichtbaren Zeitraum hervorgehoben, andernfalls das erste geplante Gericht dieses Zeitraums. Weitere Rezepte desselben Tages stehen direkt darunter, die übrigen Tage folgen chronologisch. Ohne geplantes Gericht entfällt die große Karte. Montag in der Referenz ist ein Beispieldatensatz; der produktive Zeitraum beginnt weiterhin heute.
 
 ### Kompakte Gerichtszeile
 
@@ -200,7 +200,7 @@ Der Resteabend ist eine geplante Entscheidung und erhält einen eigenen Aufbau:
 - Aktiven Screen mit blauer Schrift, passendem Icon und sanfter Auswahlfläche kennzeichnen.
 - Icons aus einem einheitlichen Outline-System verwenden. Beschriftungen tragen die Bedeutung; keine wechselnden Emoji als Bedienelemente.
 - Fixieren, Hinzufügen und andere wiederkehrende Aktionen behalten Symbol, Farbe und Position über Screens hinweg bei.
-- Ob die mobile Navigation feststeht, wird mit den nächsten Screens entschieden. Bei fixer Position Safe-Area, Inhaltsabstand und Tastatur berücksichtigen.
+- Die mobile Navigation steht unten fest, mit Safe-Area und ausreichendem Inhaltsabstand. Bei verkleinertem Visual Viewport während einer Texteingabe wird sie ausgeblendet. App-Start führt zum Wochenplan; die frühere Kachelübersicht entfällt.
 - Desktop erhält eine zum Platz passende Navigation und breitere Inhaltsanordnung. Nicht einfach eine schmale Telefonansicht auf dem Desktop zentrieren.
 - Formulare haben sichtbare Labels, mindestens 16 px Eingabeschrift und verständliche Validierung direkt beim Feld.
 - Dialoge und Aktionsmenüs bleiben auch bei kleiner Höhe und geöffneter Tastatur erreichbar und scrollbar. Im Zweifel eine passende Sheet-Ansicht für kleine Screens entwerfen.
@@ -221,7 +221,7 @@ Ausgewählt ist die **Wochenliste mit Gerichtsvorschau**. Das Wochenraster bleib
 
 ### Vorschau und Bedienung
 
-- Anfangs ist Montag ausgewählt. Eine andere Tagesauswahl aktualisiert die rechte Vorschau; die Wochenliste bleibt sichtbar.
+- Anfangs ist der erste sichtbare Tag ausgewählt. Eine andere Tagesauswahl aktualisiert die rechte Vorschau; die Wochenliste bleibt sichtbar. Bei einem Zeitraumwechsel beginnt die Auswahl wieder beim ersten sichtbaren Tag.
 - Bei einem Gericht: breites Foto, Tag und Datum, Gerichtstitel, Fixierung, Dauer, Portionen, Zutatenübersicht und **Rezept ansehen**.
 - Bei einem freien Tag: Datum, „Nicht geplant“, kurze Erklärung und **Gericht auswählen**. Der Resteabend erhält eine grüne Erklärung ohne Foto oder erfundene Zubereitungsangaben.
 - **Rezept ansehen** öffnet eine schließbare, bei Bedarf scrollbar bleibende Detailansicht mit Zubereitung. Schließen bleibt erreichbar; Escape und Antippen außerhalb schließen ebenfalls. Der Tastaturfokus bleibt im Dialog und kehrt danach zum Einstieg zurück.
@@ -230,15 +230,15 @@ Ausgewählt ist die **Wochenliste mit Gerichtsvorschau**. Das Wochenraster bleib
 
 ### Übertragung auf weitere Screens
 
-Die Seitenleiste und der reduzierte Header bilden die Desktop-Basis. Die konkrete Desktop-Anordnung von Gerichtsgalerie, Rezeptdetails, Kochmodus und Einkaufszettel ist noch separat abzustimmen. Eine schmale Fallback-Ansicht des Desktop-Mockups ersetzt nicht die bereits abgestimmten mobilen Screens.
+Die Seitenleiste und der reduzierte Header bilden ab 1024 px die Desktop-Basis. Die Galerie ergänzt Spalten mit mindestens etwa 220 px Kartenbreite. Rezeptdetails nutzen zwei Inhaltsspalten, der Kochmodus zeigt Zutaten neben dem Schritt. Einkauf und Editor bleiben bis etwa 960 px breit. Darunter sowie bei niedrigen Touch-Querformaten gilt das mobile Layout.
 
 Referenzgrößen für die Umsetzung: **1440 × 900, 1280 × 800 und 1024 × 768 px**, jeweils hell und dunkel. Desktop-Anpassungen dürfen die mobilen Regeln und Safe-Areas nicht beeinträchtigen.
 
 ## 11. Weitere Screens gemeinsam durchgehen
 
-Die folgenden Übertragungen sind Ausgangspunkte für Mockups, noch keine abgestimmten Screen-Entwürfe:
+Die sieben mobilen Referenzansichten sind umgesetzt. Für weitere Designänderungen dienen die folgenden Schwerpunkte als Prüfraster:
 
-| Screen | Was wir als Nächstes klären |
+| Screen | Gestaltungsschwerpunkt |
 | --- | --- |
 | Meine Gerichte | Bildliste oder Bildraster, Suche, Hinzufügen und Katalogzugang |
 | Rezeptdetail | Großes Foto, Portionen, Zutaten und Zubereitung in gut lesbarer Reihenfolge |

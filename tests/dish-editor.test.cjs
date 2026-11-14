@@ -5,11 +5,11 @@ const vm = require('node:vm');
 const recipes = require('../recipe-model.js');
 
 // Exercise the same form-to-recipe conversion used by the editor with rows
-// that may be offscreen in the mobile pager.
+// that may be inside a collapsed editor section.
 function readEditorValue(servings, ingredients, steps = []) {
   const source = fs.readFileSync(require.resolve('../app.js'), 'utf8');
   const start = source.indexOf('function recipeEditorValue(){');
-  const end = source.indexOf('// The creation wizard', start);
+  const end = source.indexOf('// The section-based editor', start);
   assert.ok(start >= 0 && end > start);
   const rows = ingredients.map(item => ({
     querySelectorAll: () => Object.entries(item).map(([field, value]) => ({

@@ -1332,3 +1332,11 @@ body { background: radial-gradient(ellipse at 85% 0%, #293f49, transparent 40%),
 #dish-form.is-imported-ingredients .recipe-ingredient-row select { background-color: #18232f; border-color: #60758b; color: #e0e8f1; }
 
 .shopping-add-status { background: #233b32; border-color: #456657; color: #e0f1e3; }
+
+/* The same semantic roles as the light design; photos retain natural colors. */
+html.design {
+  --canvas:#171B21;--paper:#242A33;--ink:#EDF2FA;--muted:#ADB9C9;
+  --line:#3C4654;--action:#AACDF5;--on-action:#17283E;--selection:#2B3B50;
+  --rest:#293E32;--on-rest:#B9D8C3;--error:#ffb4a9;
+  --warning:#eed197;--warning-bg:#352d20;color-scheme:dark;
+}
