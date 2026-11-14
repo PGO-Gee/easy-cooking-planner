@@ -2,6 +2,9 @@
 
 Eine statische Web-App zum Planen der Mahlzeiten für die Woche. Die App bietet Wochenplanung, eine eigene Gerichtesammlung und einen Einkaufszettel. Sie ist für eine geschlossene Testphase mit ausgewählten Nutzer:innen vorgesehen.
 
+Die abgestimmte UI-Gestaltung und die Prüfliste für weitere Screens stehen im [UI-Styleguide](STYLEGUIDE.md).
+Screenshots aller sieben Screens in Hell/Dunkel und eine lokal nutzbare interaktive Vorschau liegen im [UI-Referenzpaket vom 14.11.2026](docs/ui-reference/2026-11-14/README.md).
+
 ## Lokal starten
 
 Im Projektverzeichnis einen lokalen HTTP-Server starten, zum Beispiel:
