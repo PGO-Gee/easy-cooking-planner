@@ -5,11 +5,11 @@ Stand: 14. November 2026.
 ## Nachbesserungen nach iPhone-15-Pro-Rückmeldung
 
 - Pinnadel und Titel der großen Gerichtskarte liegen in getrennten Rasterspalten, auch bei mehrzeiligen Namen. Der grüne Tagesbalken zeigt zentriert „Reste“.
-- Ein durchgehend erreichbarer Kontokreis zeigt Initialen aus dem vorhandenen Anzeigenamen und öffnet Profil/Haushalt, Theme und weitere Kontoeinstellungen. Der Name wird für die Offlineanzeige pro Konto lokal gespeichert und nicht für Berechtigungen verwendet. Die Kontoeinträge entfallen im Planen-Menü und unten in der Desktop-Seitenleiste.
+- Ein Kontokreis direkt vor dem jeweiligen Screen-Titel zeigt Initialen aus dem vorhandenen Anzeigenamen und öffnet Profil/Haushalt, Theme und weitere Kontoeinstellungen. Eine separate obere Kontozeile entfällt. Der Name wird für die Offlineanzeige pro Konto lokal gespeichert und nicht für Berechtigungen verwendet. Die Kontoeinträge entfallen im Planen-Menü und unten in der Desktop-Seitenleiste.
 - Das Planen-Menü hat eine klar gegliederte Wochenauswahl und einen eigenen Misch-Button. Die untere Navigation liegt auf einer vollbreiten, bis zum unteren Rand deckenden Fläche einschließlich Safe-Area.
 - Die Gerichtsuche erhält einen einzigen Fokusrahmen am Feldcontainer. 62 reproduzierbar erzeugte WebP-Kartenbilder mit 384 × 288 px benötigen insgesamt 1.050.758 statt 12.742.192 Byte der großen Originale (**91,8 % weniger**). Die ersten vier Karten laden sofort, weitere bei Annäherung; bei fehlendem WebP fällt die Anzeige auf das vorhandene kleine JPEG zurück. Generierung: `tools/build-recipe-card-images.py` mit Pillow.
-- Die Einkaufseingabe bleibt beim Scrollen und im simulierten Tastaturzustand oben unter dem Kontokreis. Langes Drücken zeigt die Zuordnung drei Sekunden; ein besonders langes Halten darf den Artikel beim Loslassen nicht zusätzlich abhaken. Tastatur-/Rechtsklick-Aufrufe bleiben ohne Zeitlimit schließbar.
-- Aktuelle App-Shell: **v124**, Asset-Version `20261114-2`.
+- Die Einkaufseingabe bleibt beim Scrollen und im simulierten Tastaturzustand am oberen sichtbaren Rand, ohne Abstand für eine separate Kontozeile. Langes Drücken zeigt die Zuordnung drei Sekunden; ein besonders langes Halten darf den Artikel beim Loslassen nicht zusätzlich abhaken. Tastatur-/Rechtsklick-Aufrufe bleiben ohne Zeitlimit schließbar.
+- Aktuelle App-Shell: **v125**, Asset-Version `20261114-3`.
 
 Aktueller Prüfumfang: **177 Node-Tests** und **126 Browserkombinationen** (sieben Screens × neun Größen × Light/Dark). Zusätzlich zu den unten genannten Größen wurden **393 × 852** und **852 × 393 CSS-Pixel** geprüft. Gezielte Assertions kontrollieren getrennte Titel-/Aktionsspalten, Reste-Zentrierung, Initialen/Kontomenü, den Suchfokus, kleinere Bildquellen, die oben bleibende Eingabe, den bis zum unteren Rand deckenden Navigationsbereich sowie das zeitgesteuerte Pop-up. Dies sind Desktop-Chrome-Prüfungen; die echte iPhone-/Safari-Prüfung stammt weiterhin vom Nutzer.
 

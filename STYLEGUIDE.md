@@ -49,7 +49,7 @@ Wochenplan                       [≡ Planen]
 Das Zeichen im Schema steht für ein Regler-Symbol, nicht für ein zusätzliches Menü-Icon.
 
 - Genau ein Screen-Titel. Kein zusätzlicher Marken-Header innerhalb der Hauptscreens.
-- Oberhalb der Screens bleibt ein kleiner Kontokreis mit den Initialen des Anzeigenamens erreichbar. Er öffnet Profil/Haushalt, Theme und weitere vorhandene Kontoeinstellungen. Ohne Namen erscheint ein neutrales Profilsymbol.
+- Direkt vor dem jeweiligen Screen-Titel steht ein kleiner Kontokreis mit den Initialen des Anzeigenamens, ohne separate obere Zeile. Er öffnet Profil/Haushalt, Theme und weitere vorhandene Kontoeinstellungen. Ohne Namen erscheint ein neutrales Profilsymbol.
 - **Planen** bleibt sichtbar beschriftet. Ein alleinstehendes „…“ ist für diesen Einstieg zu unklar.
 - Das Wochenmenü enthält nur die Wochenwahl und „7 Tage mischen“, in einer abgerundeten, klar gegliederten Fläche. Profil und Einstellungen liegen im gemeinsamen Kontomenü.
 - Vorräte werden innerhalb von „7 Tage mischen“ ausgewählt oder übersprungen, bevor der Plan erstellt wird. Ein separater Menüpunkt „Vorräte wählen“ entfällt. Fixierte Gerichte bleiben beim Mischen erhalten.
@@ -212,7 +212,7 @@ Ausgewählt ist die **Wochenliste mit Gerichtsvorschau**. Das Wochenraster bleib
 
 ### Aufbau des Wochenplans
 
-- Links eine schmale, deckende Seitenleiste: Wochenplan, Gerichte, Zubereiten und Einkauf. Der gemeinsame Kontokreis steht auch am Desktop oberhalb des Inhalts. Der aktive Bereich ist blau und sanft hinterlegt.
+- Links eine schmale, deckende Seitenleiste: Wochenplan, Gerichte, Zubereiten und Einkauf. Der gemeinsame Kontokreis steht auch am Desktop direkt vor dem Screen-Titel. Der aktive Bereich ist blau und sanft hinterlegt.
 - Seitenleiste ungefähr 200 px breit bei großen Desktop-Ansichten und 172 px bei 1024 px Breite. Der Hauptbereich hat etwa 32 px horizontalen Abstand, bei 1024 px etwa 24 px.
 - Der Header enthält „Wochenplan“, darunter den Zeitraum, rechts **Planen**. Kein zusätzlicher Marken-Header und keine parallele Reihe für Misch- oder Vorratsaktionen.
 - Darunter zwei Bereiche im Verhältnis ungefähr 45 : 55 mit etwa 20–26 px Abstand: Wochenliste links, Gerichtsvorschau rechts. Bei 1024 px bleiben beide nebeneinander und ohne horizontales Scrollen nutzbar.

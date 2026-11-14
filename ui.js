@@ -52,7 +52,7 @@ function uiDialog(id,title){
   return dialog;
 }
 function uiMenu(label,id){const details=document.createElement('details');details.className='ui-menu';details.id=id;const summary=document.createElement('summary');summary.append(uiIcon('sliders'),document.createTextNode(label));const panel=document.createElement('div');panel.className='ui-menu-panel';details.append(summary,panel);return {details,panel}}
-let uiSelectedDay=0,uiSelectedMeal=0,uiRangeKey='',uiRecipeOpener=null;
+let uiSelectedDay=0,uiSelectedMeal=0,uiRangeKey='',uiRecipeOpener=null,accountAvatar=null;
 function uiDesktop(){return !compactNavigationQuery.matches}
 function selectDesktopMeal(meal){
   if(!uiDesktop())return false;
@@ -133,10 +133,22 @@ function enhanceCookingStep(){
   const content=$('#cooking-content');content.className='cooking-step-content';const ingredients=content.querySelector('.cook-ingredients-details');if(ingredients){const details=document.createElement('details');details.className='cook-ingredients-details';details.open=uiDesktop();const summary=document.createElement('summary');summary.textContent='Zutaten griffbereit';details.append(summary,...ingredients.childNodes);ingredients.replaceWith(details)}syncDesignNavigation();
 }
 function syncDesignNavigation(){
+  placeAccountAvatar();
   updateAccountIdentity();
   const actual=savedView(),active=actual==='cooking'&&cookingStage==='overview'?recipeDetailPreviousView:actual;
   document.querySelectorAll('.nav-item,.mobile-nav button').forEach(button=>{const selected=button.dataset.view===active;button.classList.toggle('active',selected);if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current')});
   document.documentElement.dataset.view=actual;document.documentElement.dataset.cookingStage=cookingStage;
+}
+function placeAccountAvatar(){
+  if(!accountAvatar)return;
+  const view=savedView()==='cooking'?document.getElementById('cooking-view'):document.querySelector('.view:not(.hidden)');if(!view)return;
+  let title=view.querySelector('.page-heading h1');
+  if(view.id==='cooking-view'&&cookingStage==='overview')title=document.querySelector('#cooking-content .recipe-detail-heading h2')||title;
+  if(view.id==='cooking-view'&&cookingStage==='cook')title=document.querySelector('#cooking-content .cook-step-title')||title;
+  if(!title)return;
+  let row=title.parentElement;
+  if(!row.classList.contains('screen-title')){row=document.createElement('div');row.className='screen-title';title.before(row);row.append(title)}
+  row.prepend(accountAvatar);
 }
 let shoppingAssociationTimeout=0;
 function openShoppingAssociation(tile,labels,{autoDismiss=false}={}){
@@ -198,7 +210,7 @@ function initializeDesign(){
   const account=uiDialog('account-dialog','Dein Konto');const accountMenu=$('#profile-actions-menu');const accountName=document.createElement('p');accountName.id='account-name';accountName.className='account-name';account.append(accountName,accountMenu);accountMenu.hidden=false;
   const openAccount=()=>{accountMenu.hidden=false;account.showModal()};account.addEventListener('click',event=>{if(event.target.closest('.profile-action,.nav-item'))account.close()});
   const admin=$('#catalog-admin-nav');accountMenu.append(admin);
-  const accountBar=document.createElement('div');accountBar.className='account-bar';const avatar=uiButton('',openAccount,{className:'account-avatar'});avatar.id='account-avatar';avatar.setAttribute('aria-haspopup','dialog');accountBar.append(avatar);$('.main-content').prepend(accountBar);$('#household-open').querySelector('span:last-child').textContent='Profil & Haushalt';updateAccountIdentity();
+  accountAvatar=uiButton('',openAccount,{className:'account-avatar'});accountAvatar.id='account-avatar';accountAvatar.setAttribute('aria-haspopup','dialog');$('#household-open').querySelector('span:last-child').textContent='Profil & Haushalt';
   const weekHeading=$('#week-view .page-heading');weekHeading.querySelector('h1').firstChild.textContent='Wochenplan';const period=document.createElement('p');period.className='subheading';period.id='week-period';weekHeading.querySelector('.subheading').replaceWith(period);
   const plan=uiMenu('Planen','plan-menu');weekHeading.append(plan.details);const toolbar=$('#week-view .week-toolbar');const planHeading=document.createElement('div');planHeading.className='plan-menu-heading';planHeading.textContent='Deine Wochenplanung';$('#mix-btn').replaceChildren(uiIcon('sliders'),document.createTextNode('7 Tage mischen'));plan.panel.append(planHeading,toolbar,$('#mix-btn'));
   plan.panel.addEventListener('click',event=>{if(event.target.closest('button')&&!event.target.closest('.week-switch'))plan.details.open=false});

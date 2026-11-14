@@ -502,9 +502,10 @@ html.design .mobile-nav-item { display:flex;flex-direction:column;align-items:ce
 html.design .mobile-nav-item .ui-icon,html.design .mobile-nav-item svg { width:18px;height:18px; }
 html.design .mobile-nav-item.active { background:var(--selection);color:var(--action);font-weight:700; }
 html.design.keyboard-open .mobile-nav-dock { display:none; }
-html.design .account-bar { position:sticky;top:calc(var(--visual-viewport-top,0px) + env(safe-area-inset-top,0px));z-index:40;display:flex;align-items:center;height:60px;margin-bottom:14px;background:var(--canvas); }
-html.design .account-bar::before { content:'';position:absolute;left:0;right:0;bottom:100%;height:calc(24px + env(safe-area-inset-top,0px));background:var(--canvas); }
-html.design .account-avatar { display:grid;place-items:center;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--action);font:700 15px/1 var(--sans);box-shadow:0 2px 8px #101f3508; }
+html.design .screen-title { display:flex;align-items:center;gap:10px;min-width:0; }
+html.design .screen-title > h1,html.design .screen-title > h2 { flex:1;min-width:0;margin:0;overflow-wrap:anywhere; }
+html.design .page-heading > div:first-child { flex:1;min-width:0; }
+html.design .account-avatar { display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--action);font:700 15px/1 var(--sans);box-shadow:0 2px 8px #101f3508; }
 html.design #account-dialog { width:min(360px,calc(100vw - 24px));border-radius:24px;background:var(--paper); }
 html.design .account-name { color:var(--muted);margin:-12px 0 18px;overflow-wrap:anywhere; }
 html.design #account-dialog .profile-action { width:100%;border-radius:12px;padding:12px;text-align:left;justify-content:flex-start; }
@@ -684,7 +685,7 @@ html.design .cook-step-actions { display:flex;gap:10px;margin:20px 0; }
 html.design .cook-step-actions button { flex:1; }
 html.design .cook-ingredients-details { background:var(--selection);border:0;border-radius:14px;padding:0 16px; }
 html.design .shopping-screen { max-width:960px;margin:0 auto; }
-html.design .shopping-add-form { position:sticky;top:calc(var(--visual-viewport-top,0px) + env(safe-area-inset-top,0px) + 60px);z-index:30;display:flex;flex-wrap:wrap;gap:10px;width:100%;max-width:none;margin:0 0 22px;padding:10px 0;background:var(--canvas);border:0;box-shadow:0 1px 0 var(--line); }
+html.design .shopping-add-form { position:sticky;top:calc(var(--visual-viewport-top,0px) + env(safe-area-inset-top,0px));z-index:30;display:flex;flex-wrap:wrap;gap:10px;width:100%;max-width:none;margin:0 0 22px;padding:10px 0;background:var(--canvas);border:0;box-shadow:0 1px 0 var(--line); }
 html.design .shopping-item-suggest { flex:1;min-width:0; }
 html.design .shopping-add-form input { width:100%; }
 html.design .shopping-add-status { flex:1 1 100%;background:var(--selection);color:var(--ink);border:1px solid var(--line); }
@@ -769,6 +770,9 @@ html.design .password-sign-in-button { background:var(--action);color:var(--on-a
   html.design .week-layout { gap:20px; }
 }
 @media(max-width:359px) {
+  html.design .page-heading { flex-wrap:wrap; }
+  html.design .page-heading > div:first-child { flex-basis:100%; }
+  html.design .page-heading > .ui-menu,html.design .page-heading > .primary-button { margin-left:auto; }
   html.design .main-content { padding-left:14px;padding-right:14px; }
   html.design .page-heading h1 { font-size:25px; }
   html.design #dish-list { gap:9px; }
