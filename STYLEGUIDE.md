@@ -1,10 +1,11 @@
 # Wochentisch – UI-Styleguide
 
-Stand: 14. November 2026 · Gestaltungsrichtung: **Fokus / Wochenmenü**
+Stand: 14. November 2026 · Mobil: **Fokus / Wochenmenü** · Desktop: **Wochenliste mit Gerichtsvorschau**
 
 Dieser Guide hält die gemeinsam abgestimmte Gestaltung fest und dient als Grundlage für die nächsten Screens. Er beschreibt das Zielbild; die bestehende App ist noch nicht auf dieses Design umgestellt. Bestehende Funktionen bleiben bei der Gestaltung berücksichtigt. Die iPhone-first-Vorgaben aus `AGENTS.md` gelten zusätzlich.
 
 Die zugehörigen [Screenshots und die interaktive Vorschau](docs/ui-reference/2026-11-14/README.md) sind als datierter Referenzstand im Projekt gespeichert.
+Für den Desktop-Wochenplan gilt die separat gesicherte [ausgewählte Wochenliste mit Vorschau und Screenshots](docs/ui-reference/2026-11-14-desktop/README.md).
 
 ## 1. Gestaltungsrichtung
 
@@ -21,7 +22,8 @@ Eine moderne, persönliche Kochplaner-App mit ruhigen Flächen, echten Gerichtsb
 
 | Element | Festlegung |
 | --- | --- |
-| Grundlayout | „Fokus“: ein hervorgehobenes Gericht mit großem Foto, darunter die kompakte Woche |
+| Mobiler Wochenplan | „Fokus“: ein hervorgehobenes Gericht mit großem Foto, darunter die kompakte Woche |
+| Desktop-Wochenplan | Wochenliste links, Vorschau des ausgewählten Tages rechts; schmale Seitenleiste für die Navigation |
 | Schrift | Vorhandene Comic Relief beibehalten, regulär und fett |
 | Header | Screen-Titel und gegebenenfalls Datum; kein zusätzlicher App-Name |
 | Header-Spruch | Entfällt |
@@ -31,7 +33,7 @@ Eine moderne, persönliche Kochplaner-App mit ruhigen Flächen, echten Gerichtsb
 | Resteabend | Kompakte grüne Zeile mit Datum, „Resteabend“ und Rücklauf-Symbol |
 | Navigation | Wochenplan, Gerichte, Zubereiten, Einkauf; Icons mit sichtbaren Beschriftungen |
 
-Die zuletzt gezeigte Vorschau enthielt noch den App-Namen über dem Titel. Die anschließend vereinbarte Entfernung gehört ausdrücklich zum Zielbild dieses Guides.
+Die aktuellen mobilen und ausgewählten Desktop-Referenzen beginnen direkt mit dem Screen-Titel. Frühere Entwürfe mit zusätzlichem App-Namen im Header sind überholt.
 
 ## 3. Header und Aktionen
 
@@ -204,7 +206,35 @@ Der Resteabend ist eine geplante Entscheidung und erhält einen eigenen Aufbau:
 - Dialoge und Aktionsmenüs bleiben auch bei kleiner Höhe und geöffneter Tastatur erreichbar und scrollbar. Im Zweifel eine passende Sheet-Ansicht für kleine Screens entwerfen.
 - Keine wesentliche Aktion ausschließlich über Hover oder eine unbeschriftete Geste zugänglich machen. Sichtbarer Tastaturfokus bleibt erhalten.
 
-## 10. Weitere Screens gemeinsam durchgehen
+## 10. Abgestimmte Desktop-Richtung
+
+Ausgewählt ist die **Wochenliste mit Gerichtsvorschau**. Das Wochenraster bleibt als verworfene Alternative im früheren Vergleich dokumentiert und ist keine Umsetzungsvorgabe.
+
+### Aufbau des Wochenplans
+
+- Links eine schmale, deckende Seitenleiste: Wochenplan, Gerichte, Zubereiten und Einkauf. Profil und Einstellungen stehen unten, getrennt von der Hauptnavigation. Der aktive Bereich ist blau und sanft hinterlegt.
+- Seitenleiste ungefähr 200 px breit bei großen Desktop-Ansichten und 172 px bei 1024 px Breite. Der Hauptbereich hat etwa 32 px horizontalen Abstand, bei 1024 px etwa 24 px.
+- Der Header enthält „Wochenplan“, darunter den Zeitraum, rechts **Planen**. Kein zusätzlicher Marken-Header und keine parallele Reihe für Misch- oder Vorratsaktionen.
+- Darunter zwei Bereiche im Verhältnis ungefähr 45 : 55 mit etwa 20–26 px Abstand: Wochenliste links, Gerichtsvorschau rechts. Bei 1024 px bleiben beide nebeneinander und ohne horizontales Scrollen nutzbar.
+- Alle sieben Tage bleiben chronologisch sichtbar. Geplante Tage zeigen Datum, kleines Foto, Gericht, Dauer und Portionen. Der ausgewählte Tag erhält einen feinen blauen Rahmen und eine sanfte Auswahlfläche.
+- Freie Tage und Resteabende bleiben etwa 44 px hohe Zeilen. Resteabend ist grün, „Nicht geplant“ neutral. Beide können ausgewählt werden, ohne aus der Wochenübersicht zu verschwinden.
+
+### Vorschau und Bedienung
+
+- Anfangs ist Montag ausgewählt. Eine andere Tagesauswahl aktualisiert die rechte Vorschau; die Wochenliste bleibt sichtbar.
+- Bei einem Gericht: breites Foto, Tag und Datum, Gerichtstitel, Fixierung, Dauer, Portionen, Zutatenübersicht und **Rezept ansehen**.
+- Bei einem freien Tag: Datum, „Nicht geplant“, kurze Erklärung und **Gericht auswählen**. Der Resteabend erhält eine grüne Erklärung ohne Foto oder erfundene Zubereitungsangaben.
+- **Rezept ansehen** öffnet eine schließbare, bei Bedarf scrollbar bleibende Detailansicht mit Zubereitung. Schließen bleibt erreichbar; Escape und Antippen außerhalb schließen ebenfalls. Der Tastaturfokus bleibt im Dialog und kehrt danach zum Einstieg zurück.
+- **Planen → 7 Tage mischen** führt zur optionalen Vorratsauswahl. Vorräte können ausgewählt oder übersprungen werden. Fixierte Gerichte bleiben erhalten; die im Mockup gezeigte Mischlogik ist nur eine lokale Simulation.
+- Gleiche Comic-Relief-Schrift, Farbrollen, Bilder und Zustandsfarben wie mobil. Keine zusätzliche Desktop-Farbwelt oder dekorativen Kennzahlen.
+
+### Übertragung auf weitere Screens
+
+Die Seitenleiste und der reduzierte Header bilden die Desktop-Basis. Die konkrete Desktop-Anordnung von Gerichtsgalerie, Rezeptdetails, Kochmodus und Einkaufszettel ist noch separat abzustimmen. Eine schmale Fallback-Ansicht des Desktop-Mockups ersetzt nicht die bereits abgestimmten mobilen Screens.
+
+Referenzgrößen für die Umsetzung: **1440 × 900, 1280 × 800 und 1024 × 768 px**, jeweils hell und dunkel. Desktop-Anpassungen dürfen die mobilen Regeln und Safe-Areas nicht beeinträchtigen.
+
+## 11. Weitere Screens gemeinsam durchgehen
 
 Die folgenden Übertragungen sind Ausgangspunkte für Mockups, noch keine abgestimmten Screen-Entwürfe:
 
@@ -234,12 +264,14 @@ Für jeden Screen zuerst die Hauptaufgabe benennen, dann den Header und die eine
 - [ ] Safe-Areas und gegebenenfalls fixe Navigation berücksichtigt.
 - [ ] Tatsächlich geprüfte Viewports und Zustände dokumentiert.
 
-## 11. Umsetzung und bisherige Prüfung
+## 12. Umsetzung und bisherige Prüfung
 
 Styleguide und Referenzpaket dokumentieren das Zielbild. Die produktive Oberfläche wurde noch nicht umgestellt. Bei der späteren Umsetzung vorhandene Stylesheets und Gestaltungsmuster weiterverwenden; keine zusätzliche allgemeine UI- oder Mobile-CSS-Datei einführen. Wiederkehrende Werte in die vorhandene Struktur integrieren.
 
 Die Mockups wurden in Chrome bei **320 × 568, 390 × 844, 736 × 390 und 1024 × 768 px**, jeweils hell und dunkel sowie mit emulierter reduzierter Bewegung geprüft. Die überarbeitete Einkaufsliste wurde zusätzlich bei **390 × 340 px** sowie mit simulierten Touch-Haltegesten geprüft. Die Prüfung umfasste unter anderem geladene Bilder und Schrift, horizontale Überläufe, Menübedienung, Fixierung, Portionswahl, Kochschritte sowie Abhaken und Gerichtzuordnung beim Einkauf.
 
 Das Referenzpaket enthält **22 Screenshots** der sieben Screens und vier zusätzlicher Zustände in Hell/Dunkel, aufgenommen bei **390 × 844 px** als vollständige Inhaltsansichten. Der eigenständige HTML-Export wurde mit blockierten externen Netzwerkanfragen geöffnet und bedient; Schriften, Bilder und Icons sind eingebettet.
+
+Die ausgewählte Desktop-Wochenliste ist separat mit **14 Screenshots** bei **1440 × 900, 1280 × 800 und 1024 × 768 px** sowie zusätzlichen Tages- und Menüzuständen dokumentiert. Der eigenständige Export wurde in Hell/Dunkel ohne externe Netzwerkanfragen geprüft; Schrift, Bilder, sieben Tagesziele, fehlende horizontale Überläufe und Fokus-Rückgabe wurden kontrolliert. Der frühere Desktop-Vergleich enthält ergänzende Prüfungen schmaler Fallbacks und der lokalen Interaktionen.
 
 Eine echte iPhone-/Safari-Prüfung, die Prüfung mit geöffneter iOS-Tastatur und die Prüfung der künftig umgestalteten produktiven Screens stehen aus. Die gemessenen Desktop-Breiten betreffen die eingebettete mobile Vorschau und bestätigen noch kein künftiges Desktop-Layout.

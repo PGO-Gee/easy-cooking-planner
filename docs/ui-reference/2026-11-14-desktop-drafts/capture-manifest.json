@@ -1,0 +1,599 @@
+{
+  "status": "drafts-not-selected",
+  "designDate": "2026-11-14",
+  "browser": "157.0.8103.78",
+  "files": [
+    "screenshots/light/01-wochenliste-1440.png",
+    "screenshots/light/02-wochenraster-1440.png",
+    "screenshots/light/01-wochenliste-1280.png",
+    "screenshots/light/02-wochenraster-1280.png",
+    "screenshots/light/01-wochenliste-1024.png",
+    "screenshots/light/02-wochenraster-1024.png",
+    "screenshots/light/03-wochenliste-resteabend.png",
+    "screenshots/light/04-wochenliste-freier-tag.png",
+    "screenshots/light/05-planen-menue.png",
+    "screenshots/light/06-mischen-vorraete.png",
+    "screenshots/light/07-wochenraster-rezept.png",
+    "screenshots/dark/01-wochenliste-1440.png",
+    "screenshots/dark/02-wochenraster-1440.png",
+    "screenshots/dark/01-wochenliste-1280.png",
+    "screenshots/dark/02-wochenraster-1280.png",
+    "screenshots/dark/01-wochenliste-1024.png",
+    "screenshots/dark/02-wochenraster-1024.png",
+    "screenshots/dark/03-wochenliste-resteabend.png",
+    "screenshots/dark/04-wochenliste-freier-tag.png",
+    "screenshots/dark/05-planen-menue.png",
+    "screenshots/dark/06-mischen-vorraete.png",
+    "screenshots/dark/07-wochenraster-rezept.png"
+  ],
+  "screenshots": 22,
+  "layouts": [
+    {
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "layout": "agenda",
+      "shellWidth": 1440,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "layout": "calendar",
+      "shellWidth": 1440,
+      "overflow": [],
+      "gridColumns": 7,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 800,
+      "layout": "agenda",
+      "shellWidth": 1280,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 800,
+      "layout": "calendar",
+      "shellWidth": 1280,
+      "overflow": [],
+      "gridColumns": 7,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 768,
+      "layout": "agenda",
+      "shellWidth": 1024,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 768,
+      "layout": "calendar",
+      "shellWidth": 1024,
+      "overflow": [],
+      "gridColumns": 4,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 736,
+      "height": 390,
+      "layout": "agenda",
+      "shellWidth": 736,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 736,
+      "height": 390,
+      "layout": "calendar",
+      "shellWidth": 736,
+      "overflow": [],
+      "gridColumns": 4,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "layout": "agenda",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "layout": "calendar",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": 2,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "layout": "agenda",
+      "shellWidth": 320,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "layout": "calendar",
+      "shellWidth": 320,
+      "overflow": [],
+      "gridColumns": 1,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 340,
+      "layout": "agenda",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 340,
+      "layout": "calendar",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": 2,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "layout": "agenda",
+      "shellWidth": 1440,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "layout": "calendar",
+      "shellWidth": 1440,
+      "overflow": [],
+      "gridColumns": 7,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 800,
+      "layout": "agenda",
+      "shellWidth": 1280,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 800,
+      "layout": "calendar",
+      "shellWidth": 1280,
+      "overflow": [],
+      "gridColumns": 7,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 768,
+      "layout": "agenda",
+      "shellWidth": 1024,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 768,
+      "layout": "calendar",
+      "shellWidth": 1024,
+      "overflow": [],
+      "gridColumns": 4,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 736,
+      "height": 390,
+      "layout": "agenda",
+      "shellWidth": 736,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 736,
+      "height": 390,
+      "layout": "calendar",
+      "shellWidth": 736,
+      "overflow": [],
+      "gridColumns": 4,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "layout": "agenda",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "layout": "calendar",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": 2,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "layout": "agenda",
+      "shellWidth": 320,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "layout": "calendar",
+      "shellWidth": 320,
+      "overflow": [],
+      "gridColumns": 1,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 340,
+      "layout": "agenda",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": null,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 340,
+      "layout": "calendar",
+      "shellWidth": 390,
+      "overflow": [],
+      "gridColumns": 2,
+      "images": true,
+      "days": 7,
+      "menu": [
+        "Woche wählen",
+        "7 Tage mischen",
+        "Profil & Einstellungen"
+      ],
+      "font": true
+    }
+  ],
+  "checks": [
+    {
+      "name": "light rest preview",
+      "pass": true
+    },
+    {
+      "name": "light free-day preview",
+      "pass": true
+    },
+    {
+      "name": "light plan menu",
+      "pass": true
+    },
+    {
+      "name": "light pantry inside mix flow",
+      "pass": true
+    },
+    {
+      "name": "light escape and focus return",
+      "pass": true
+    },
+    {
+      "name": "light grid keyboard opens detail",
+      "pass": true
+    },
+    {
+      "name": "light grid close restores focus",
+      "pass": true
+    },
+    {
+      "name": "dark rest preview",
+      "pass": true
+    },
+    {
+      "name": "dark free-day preview",
+      "pass": true
+    },
+    {
+      "name": "dark plan menu",
+      "pass": true
+    },
+    {
+      "name": "dark pantry inside mix flow",
+      "pass": true
+    },
+    {
+      "name": "dark escape and focus return",
+      "pass": true
+    },
+    {
+      "name": "dark grid keyboard opens detail",
+      "pass": true
+    },
+    {
+      "name": "dark grid close restores focus",
+      "pass": true
+    },
+    {
+      "name": "dialog fits 1024x768",
+      "pass": true
+    },
+    {
+      "name": "dialog fits 320x568",
+      "pass": true
+    },
+    {
+      "name": "dialog fits 390x340",
+      "pass": true
+    },
+    {
+      "name": "dialog pin updates underlying grid",
+      "pass": true
+    },
+    {
+      "name": "Tuesday selection updates preview",
+      "pass": true
+    },
+    {
+      "name": "free day can receive a recipe",
+      "pass": true
+    },
+    {
+      "name": "mix preserves fixed Monday",
+      "pass": true
+    }
+  ],
+  "errors": [],
+  "remoteRequests": [],
+  "layoutFailures": [],
+  "sourceSha256": "3d4fab25b0870ddd6a4b319cc047174854fbca70addcb6af889c5b6a671bdd40",
+  "notes": "Desktop Chrome only. Narrow layouts are fallback checks, not new mobile designs. No real iPhone/Safari or real iOS-keyboard test."
+}

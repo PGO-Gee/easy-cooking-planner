@@ -1,0 +1,83 @@
+{
+  "status": "selected",
+  "selectedLayout": "Wochenliste mit Gerichtsvorschau",
+  "decisionDate": "2026-11-14",
+  "browser": "157.0.8103.78",
+  "screenshots": 14,
+  "files": [
+    "screenshots/light/01-wochenliste-1440.png",
+    "screenshots/light/01-wochenliste-1280.png",
+    "screenshots/light/01-wochenliste-1024.png",
+    "screenshots/light/02-resteabend.png",
+    "screenshots/light/03-nicht-geplant.png",
+    "screenshots/light/04-planen-menue.png",
+    "screenshots/light/05-mischen-vorraete.png",
+    "screenshots/dark/01-wochenliste-1440.png",
+    "screenshots/dark/01-wochenliste-1280.png",
+    "screenshots/dark/01-wochenliste-1024.png",
+    "screenshots/dark/02-resteabend.png",
+    "screenshots/dark/03-nicht-geplant.png",
+    "screenshots/dark/04-planen-menue.png",
+    "screenshots/dark/05-mischen-vorraete.png"
+  ],
+  "layouts": [
+    {
+      "theme": "light",
+      "width": 1440,
+      "height": 900,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1280,
+      "height": 800,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    },
+    {
+      "theme": "light",
+      "width": 1024,
+      "height": 768,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1440,
+      "height": 900,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1280,
+      "height": 800,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    },
+    {
+      "theme": "dark",
+      "width": 1024,
+      "height": 768,
+      "days": 7,
+      "overflow": [],
+      "images": true,
+      "font": true
+    }
+  ],
+  "errors": [],
+  "remoteRequests": [],
+  "sourceSha256": "604bf69b059dfc4a4429392aad386f9141bcf5db7091519e5bb9109faf35c0a1",
+  "notes": "Desktop Chrome; no real iPhone/Safari test. Original comparison has additional fallback and interaction checks."
+}

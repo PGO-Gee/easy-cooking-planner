@@ -4,6 +4,7 @@ Eine statische Web-App zum Planen der Mahlzeiten für die Woche. Die App bietet 
 
 Die abgestimmte UI-Gestaltung und die Prüfliste für weitere Screens stehen im [UI-Styleguide](STYLEGUIDE.md).
 Screenshots aller sieben Screens in Hell/Dunkel und eine lokal nutzbare interaktive Vorschau liegen im [UI-Referenzpaket vom 14.11.2026](docs/ui-reference/2026-11-14/README.md).
+Für Desktop ist die **Wochenliste mit Gerichtsvorschau** ausgewählt: [verbindliche Desktop-Referenz mit Vorschau und Screenshots](docs/ui-reference/2026-11-14-desktop/README.md). Der [frühere Variantenvergleich](docs/ui-reference/2026-11-14-desktop-drafts/README.md) bleibt zur Nachvollziehbarkeit erhalten.
 
 ## Lokal starten
 
