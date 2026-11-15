@@ -1694,3 +1694,9 @@ html.design #pantry-dialog .dialog-head { margin-bottom:16px; }
 html.design #pantry-dialog .dialog-actions { margin:16px 0 0; padding:12px 0 max(0px,env(safe-area-inset-bottom)); gap:8px; border-top:1px solid var(--line); background:var(--canvas); }
 #pantry-dialog .dialog-actions button { min-height:44px; }
 #pantry-dialog .pantry-search { min-height:44px; }
+
+#cooking-entry-dialog h2 { overflow-wrap:anywhere; min-width:0; }
+#cooking-entry-dialog .cooking-entry-move { flex-direction:column; gap:6px; }
+#cooking-entry-dialog .cooking-entry-move select { width:100%; min-width:0; min-height:44px; font-size:16px; padding:10px; color:inherit; background:var(--paper,#fff); border:1px solid var(--line); border-radius:10px; }
+#cooking-entry-dialog > button { min-height:44px; white-space:normal; }
+html[data-theme="dark"] #cooking-entry-dialog .cooking-entry-move select { background:#273329; color:#f1f3e9; }

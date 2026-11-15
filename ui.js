@@ -82,8 +82,7 @@ function enhanceWeekView(days){
       meal.querySelector('.meal-nutrition').hidden=true;
       const pin=meal.querySelector('.meal-pin');pin.replaceChildren(uiIcon('pin'));
       const remove=meal.querySelector('.meal-remove');remove.hidden=true;
-      const actions=uiButton('',event=>{event.stopPropagation();openMealActions(index,mealIndex,dish.id)},{className:'meal-more',icon:meal.classList.contains('is-pinned')&&!meal.classList.contains('focus-meal')?'pin':'more'});actions.setAttribute('aria-label',`Aktionen für ${dish.name}`);actions.addEventListener('pointerdown',event=>event.stopPropagation());actions.addEventListener('touchstart',event=>event.stopPropagation(),{passive:true});meal.querySelector('.meal-actions').append(actions);
-      meal.addEventListener('keydown',event=>{if(uiDesktop()&&event.target===meal&&['Enter',' '].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();selectDesktopMeal(meal)} });
+
     });
   });
   $('#week-period').textContent=formatRange(days[0].date);renderWeekPreview();
@@ -104,11 +103,13 @@ function renderWeekPreview(){
   if(dishes.length>1){const others=document.createElement('div');others.className='preview-other';dishes.forEach((item,index)=>{const b=uiButton(item.name,()=>{uiSelectedMeal=index;renderWeekPreview()});b.setAttribute('aria-pressed',String(index===uiSelectedMeal));others.append(b)});body.append(others)}
   preview.append(body);
 }
-function openMealActions(day,mealIndex,dishId){
-  const dialog=uiDialog('meal-actions-dialog','Gericht planen');dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());const date=rangeDates()[day];
-  dialog.append(uiButton('Kochmenge anpassen',()=>{dialog.close();openCookingEntryOptions(date,mealIndex)}),uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(dishId,{from:'week',servings:window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(date),mealIndex))})},{icon:'dishes'}),uiButton('Fixierung ändern',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Rezept hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
-  const label=document.createElement('label');label.textContent='Verschieben nach';const select=document.createElement('select');rangeDates().forEach((target,index)=>select.add(new Option(formatChooserDate(target),index)));select.value=String(day);label.append(select);dialog.append(label,uiButton('Verschieben',()=>{if(moveMealToDropTarget({sourceDay:day,targetDay:Number(select.value),mealIndex,dishId,insertIndex:planForDate(rangeDates()[Number(select.value)]).length})){save();renderCalendar()}dialog.close()}),uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));dialog.showModal();
+function openMealActions(day,mealIndex){openCookingEntryOptions(rangeDates()[day],mealIndex)}
+function appendCookingEntryActions(dialog,date,mealIndex,dishId){
+  const day=rangeDates().findIndex(target=>keyFor(target)===keyFor(date));
+  dialog.append(uiButton(pinnedMealsForDate(date)[mealIndex]?'Fixierung aufheben':'Gericht fixieren',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Rezept hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
+  const label=document.createElement('label');label.className='cooking-entry-move';label.textContent='Verschieben nach';const select=document.createElement('select');rangeDates().forEach((target,index)=>select.add(new Option(formatChooserDate(target),index)));select.value=String(day);label.append(select);dialog.append(label,uiButton('Verschieben',()=>{if(moveMealToDropTarget({sourceDay:day,targetDay:Number(select.value),mealIndex,dishId,insertIndex:planForDate(rangeDates()[Number(select.value)]).length})){save();renderCalendar()}dialog.close()}),uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
 }
+
 function showDesktopRecipe(){
   if(!uiDesktop()||recipeDetailPreviousView!=='week')return;
   const dialog=uiDialog('recipe-detail-dialog','Rezept');const content=$('#cooking-content');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();

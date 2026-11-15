@@ -1,5 +1,35 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: Haushalt als Planungsstandard und gemeinsamer Gerichtdialog
+
+- „7 Tage mischen“ und die einzelne Gerichtauswahl verwenden den Haushalt
+  für einen Tag. Frühere individuelle Portions- oder Tagesvorgaben werden
+  beim Mischen ignoriert. Ohne eingerichteten Haushalt gilt die Rezeptmenge.
+- Die Drei-Punkte-Aktion entfällt. Klick, Tipp oder Enter auf eine Gerichtskarte
+  öffnen denselben Dialog mit Rezeptzugang, Kochmenge und Planaktionen.
+- „Für zwei Tage kochen“ übernimmt die Portionen pro Tag und legt nach dem
+  Speichern einen verknüpften Restetag an. Belegte Folgetage werden verschoben;
+  Fixierungen bleiben geschützt. Einkaufsmengen und Rückgängig bleiben erhalten.
+- 211 Node-Tests bestanden. Der gezielte Browserlauf prüft außerdem
+  Haushaltsvorgabe, sieben einzelne Kochtage, Restetag samt Verschieben,
+  500-g-Einkaufsbedarf, Mengenkorrektur, Offline-Speicherung und Rückgängig.
+- 50 Browserkombinationen: Haushalt, Planen, Gerichtdialog, Reste und Einkauf
+  bei 320 × 568, 390 × 844, 844 × 390, 1440 × 900 und 390 × 360 CSS-Pixeln,
+  jeweils Light/Dark und reduzierte Bewegung. Gerichtdialog per Enter auch am
+  Desktop geprüft; Eingabe und erreichbares Speichern bei reduzierter Höhe.
+- Screenshots des hellen Gerichtdialogs und des dunklen Planen-Dialogs bei
+  390 × 844 visuell geprüft. Keine echte iPhone-/Safari- oder iOS-Tastaturprüfung;
+  390 × 360 simuliert ausschließlich den verfügbaren Platz bei Tastatureingabe.
+- Zusätzlich besteht der vorhandene UI-Regressionstest mit 126 Kombinationen
+  bei 320 × 568, 390 × 844, 393 × 852, 430 × 932, 844 × 390, 852 × 393,
+  1024 × 768, 1280 × 800 und 1440 × 900, jeweils Light/Dark und reduzierte
+  Bewegung. Desktop-Rezeptzugang aus dem Gerichtdialog, Verschieben mit
+  erhaltener Fixierung, lokaler OCR-Smoke-Test und Offline-Neustart nach
+  Service-Worker-Update bestanden ebenfalls.
+- App-Shell auf v132 und geänderte UI-Assets auf `20261115-4` erhöht.
+
+Die folgenden Abschnitte dokumentieren den vorherigen Stand.
+
 ## Ergebnis
 
 Implementiert sind Haushaltsgröße mit anpassbarem Kinderfaktor, Portions- und

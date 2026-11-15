@@ -7,9 +7,9 @@ function fixture(){
  ctx.planForDate=date=>{const {week,day}=model.coordinates(ctx.keyFor(date));return ctx.state.plans[week]?.[day]||[]};ctx.pinnedMealsForDate=date=>{const {week,day}=model.coordinates(ctx.keyFor(date));return ctx.state.pinnedMeals[week]?.[day]||[]};ctx.makePlan=(start,pantry,blocked)=>dates.map((d,i)=>blocked.has(i)?[]:['a']);
  vm.createContext(ctx);vm.runInContext(fs.readFileSync(require.resolve('../planning-ui.js'),'utf8'),ctx);ctx.readPlanningFields=()=>model.settings(ctx.state.planningSettings);return ctx;
 }
-test('automatic planning truncates before a pinned day and preserves its servings',()=>{
+test('automatic planning preserves a pinned day and its servings',()=>{
  const c=fixture();c.state=model.add(c.state,'fixed','2026-11-10',3,1,'pinned');c.state.pinnedMeals['2026-11-09'][1][0]=true;c.replaceCookingRange([]);
- assert.equal(model.entryAt(c.state,'2026-11-09',0).restDates.length,0);assert.equal(c.state.cookingEntries.pinned.portions,3);assert.equal(c.state.cookingEntries.pinned.pinned,true);assert.equal(model.entryAt(c.state,'2026-11-11',0).restDates.length,1);
+ assert.equal(model.entryAt(c.state,'2026-11-09',0).restDates.length,0);assert.equal(c.state.cookingEntries.pinned.portions,3);assert.equal(c.state.cookingEntries.pinned.pinned,true);assert.equal(model.entryAt(c.state,'2026-11-11',0).restDates.length,0);
 });
 test('a pinned day outside the visible range also truncates a new block',()=>{
  const c=fixture();c.state=model.add(c.state,'fixed','2026-11-16',2,1,'next-week-pin');c.state.pinnedMeals['2026-11-16'][0][0]=true;c.replaceCookingRange([]);assert.equal(model.entryAt(c.state,'2026-11-15',0).restDates.length,0);assert.equal(c.state.cookingEntries['next-week-pin'].date,'2026-11-16');
@@ -21,10 +21,11 @@ test('one day per recipe plans seven cooking days without automatic leftovers',(
  const c=fixture();c.state.planningSettings.days=1;c.replaceCookingRange([]);
  const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.restDates.length===0));assert.deepEqual(c.state.restDays,{});
 });
-test('two days per recipe alternates cooking and leftovers using the selected duration',()=>{
- const c=fixture();c.replaceCookingRange([]);
- const entries=Object.values(c.state.cookingEntries);assert.deepEqual(entries.map(e=>e.date),['2026-11-09','2026-11-11','2026-11-13','2026-11-15']);assert(entries.every(e=>e.restDates.length===1));assert.equal(c.state.planningSettings.days,2);
+test('remixing ignores old custom portions and duration and uses the household for seven single days',()=>{
+ const c=fixture();c.state.planningSettings.mode='custom';c.state.planningSettings.portions=9;c.replaceCookingRange([]);
+ const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.portions===2.5&&e.restDates.length===0));assert.equal(c.state.planningSettings.days,1);assert.equal(c.state.planningSettings.mode,'household');
 });
+
 test('replanning with one day removes leftovers from the previous two-day plan',()=>{
  const c=fixture();c.replaceCookingRange([]);c.state.planningSettings.days=1;c.replaceCookingRange([]);
  const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.restDates.length===0));assert.deepEqual(c.state.restDays,{});
