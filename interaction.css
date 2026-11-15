@@ -1698,3 +1698,8 @@ html.design #cooking-entry-dialog[open] {
   bottom:calc(100dvh - var(--visual-viewport-top,0px) - var(--visual-viewport-height,100dvh) + env(safe-area-inset-bottom,0px) + 12px);
   margin:auto;
 }
+
+/* Touch activation must not leave keyboard-style rings on the weekly planner. */
+#calendar, #calendar *, #cooking-entry-dialog button { -webkit-tap-highlight-color:transparent; }
+html.design[data-input-modality="pointer"] #calendar :is(.meal-card,.meal-pin,.day-select,.rest-day-tile):focus,
+html.design[data-input-modality="pointer"] :is(#cooking-entry-dialog,#linked-rest-dialog,#choose-dialog) button:focus { outline:none; }

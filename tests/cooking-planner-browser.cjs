@@ -58,5 +58,35 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
  await page.locator('#toast button').click();await page.waitForFunction(()=>Object.values(state.cookingEntries).length===0);
  assert.equal(await page.locator('#calendar .rest-day-tile').count(),3,'undo restores the previous manual rest days');
  assert(await page.evaluate(()=>sameValue(cookingPlanSnapshot(state),window.__beforeLegacyRemix)),'undo restores semantic plan after cloud padding');
+
+ // A touch-enabled Chromium context exercises real compatibility events.
+ const touchContext=await browser.newContext({hasTouch:true,isMobile:true,viewport:{width:390,height:844},serviceWorkers:'block'});await touchContext.route('https://**/*',r=>r.abort());
+ const touchPage=await touchContext.newPage();touchPage.on('pageerror',e=>errors.push(e.message));await touchPage.goto(page.url());await touchPage.waitForFunction(()=>typeof initializePlanningUI==='function'&&document.documentElement.classList.contains('design'));await fixture(touchPage);
+ await touchPage.evaluate(async()=>{for(let i=0;i<3;i++)state=WochentischCookingPlan.add(state,state.dishes[i].id,keyFor(rangeDates()[i]),2.5,1,'touch-'+i);await renderCalendar();window.__menuOpens=0;const original=openPlannedMeal;openPlannedMeal=meal=>{window.__menuOpens++;original(meal)}});
+ const touchCard=touchPage.locator('#calendar .day-content[data-day="1"] .meal-card'),touchTitle=touchCard.locator('.meal-title'),touchDialog=touchPage.locator('#cooking-entry-dialog');
+ for(const theme of ['light','dark']){
+  await touchPage.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await touchPage.evaluate(()=>{themeOverride=null;applyTheme()});
+  for(let attempt=0;attempt<3;attempt++){
+   const before=await touchPage.evaluate(()=>window.__menuOpens);await touchTitle.tap();assert(await touchDialog.isVisible());assert.equal(await touchPage.evaluate(()=>window.__menuOpens),before+1);
+   assert.equal(await touchDialog.locator('.close-button').evaluate(el=>getComputedStyle(el).outlineStyle),'none');await touchDialog.locator('.close-button').tap();await touchPage.waitForTimeout(80);
+   assert.equal(await touchCard.evaluate(el=>getComputedStyle(el).outlineStyle),'none');assert(await touchCard.evaluate(el=>el===document.activeElement),'focus returns to the tapped card without a ring');assert.equal(await touchPage.locator('dialog[open]').count(),0);
+  }
+  const beforePin=await touchPage.evaluate(()=>window.__menuOpens);await touchCard.locator('.meal-pin').tap();await touchPage.waitForTimeout(100);assert.equal(await touchPage.locator('dialog[open]').count(),0);assert.equal(await touchPage.evaluate(()=>window.__menuOpens),beforePin);
+ }
+ const cdp=await touchContext.newCDPSession(touchPage);
+ async function startTouch(){await touchTitle.scrollIntoViewIfNeeded();const b=await touchTitle.boundingBox();const point={x:b.x+b.width/2,y:b.y+b.height/2};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});return point}
+ // A scroll lasting beyond the old suppression timeout must not become a tap.
+ let point=await startTouch();await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:point.x,y:point.y-45}]});await touchPage.waitForTimeout(800);await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchPage.waitForTimeout(100);assert.equal(await touchPage.locator('dialog[open],.meal-week-targets,.meal-drag-ghost').count(),0);
+ // Holding briefly must not raise the drag overlay; cancelling a real hold cleans up.
+ point=await startTouch();await touchPage.waitForTimeout(350);assert.equal(await touchPage.locator('.meal-week-targets').count(),0);await touchPage.waitForTimeout(250);assert.equal(await touchPage.locator('.meal-week-targets').count(),1);await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});await touchPage.waitForTimeout(100);assert.equal(await touchPage.locator('dialog[open],.meal-week-targets,.meal-drag-ghost').count(),0);
+
+ // Touch drag still moves a whole block, without opening its menu on release.
+ await touchPage.evaluate(()=>window.__beforeTouchDrag=cookingPlanSnapshot(state));point=await startTouch();await touchPage.waitForTimeout(550);
+ const drop=await touchPage.locator('.meal-week-target[data-drop-day="2"]').boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:drop.x+drop.width/2,y:drop.y+drop.height/2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchPage.waitForTimeout(100);
+ assert.equal(await touchPage.evaluate(()=>state.cookingEntries['touch-1'].date),await touchPage.evaluate(()=>keyFor(rangeDates()[2])));assert.equal(await touchPage.locator('dialog[open],.meal-week-targets,.meal-drag-ghost').count(),0);
+ await touchPage.locator('#toast button').tap();await touchPage.waitForTimeout(100);assert(await touchPage.evaluate(()=>sameValue(cookingPlanSnapshot(state),window.__beforeTouchDrag)));
+ // Keyboard focus is still visible after touch input.
+ await touchTitle.scrollIntoViewIfNeeded();await touchCard.focus();await touchPage.keyboard.press('Tab');assert.equal(await touchPage.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle),'solid');await touchCard.press('Enter');assert(await touchDialog.isVisible());assert.equal(await touchDialog.locator('.close-button').evaluate(el=>getComputedStyle(el).outlineStyle),'solid');await touchPage.keyboard.press('Escape');
+ await touchContext.close();
  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, seven household days, per-dish leftovers and displacement, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});

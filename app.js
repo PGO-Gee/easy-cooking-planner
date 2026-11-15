@@ -1802,6 +1802,7 @@ function finishMealActionPointer(event){
   if(event.cancelable)event.preventDefault();
   event.stopPropagation();
   suppressedMealActionClick={expires:Date.now()+700};
+  suppressedMealOpenUntil=Date.now()+700;
   if(target.action==='remove')removeMealFromDay(target.date,target.mealIndex,target.dishId);
   else setMealPinned(target.date,target.mealIndex,target.dishId);
 }
@@ -1960,15 +1961,15 @@ function startMealTouchDrag(event){
   drag.touchTimer=setTimeout(()=>{
     if(mealDragState!==drag)return;
     createMealDragGhost(drag);showMealWeekTargets(drag);
-  },320);
+  },500);
 }
 function moveMealTouchDrag(event){
   const drag=mealDragState;
-  if(!drag?.touchGesture)return;
+  if(!drag?.touchGesture||drag.cancelled)return;
   if(event.touches.length!==1){cancelMealTouchDrag();return}
   const touch=event.touches[0];drag.clientX=touch.clientX;drag.clientY=touch.clientY;
   if(!drag.dragging){
-    if(Math.hypot(touch.clientX-drag.startX,touch.clientY-drag.startY)>10){suppressedMealOpenUntil=Date.now()+700;clearMealDragVisuals(drag);mealDragState=null}
+    if(Math.hypot(touch.clientX-drag.startX,touch.clientY-drag.startY)>10){suppressedMealOpenUntil=Date.now()+700;clearMealDragVisuals(drag);drag.cancelled=true}
     return;
   }
   if(event.cancelable)event.preventDefault();
@@ -2034,12 +2035,18 @@ function finishMealTouchDrag(event,cancelled=false){
   if(drag.dragging&&event.cancelable)event.preventDefault();
   const touch=event.changedTouches?.[0];
   if(touch){drag.clientX=touch.clientX;drag.clientY=touch.clientY;if(drag.dragging&&drag.ghost){drag.ghost.style.left=`${touch.clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${touch.clientY-drag.grabOffsetY}px`}}
-  finishMealDrop(drag,cancelled);
+  // A touch tap opens once here; the compatibility click is suppressed.
+  // Scrolling, cancelling or dropping must never open a dish on release.
+  const openAfterTap=!cancelled&&!drag.cancelled&&!drag.dragging;
+  if(event.cancelable)event.preventDefault();
+  suppressedMealOpenUntil=Date.now()+700;
+  finishMealDrop(drag,cancelled||drag.cancelled);
+  if(openAfterTap)openPlannedMeal(drag.meal);
 }
 function cancelMealTouchDrag(){
   const drag=mealDragState;
   if(!drag?.touchGesture)return;
-  cancelMealDrag();
+  clearMealDragVisuals(drag);drag.cancelled=true;
 }
 async function renderCalendarContent({shuffleAnimation=false,droppedMeal=null}={}){
   const sequence=++calendarRenderSequence,scope=authScope,householdId=currentHouseholdId;

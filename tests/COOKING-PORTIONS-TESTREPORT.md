@@ -1,5 +1,27 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: Touch-Aktivierung und Fokus im Wochenplan
+
+- Touch- und Mausbedienung hinterlassen im Wochenplan und dessen Aktionsdialogen
+  keine Tastatur-Fokusrahmen. Native Tap-Markierungen der Gerichtskarten entfallen.
+  Tastaturbedienung zeigt weiterhin einen sichtbaren Fokus.
+- Touch-Tipps öffnen das Gericht genau beim Loslassen; nachfolgende
+  Kompatibilitätsklicks werden unterdrückt. Scrollen und abgebrochene Gesten
+  bleiben bis zum Ende als solche markiert und öffnen kein Gericht.
+- Nach Pinnadel-Aktionen wird auch ein nachfolgender Klick auf die inzwischen
+  neu gerenderte Gerichtskarte unterdrückt. Die Haltezeit für Touch-Drag beträgt
+  500 statt 320 ms. Fokus kehrt ohne Scrollen zum geöffneten Gericht zurück.
+- Zusätzlicher Chromium-Kontext mit Touch-Emulation bei 390 × 844: je drei
+  echte Tap-Sequenzen in Light/Dark, Schließen ohne Fokusrahmen, Pinnadel ohne
+  Menüöffnung, Scrollen über 800 ms, kurzes Halten, Abbruch nach längerem Halten,
+  Touch-Drag auf einen belegten Tag mit vollständigem Undo sowie sichtbarer
+  Tastaturfokus nach Touch-Eingabe geprüft. Touch-Sequenzen wurden über
+  Chromium-Eingabeereignisse ausgelöst, nicht nur durch direkte Funktionsaufrufe.
+- 213 Node-Tests sowie die 50 gezielten und 126 allgemeinen Browserkombinationen
+  bestanden: ab 320 px, Hoch-/Querformat, Light/Dark, reduzierte Bewegung und
+  reduzierte Eingabehöhe. Kein echter iPhone-/Safari-/iOS-Tastaturlauf.
+- App-Shell v137; UI-Assets `20261115-9`.
+
 ## Ergänzung: sichtbare Fixierung, mittiger Gerichtdialog und Drag-Undo
 
 - Pinnadeln erscheinen rechts an allen Gerichten. Aktive Fixierungen sind mit

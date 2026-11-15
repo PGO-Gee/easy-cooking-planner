@@ -204,6 +204,10 @@ function renderRecipeForm(){
   updateDishTypeFields();
 }
 function initializeDesign(){
+  // Keep touch/mouse focus quiet while retaining visible keyboard navigation.
+  document.addEventListener('pointerdown',()=>{document.documentElement.dataset.inputModality='pointer'},true);
+  document.addEventListener('keydown',event=>{if(!event.metaKey&&!event.ctrlKey&&!event.altKey)document.documentElement.dataset.inputModality='keyboard'},true);
+
   document.documentElement.classList.add('design');
   const nav=document.createElement('nav');nav.className='mobile-nav';nav.setAttribute('aria-label','Hauptnavigation');
   [['week','Wochenplan'],['dishes','Gerichte'],['cooking','Zubereiten'],['shopping','Einkauf']].forEach(([view,label])=>{const button=uiButton(label,()=>{if(view==='cooking'){void saveCookingProgress();cookingStage='list';selectedRecipeDishId=''}setView(view);window.scrollTo(0,0)},{icon:view,className:'mobile-nav-item'});button.dataset.view=view;nav.append(button);const desktop=$(`#sidebar .nav-item[data-view="${view}"]`);desktop.replaceChildren(uiIcon(view),document.createTextNode(label));if(view==='cooking')desktop.addEventListener('click',event=>{event.stopImmediatePropagation();void saveCookingProgress();cookingStage='list';selectedRecipeDishId='';setView('cooking');closeMobileMenu()},{capture:true});});

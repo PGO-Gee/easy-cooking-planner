@@ -7,7 +7,7 @@ function renderPlanningDefault(container){
 }
 function openPlannedMeal(meal){
   const day=Number(meal.closest('.day-content')?.dataset.day),position=Number(meal.dataset.mealIndex);
-  uiSelectedDay=day;uiSelectedMeal=position;renderWeekPreview();openCookingEntryOptions(rangeDates()[day],position);
+  meal.focus({preventScroll:true});uiSelectedDay=day;uiSelectedMeal=position;renderWeekPreview();openCookingEntryOptions(rangeDates()[day],position);
 }
 /* Planning controls share the existing dialogs and stylesheets. */
 function normalizeQuantityOverrides(value){return Object.fromEntries(Object.entries(value||{}).filter(([key,amount])=>{try{const parts=JSON.parse(key);return parts.length===3&&window.WochentischCookingPlan.validDate(parts[0])&&typeof parts[1]==='string'&&typeof parts[2]==='string'&&Number.isFinite(amount)&&amount>0}catch{return false}}))}
