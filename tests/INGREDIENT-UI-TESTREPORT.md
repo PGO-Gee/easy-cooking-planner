@@ -22,3 +22,16 @@ Lokales Chromium Headless, isolierte Rezept-Testdaten, externe Netzwerkanfragen 
 390×340 simuliert eine geringe verfügbare Höhe. Keine Prüfung mit echter iOS-Tastatur, Safari, physischem iPhone, VoiceOver oder Touch-Scrollgesten. Die Chromium-Prüfung ersetzt diese Geräteprüfung nicht.
 
 Browser-Test starten: `node tests/ingredient-suggestions-browser.cjs`. Falls erforderlich, `WOCHENTISCH_PLAYWRIGHT_MODULE` und `PLAYWRIGHT_BROWSERS_PATH` auf die lokale Playwright-Installation setzen. Screenshots landen in `.ui-check/` (oder `WOCHENTISCH_UI_OUTPUT`).
+
+
+## Ergänzung: einheitliche Zutatennamen (15. November 2026)
+
+- Browser-Test um das Screenshot-Beispiel „Kar“ erweitert: genau ein Vorschlag
+  „Karotten“ und „Kartoffeln“, keine Einzahl-Duplikate. Manuelles Hinzufügen von
+  „Karotte“ speichert „Karotten“; erneute Eingabe von „Karotten“ erzeugt keinen
+  zweiten Artikel und zeigt den vorhandenen Duplikathinweis.
+- Erneut geprüft: Chromium, 320×568, 390×844, 844×390, 390×340, 1440×900,
+  jeweils Light/Dark und reduzierte Bewegung. Keine echte iOS-Tastaturprüfung.
+- Zusätzliche Unit-Tests für kanonische Vorschlagskataloge, getrennte Produkte,
+  idempotente Migration einschließlich Mengen/Häkchen sowie Rezeptzeilen mit
+  unterschiedlichen Mengen, Einheiten und Notizen.

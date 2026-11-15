@@ -72,3 +72,14 @@ test('cooking view displays imported quantities unchanged when portions are unkn
   assert.match(container.children[0].textContent, /unverändert/);
   assert.equal(container.children[1].children[0].children[0].textContent, '450 g');
 });
+
+test('saving manually typed ingredients canonicalizes names without merging recipe rows', () => {
+  const recipe = readEditorValue('2', [
+    {name:'Karotte',amount:'1',unit:'Stück',note:'Sauce'},
+    {name:'Karotten',amount:'200',unit:'g',note:'Salat'}
+  ]);
+  assert.deepEqual(JSON.parse(JSON.stringify(recipe.ingredients)), [
+    {name:'Karotten',amount:1,unit:'Stück',note:'Sauce'},
+    {name:'Karotten',amount:200,unit:'g',note:'Salat'}
+  ]);
+});

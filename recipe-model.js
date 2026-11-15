@@ -1,8 +1,10 @@
 (function (root, factory) {
-  if (typeof module === 'object' && module.exports) module.exports = factory();
-  else root.WochentischRecipes = factory();
-})(typeof globalThis === 'object' ? globalThis : this, function () {
+  if (typeof module === 'object' && module.exports) module.exports = factory(require('./ingredient-catalog.js'));
+  else root.WochentischRecipes = factory(root.WochentischIngredients);
+})(typeof globalThis === 'object' ? globalThis : this, function (ingredientsCatalog) {
   'use strict';
+
+  const ingredientName = value => ingredientsCatalog.normalize(String(value ?? ''));
 
   function parseAmount(value) {
     if (typeof value === 'number') return Number.isFinite(value) && value > 0 ? value : null;
@@ -24,7 +26,7 @@
     const servingsValue = Number(recipe.servings);
     const servings = Number.isInteger(servingsValue) && servingsValue > 0 ? servingsValue : null;
     const ingredients = (Array.isArray(recipe.ingredients) ? recipe.ingredients : []).map(item => ({
-      name: String(item?.name ?? '').trim(),
+      name: ingredientName(item?.name),
       amount: normalizeAmount(item?.amount),
       unit: String(item?.unit ?? '').trim(),
       note: String(item?.note ?? '').trim()
@@ -47,11 +49,11 @@
   }
 
   function shoppingIngredients(recipe, legacyIngredients = []) {
-    if (!recipe || !Array.isArray(recipe.ingredients) || !recipe.ingredients.some(item => String(item?.name ?? '').trim())) {
-      return Array.isArray(legacyIngredients) ? legacyIngredients.slice() : [];
+    if (!recipe || !Array.isArray(recipe.ingredients) || !recipe.ingredients.some(item => ingredientName(item?.name))) {
+      return ingredientsCatalog.unique(legacyIngredients);
     }
     const seen = new Set();
-    return recipe.ingredients.map(item => String(item?.name ?? '').trim()).filter(name => {
+    return recipe.ingredients.map(item => ingredientName(item?.name)).filter(name => {
       const key = name.toLocaleLowerCase('de-DE');
       if (!key || seen.has(key)) return false;
       seen.add(key);
@@ -60,12 +62,12 @@
   }
 
   // Older dishes may only have a shopping list; expose it in the same editor
-  // without inventing quantities or discarding their existing names.
+  // without inventing quantities or combining separate recipe rows.
   function editableIngredients(recipe, legacyIngredients = []) {
     const normalized = normalizeRecipe(recipe);
     if (normalized?.ingredients.length) return normalized.ingredients;
     return (Array.isArray(legacyIngredients) ? legacyIngredients : [])
-      .map(name => String(name ?? '').trim()).filter(Boolean)
+      .map(name => ingredientName(name)).filter(Boolean)
       .map(name => ({ name, amount: null, unit: '', note: '' }));
   }
 

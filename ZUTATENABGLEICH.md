@@ -88,9 +88,24 @@ Rezept, stellt die App dessen konkrete Zutaten wieder für die Planung und
 Einkaufsliste her. Ohne vollständiges Rezept bleibt der allgemeine Name
 erhalten; die ursprüngliche Sorte kann nicht zuverlässig rekonstruiert werden.
 
-Mengen und Einkaufsstatus behalten ihre bisherigen konkreten Schlüssel.
-Eine neu getrennte Zutat kann daher wieder als offen erscheinen. Eine neue
-Zuordnung schreibt Rezeptbezeichnungen nicht in ihren Oberbegriff um.
+Alle Eingaben verwenden dieselben ausdrücklich hinterlegten Produktnamen:
+Rezepteditor, Rezeptansicht, Import, Vorräte, Vorschläge und manuelle
+Einkaufsartikel. Beispielsweise erscheinen Karotte/Möhre/Karotten als
+„Karotten“ und Kartoffel/Kartoffeln als „Kartoffeln“. Filets behalten ihre
+konkrete Produktbezeichnung, etwa „Lachsfilet“ für Lachsfilet/Lachsfilets.
+Die Vorschlagslisten enthalten nur die vereinheitlichten Namen.
+
+Beim Laden werden vorhandene Daten ebenfalls normalisiert. Manuelle Artikel
+und Vorratseinträge werden pro Woche dedupliziert. Gespeicherte Mengen unter
+mehreren Alias-Schlüsseln werden addiert; ein vorhandenes Häkchen bleibt beim
+zusammengeführten Produkt erhalten. Ausgeblendete Alias-Einträge werden auf
+denselben Produktschlüssel übertragen. Wiederholtes Laden addiert nichts erneut.
+
+Rezeptzeilen behalten ihre Mengen, Einheiten und Notizen und werden nicht
+zusammengelegt: Dieselbe Zutat kann für verschiedene Rezeptteile nötig sein.
+Freitext in Zubereitungsschritten bleibt unverändert. Unbekannte eigene
+Produktnamen werden nicht automatisch auf Einzahl oder Mehrzahl gekürzt.
+Eine Vorratszuordnung schreibt Produktnamen niemals in ihren Oberbegriff um.
 
 Die vollständigen Zuordnungstabellen stehen im Zutatenkatalog im Code.
 Neue Namen werden dort ausdrücklich ergänzt und durch positive sowie negative

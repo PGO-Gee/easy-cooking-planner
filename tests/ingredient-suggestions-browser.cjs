@@ -18,7 +18,17 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
 for(const [width,height] of [[320,568],[390,844],[844,390],[390,340],[1440,900]])for(const theme of ['light','dark']){
 await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await fixture(page);await page.evaluate(()=>{themeOverride=null;applyTheme();openPantryPlanner()});await page.locator('#pantry-input').fill('to');
 assert(await page.locator('#pantry-suggestions').isVisible());assert(await page.locator('#pantry-suggestions mark').count());await page.locator('#pantry-input').press('ArrowDown');assert(await page.locator('#pantry-input').getAttribute('aria-activedescendant'));await page.locator('#pantry-input').press('Enter');assert.equal(await page.locator('#pantry-selected .pantry-chip').count(),1);await page.locator('#pantry-input').fill('ka');await page.screenshot({path:path.join(out,`${width}-${height}-${theme}-suggestions.png`)});await page.locator('#pantry-input').press('Escape');assert(await page.locator('#pantry-dialog').isVisible());assert(!await page.locator('#pantry-suggestions').isVisible());
-await page.evaluate(()=>{$('#pantry-dialog').close();openShoppingList()});await page.locator('#shopping-item-input').fill('to');await page.locator('#shopping-item-input').press('ArrowDown');await page.locator('#shopping-item-input').press('Enter');assert.equal(await page.locator('#shopping-item-input').inputValue(),'');
+await page.evaluate(()=>{$('#pantry-dialog').close();openShoppingList()});await page.locator('#shopping-item-input').fill('Kar');
+const suggestions=await page.locator('#shopping-item-suggestions .ingredient-suggestion-label').allTextContents();
+assert.equal(suggestions.filter(name=>name==='Karotten').length,1);
+assert.equal(suggestions.filter(name=>name==='Kartoffeln').length,1);
+assert(!suggestions.includes('Karotte'));assert(!suggestions.includes('Kartoffel'));
+await page.locator('#shopping-item-input').fill('Karotte');await page.locator('#shopping-item-input').press('Enter');
+assert(await page.evaluate(()=>Object.values(state.manualShoppingItems).flat().includes('Karotten')));
+await page.locator('#shopping-item-input').fill('Karotten');await page.locator('#shopping-item-input').press('Enter');
+assert(await page.locator('#shopping-add-status').isVisible());
+assert.equal(await page.evaluate(()=>Object.values(state.manualShoppingItems).flat().filter(name=>name==='Karotten').length),1);
+await page.locator('#shopping-item-input').fill('to');await page.locator('#shopping-item-input').press('ArrowDown');await page.locator('#shopping-item-input').press('Enter');assert.equal(await page.locator('#shopping-item-input').inputValue(),'');
 assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 await page.evaluate(()=>{openDish('ui-0');document.querySelector('#editor-ingredients').open=true});await page.waitForTimeout(250);await page.locator('[data-recipe-field=name]').first().fill('ka');await page.locator('[data-recipe-field=name]').first().press('ArrowDown');await page.locator('[data-recipe-field=name]').first().press('Enter');assert(!await page.locator('.recipe-ingredient-suggestions').first().isVisible());await page.locator('[data-recipe-field=name]').first().fill('to');await page.locator('.recipe-ingredient-suggestions').first().scrollIntoViewIfNeeded();await page.screenshot({path:path.join(out,`${width}-${height}-${theme}-editor.png`)});
 console.log(`${width}x${height} ${theme} passed`);

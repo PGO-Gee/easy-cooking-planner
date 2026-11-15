@@ -2140,7 +2140,7 @@ function renderRecipeIngredientRows(items=[]){
     const row=document.createElement('div');row.className='recipe-ingredient-row';const showNote=true;row.classList.toggle('has-ingredient-note',showNote);
     const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
     const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
-    const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:item.name||'',role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
+    const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:normalizeIngredient(item.name),role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
     const list=recipeRowControl('div',{id:listId,className:'pantry-suggestions recipe-ingredient-suggestions',role:'listbox'});list.hidden=true;
     let blurTimer;
     const closeSuggestions=()=>{clearTimeout(blurTimer);list.hidden=true;name.setAttribute('aria-expanded','false');name.removeAttribute('aria-activedescendant')};
@@ -2186,7 +2186,7 @@ function recipeEditorValue(){
   });
   const steps=[...$('#recipe-step-rows').querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value.trim()).filter(Boolean);
   const hasData=Boolean(servingsText||ingredients.length||steps.length);
-  return hasData?{servings,ingredients,steps}:null;
+  return hasData?window.WochentischRecipes.normalizeRecipe({servings,ingredients,steps}):null;
 }
 // The section-based editor reuses the existing fields and save path.
 let recipeEditorInitial='';
