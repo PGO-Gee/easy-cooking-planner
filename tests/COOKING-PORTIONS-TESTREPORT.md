@@ -49,7 +49,8 @@ bei Tastatureingabe; der Speichern-Button blieb durch Scrollen erreichbar.
 
 ## Grenzen
 
-Keine Liveprüfung auf einem echten iPhone oder in Safari. Kein Test mit zwei
+Die ursprüngliche Abnahme erfolgte ohne Liveprüfung auf einem echten iPhone
+oder in Safari; die spätere Prüfung im Device Hub ist unten dokumentiert. Kein Test mit zwei
 realen angemeldeten Haushaltsgeräten; Sync-Konflikte wurden automatisiert mit
 synthetischen Daten geprüft. Die Migration ist live angewendet; die
 Veröffentlichung der App-Oberfläche ist nicht Teil dieses Migrationsschritts.
@@ -93,3 +94,33 @@ einen temporären Ordner zeigen. Es werden ausschließlich lokale Fixtures genut
   Der bereits vor der Migration vorhandene Hinweis auf
   [deaktivierten Schutz vor kompromittierten Passwörtern](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
   bleibt unverändert; Auth-Einstellungen wurden nicht geändert.
+
+## Korrektur: Restetage trotz „1 Tag“
+
+Am 15. November 2026 auf dem echten **iPhone 15 Pro, iOS 27.2.1**, über den
+Device Hub in der geöffneten App reproduziert (Light, Hochformat):
+
+- Der Planungsdialog zeigte „1 Tag“ und „2,5 Portionen × 1 Tag“.
+- Auch nach erneutem „7 Tage mischen“ standen zwischen den vier Gerichten
+  weiterhin die alten, eigenständigen Restemarkierungen.
+- „Rückgängig“ wurde mit „Der Plan wurde inzwischen geändert“ abgelehnt. Die
+  vier ursprünglichen Gerichte wurden anschließend über die Oberfläche wieder
+  auf ihren ursprünglichen Tagen eingetragen und die Testgerichte entfernt.
+
+Ursache des Restetagefehlers war die Behandlung eigenständiger Restemarkierungen
+als geschützte Tage bei jeder neuen Planung. Die Korrektur ersetzt sie innerhalb
+des neu geplanten Zeitraums. Verknüpfte Restetage von beibehaltenen, fixierten
+oder vor dem Zeitraum begonnenen Kochblöcken bleiben erhalten. Eigenständige
+Restetage außerhalb des Zeitraums bleiben unverändert.
+
+Zusätzlich vergleicht der Rückgängig-Schutz jetzt den tatsächlichen Planinhalt,
+ohne leere Wochen und aufgefüllte `false`-Fixierungen aus einem Cloud-Abgleich
+als nachträgliche Bearbeitung zu behandeln. Echte Änderungen bleiben geschützt.
+
+Nach der Korrektur bestanden **211 Node-Tests** und die **50 Browserprüfungen**
+für die neue Funktion. Hinzu kamen automatisierte Fälle für alte Restemarkierungen
+bei Ein-Tages-Planung, den Wechsel von zwei auf einen Tag, unveränderte Restetage
+außerhalb des Zeitraums und Rückgängig nach einem simulierten Cloud-Abgleich.
+Der Fehler wurde auf dem iPhone bestätigt; die Korrektur wurde lokal geprüft und
+noch nicht auf der veröffentlichten iPhone-App getestet. Keine zusätzliche
+Datenbankmigration erforderlich.

@@ -92,7 +92,9 @@ sich bei einer neuen Haushaltsgröße nicht.
 
 Ein Kochblock besteht aus dem Kochtag und seinen verknüpften Restetagen. Über
 **Kochmenge anpassen** am geplanten Gericht lassen sich Portionen und Dauer
-ändern. Verlängern verschiebt belegte Folgetage einschließlich ihrer Kochblöcke,
+ändern. Beim vollständigen Neumischen werden eigenständige Restemarkierungen
+im ausgewählten Zeitraum ersetzt; verknüpfte Restetage beibehaltener Kochblöcke
+bleiben geschützt. Verlängern verschiebt belegte Folgetage einschließlich ihrer Kochblöcke,
 auch über die sichtbare Woche hinaus. Muss dabei ein anderes fixiertes Gericht
 verschoben werden, bleibt der Plan unverändert. Ein ausdrücklich ausgewählter
 Kochblock lässt sich mitsamt seiner Fixierung verschieben. Restetage öffnen das

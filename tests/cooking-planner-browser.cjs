@@ -31,5 +31,14 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
   }
  }
  const overlaps=await page.evaluate(()=>[...document.querySelectorAll('.shopping-tile-shell:has(.shopping-recipe-quantity)')].filter(s=>s.querySelector('.shopping-tile').getBoundingClientRect().bottom>s.querySelector('.shopping-recipe-quantity').getBoundingClientRect().top+1).length);assert.equal(overlaps,0,'ingredient names must not overlap quantities');
- assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, automatic blocks, editing and ${results.length} viewport/theme checks.`);
+ // Reproduce legacy, unlinked leftover markers and verify a one-day remix.
+ await page.evaluate(async()=>{document.querySelectorAll('dialog[open]').forEach(d=>d.close());const dishes=state.dishes;state=emptyState();state.dishes=dishes;state.planningSettings={configured:true,adults:2,children:1,childFactor:0.5,days:1};const dates=rangeDates();for(const index of [1,3,5])setRestDay(dates[index],true);window.__beforeLegacyRemix=cookingPlanSnapshot(state);setView('week');await renderCalendar();openPantryPlanner()});
+ await page.locator('#pantry-form button[type="submit"]').click();await page.waitForFunction(()=>!document.querySelector('#pantry-dialog').open&&Object.values(state.cookingEntries).length===7);
+ assert.equal(await page.locator('#calendar .rest-day-tile').count(),0,'one-day remix must replace old independent rest markers');
+ // A normal cloud acknowledgement pads empty weeks; undo must remain usable.
+ await page.evaluate(()=>{const week='2027-01-04';state.plans[week]=Array.from({length:7},()=>[]);state.pinnedMeals[week]=Array.from({length:7},()=>[]);state.restDays[week]=[];state=normalizeState(state)});
+ await page.locator('#toast button').click();await page.waitForFunction(()=>Object.values(state.cookingEntries).length===0);
+ assert.equal(await page.locator('#calendar .rest-day-tile').count(),3,'undo restores the previous manual rest days');
+ assert(await page.evaluate(()=>sameValue(cookingPlanSnapshot(state),window.__beforeLegacyRemix)),'undo restores semantic plan after cloud padding');
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, automatic blocks, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});

@@ -20,7 +20,18 @@ function readPlanningFields(container){
   if(mode==='household'&&settings.configured&&model.householdPortions(settings)<=0)throw new Error('Bitte zuerst mindestens eine essende Person im Haushalt eintragen.');
   return {...settings,mode,portions:mode==='custom'?portions:settings.portions,days};
 }
-function cookingPlanSnapshot(value){return structuredClone({plans:value.plans,pinnedMeals:value.pinnedMeals,restDays:value.restDays,cookingEntries:value.cookingEntries||{}})}
+function cookingPlanSnapshot(value){
+  // Cloud snapshots include empty shopping weeks and fully padded pin arrays.
+  // Compare and restore the actual calendar contents, not those storage details.
+  const plans={},pinnedMeals={};
+  for(const [week,days] of Object.entries(value.plans||{})){
+    const meals=Array.from({length:7},(_,day)=>(days[day]||[]).slice());
+    if(!meals.some(day=>day.length))continue;
+    plans[week]=meals;pinnedMeals[week]=meals.map((day,index)=>day.map((_,position)=>Boolean(value.pinnedMeals?.[week]?.[index]?.[position])));
+  }
+  const restDays=Object.fromEntries(Object.entries(value.restDays||{}).map(([week,days])=>[week,[...new Set(days)].sort((a,b)=>a-b)]).filter(([,days])=>days.length));
+  return structuredClone({plans,pinnedMeals,restDays,cookingEntries:value.cookingEntries||{}});
+}
 function commitCookingChange(create,message){
   const before=cookingPlanSnapshot(state);
   try{state=create();state.cookingEntries=window.WochentischCookingPlan.normalizeEntries(state);save();renderCalendar();const after=cookingPlanSnapshot(state);showToast(message,{actionLabel:'Rückgängig',duration:10000,onAction:()=>{if(!sameValue(after,cookingPlanSnapshot(state))){showToast('Der Plan wurde inzwischen geändert. Rückgängig ist nicht mehr möglich.');return}Object.assign(state,before);save();renderCalendar()}});return true}catch(error){showToast(error.message);return false}
@@ -49,7 +60,10 @@ function replaceCookingRange(pantry){
     if(e.pinned&&dish?.type!=='baking')pinnedIds.add(e.dishId);
     if(dish?.type!=='baking')for(const date of [e.date,...e.restDates])if(keys.includes(date))protectedDays.add(keys.indexOf(date));
   }else if(keys.includes(e.date))delete entries[e.id]}
-  for(const [week,days] of Object.entries(draft.restDays||{}))for(const day of days){const key=model.addDays(week,day);if(keys.includes(key)&&!Object.values(draft.cookingEntries).some(e=>e.restDates.includes(key)))protectedDays.add(keys.indexOf(key))}
+  // A full remix replaces independent rest markers in the requested range,
+  // just as it replaces unpinned dishes. Linked rests of retained blocks are
+  // rebuilt by project(), including incoming and pinned cooking blocks.
+  draft.restDays=Object.fromEntries(Object.entries(draft.restDays||{}).map(([week,days])=>[week,days.filter(day=>!keys.includes(model.addDays(week,day)))]).filter(([,days])=>days.length));
   draft=model.project(draft,entries);
   const starts=[],blocked=new Set(protectedDays);for(let i=0;i<7;){if(blocked.has(i)){i++;continue}let duration=options.days;for(let n=1;n<duration;n++){
     const key=model.addDays(keys[i],n),inside=keys.indexOf(key),outsideProtected=Object.values(entries).some(e=>e.pinned&&[e.date,...e.restDates].includes(key));

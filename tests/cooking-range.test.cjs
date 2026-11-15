@@ -17,3 +17,29 @@ test('a pinned day outside the visible range also truncates a new block',()=>{
 test('incoming leftovers protect the first visible day and baking survives planning',()=>{
  const c=fixture();c.state=model.add(c.state,'a','2026-11-08',2.5,2,'incoming');c.state=model.add(c.state,'cake','2026-11-10',8,1,'cake');c.replaceCookingRange([]);assert.equal(model.entryAt(c.state,'2026-11-09',0),undefined);assert.deepEqual(c.state.cookingEntries.incoming.restDates,['2026-11-09']);assert.equal(c.state.cookingEntries.cake.portions,8);assert.equal(Object.values(c.state.cookingEntries).filter(e=>e.date==='2026-11-10').length,2);
 });
+test('one day per recipe plans seven cooking days without automatic leftovers',()=>{
+ const c=fixture();c.state.planningSettings.days=1;c.replaceCookingRange([]);
+ const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.restDates.length===0));assert.deepEqual(c.state.restDays,{});
+});
+test('two days per recipe alternates cooking and leftovers using the selected duration',()=>{
+ const c=fixture();c.replaceCookingRange([]);
+ const entries=Object.values(c.state.cookingEntries);assert.deepEqual(entries.map(e=>e.date),['2026-11-09','2026-11-11','2026-11-13','2026-11-15']);assert(entries.every(e=>e.restDates.length===1));assert.equal(c.state.planningSettings.days,2);
+});
+test('replanning with one day removes leftovers from the previous two-day plan',()=>{
+ const c=fixture();c.replaceCookingRange([]);c.state.planningSettings.days=1;c.replaceCookingRange([]);
+ const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.restDates.length===0));assert.deepEqual(c.state.restDays,{});
+});
+test('replanning replaces unlinked rest markers left in the selected range',()=>{
+ const c=fixture();c.state.planningSettings.days=1;c.state.restDays={'2026-11-09':[1,3,5]};c.replaceCookingRange([]);
+ assert.equal(Object.values(c.state.cookingEntries).length,7);assert.deepEqual(c.state.restDays,{});
+});
+test('replanning leaves independent rest days outside the selected range untouched',()=>{
+ const c=fixture();c.state.planningSettings.days=1;c.state.restDays={'2026-11-09':[1,3,5],'2026-11-16':[2]};c.replaceCookingRange([]);
+ assert.equal(Object.values(c.state.cookingEntries).length,7);assert.deepEqual(c.state.restDays,{'2026-11-16':[2]});
+});
+test('undo snapshots ignore empty weeks and padded false pin arrays added by sync',()=>{
+ const c=fixture();c.replaceCookingRange([]);const beforeSync=c.cookingPlanSnapshot(c.state),afterSync=structuredClone(c.state);
+ afterSync.plans['2026-11-23']=[[],[],[],[],[],[],[]];afterSync.pinnedMeals['2026-11-23']=[[],[],[],[],[],[],[]];afterSync.restDays['2026-11-23']=[];
+ assert.deepEqual(c.cookingPlanSnapshot(afterSync),beforeSync);
+ const changed=structuredClone(afterSync);Object.values(changed.cookingEntries)[0].portions=5;assert.notDeepEqual(c.cookingPlanSnapshot(changed),beforeSync);
+});
