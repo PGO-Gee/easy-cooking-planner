@@ -1,5 +1,13 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: Gerichtmenü wieder am oberen Rand
+
+- Auf Nutzerwunsch ist das Gerichtmenü wieder oben statt mittig ausgerichtet:
+  12 px Abstand zuzüglich oberer Safe Area, unabhängig vom Scrollstand der Seite.
+  Bei kleiner Höhe bleiben die Mengeneinstellungen innerhalb des Menüs scrollbar.
+- Die Positionsprüfungen erwarten nun den oberen Rand, auch bei einem vertikal
+  versetzten Visual Viewport. App-Shell v141; UI-Assets `20261115-13`.
+
 ## Ergänzung: Gerichtmenü ohne nativen Modal-Öffnungsschritt
 
 - Nach erneuter iPhone-Rückmeldung wird das Gerichtmenü in einer eigenen festen
