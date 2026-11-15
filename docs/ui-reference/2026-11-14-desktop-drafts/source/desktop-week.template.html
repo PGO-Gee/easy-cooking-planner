@@ -1,0 +1,287 @@
+<div id="dt-desktop">
+ <div class="viz-controls" role="group" aria-label="Darstellung der Desktop-Entwürfe">
+  <button type="button" class="btn" data-dt-theme="light" aria-pressed="false">Hell</button>
+  <button type="button" class="btn" data-dt-theme="dark" aria-pressed="true">Dunkel</button>
+ </div>
+ <div class="viz-carousel" aria-label="Desktop-Entwürfe: noch keine Variante ausgewählt" data-previous-label="Vorheriger Entwurf" data-next-label="Nächster Entwurf">
+  <section data-variant="Wochenliste" aria-label="Wochenliste mit Gerichtsvorschau"><div class="dt-stage"><div class="dt-shell dt-agenda" data-layout="agenda" aria-label="Desktop-Wochenplan mit Wochenliste"></div></div></section>
+  <section data-variant="Wochenraster" aria-label="Wochenraster mit Detailansicht" hidden><div class="dt-stage"><div class="dt-shell dt-calendar" data-layout="calendar" aria-label="Desktop-Wochenplan als Wochenraster"></div></div></section>
+ </div>
+</div>
+<style>
+@font-face{font-family:DTComic;src:url('__FONT_REGULAR__') format('truetype');font-weight:400;font-display:swap}
+@font-face{font-family:DTComic;src:url('__FONT_BOLD__') format('truetype');font-weight:700;font-display:swap}
+#dt-desktop{color-scheme:dark;container-type:inline-size;container-name:desktop-preview}
+#dt-desktop [hidden]{display:none!important}
+#dt-desktop .dt-stage{min-height:930px;padding:16px 0 30px}
+#dt-desktop .dt-shell{
+ --dt-bg:light-dark(#f6f7fa,#171b21);--dt-surface:light-dark(#fff,#242a33);--dt-text:light-dark(#202b3a,#edf2fa);
+ --dt-sub:light-dark(#636f7e,#adb9c9);--dt-line:light-dark(#e2e6ed,#3c4654);--dt-blue:light-dark(#2d6096,#aacdf5);
+ --dt-on:light-dark(#fff,#17283e);--dt-tint:light-dark(#eaf1fa,#2b3b50);--dt-sage:light-dark(#e8f0e9,#293e32);--dt-green:light-dark(#3c604c,#b9d8c3);
+ --dt-radius:18px;display:grid;grid-template-columns:200px minmax(0,1fr);width:100%;min-height:810px;
+ background:var(--dt-bg);color:var(--dt-text);font:400 14px/1.5 DTComic,system-ui,sans-serif;
+}
+#dt-desktop .dt-shell *{box-sizing:border-box}
+#dt-desktop .dt-shell h1,#dt-desktop .dt-shell h2,#dt-desktop .dt-shell h3,#dt-desktop .dt-shell p{margin:0}
+#dt-desktop .dt-shell button,#dt-desktop .dt-shell input{font-family:inherit}
+#dt-desktop .dt-shell button{touch-action:manipulation;min-height:44px;min-width:44px;border:0;padding:10px 13px;border-radius:22px;color:var(--dt-blue);background:transparent;font-size:13px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+#dt-desktop .dt-shell button:disabled{opacity:.45}
+#dt-desktop .dt-shell :focus-visible{outline:2px solid var(--dt-blue);outline-offset:3px}
+#dt-desktop .dt-shell svg{width:19px;height:19px;flex-shrink:0}
+#dt-desktop .dt-shell .dt-primary{background:var(--dt-blue);color:var(--dt-on);font-weight:700}
+#dt-desktop .dt-shell .dt-soft{background:var(--dt-tint);font-weight:700;font-size:12px}
+#dt-desktop .dt-sidebar{padding:34px 16px 22px;display:flex;flex-direction:column;gap:18px;background:var(--dt-surface);border-right:1px solid var(--dt-line);min-width:0}
+#dt-desktop .dt-side-nav{display:grid;gap:7px}
+#dt-desktop .dt-side-nav button,#dt-desktop .dt-profile button{display:flex;width:100%;justify-content:flex-start;text-align:left;color:var(--dt-sub);font-size:13px;border-radius:13px;padding:12px}
+#dt-desktop .dt-side-nav button[aria-current=page]{color:var(--dt-blue);background:var(--dt-tint);font-weight:700}
+#dt-desktop .dt-profile{margin-top:auto;padding-top:17px;border-top:1px solid var(--dt-line)}
+#dt-desktop .dt-main{padding:34px 32px 26px;min-width:0}
+#dt-desktop .dt-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:28px}
+#dt-desktop .dt-header h1{font-size:31px;line-height:1.2;letter-spacing:-1.1px;font-weight:700}
+#dt-desktop .dt-period{color:var(--dt-sub);font-size:13px;margin-top:9px!important}
+#dt-desktop .dt-plan-menu{position:relative;flex-shrink:0}
+#dt-desktop .dt-plan-menu>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:44px;padding:11px 17px;background:var(--dt-tint);color:var(--dt-blue);font-size:13px;font-weight:700;border-radius:24px}
+#dt-desktop summary::-webkit-details-marker{display:none}
+#dt-desktop .dt-menu-options{position:absolute;z-index:6;right:0;top:calc(100% + 8px);width:254px;max-width:calc(100vw - 32px);padding:7px;border:1px solid var(--dt-line);border-radius:16px;background:var(--dt-surface);box-shadow:0 8px 28px light-dark(#162a4020,#00000060)}
+#dt-desktop .dt-menu-options button{display:flex;width:100%;justify-content:flex-start;color:var(--dt-text);font-size:12px;text-align:left;border-radius:10px}
+#dt-desktop .dt-menu-options button+button{border-top:1px solid var(--dt-line)}
+#dt-desktop .dt-agenda-body{display:grid;grid-template-columns:minmax(280px,.88fr) minmax(0,1.12fr);gap:26px;align-items:start}
+#dt-desktop .dt-week-list{display:grid;gap:9px;min-width:0}
+#dt-desktop .dt-shell .dt-day-row{display:grid;grid-template-columns:42px 54px minmax(0,1fr) 18px;gap:11px;align-items:center;padding:12px;width:100%;min-height:88px;background:var(--dt-surface);color:var(--dt-text);border-radius:var(--dt-radius);text-align:left;border:1px solid transparent}
+#dt-desktop .dt-day-row[aria-pressed=true]{border-color:var(--dt-blue);background:var(--dt-tint)}
+#dt-desktop .dt-date{font-size:11px;color:var(--dt-sub);line-height:1.3}
+#dt-desktop .dt-date strong{display:block;font-size:23px;line-height:1.2;font-weight:400;color:var(--dt-text);margin-top:4px}
+#dt-desktop .dt-day-row>img{display:block;width:54px;height:60px;object-fit:cover;border-radius:11px}
+#dt-desktop .dt-day-copy{min-width:0}
+#dt-desktop .dt-day-copy strong{font-size:13px;line-height:1.4;display:block;font-weight:700;overflow-wrap:anywhere}
+#dt-desktop .dt-meta{color:var(--dt-sub);font-size:11px;margin-top:5px!important}
+#dt-desktop .dt-day-copy small{display:block;color:var(--dt-sub);font-size:11px;margin-top:6px}
+#dt-desktop .dt-day-row>svg{width:17px;height:17px;color:var(--dt-sub)}
+#dt-desktop .dt-shell .dt-day-strip{display:grid;grid-template-columns:42px minmax(0,1fr) 18px;gap:11px;align-items:center;min-height:44px;padding:9px 12px;width:100%;text-align:left;border-radius:12px;font-size:13px;color:var(--dt-sub);border:1px solid var(--dt-line)}
+#dt-desktop .dt-day-strip .dt-short-date{font-size:11px;white-space:nowrap}
+#dt-desktop .dt-day-strip svg{width:17px;height:17px}
+#dt-desktop .dt-shell .dt-rest{background:var(--dt-sage);color:var(--dt-green);border-color:transparent}
+#dt-desktop .dt-day-strip[aria-pressed=true]{outline:1px solid var(--dt-blue);outline-offset:1px}
+#dt-desktop .dt-detail{background:var(--dt-surface);border-radius:var(--dt-radius);overflow:hidden;min-width:0}
+#dt-desktop .dt-detail-photo{width:100%;height:200px;object-fit:cover;display:block}
+#dt-desktop .dt-detail-content{padding:18px 22px 20px}
+#dt-desktop .dt-kicker{font-size:11px;color:var(--dt-blue);margin-bottom:8px!important}
+#dt-desktop .dt-detail-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+#dt-desktop .dt-detail h2{font-size:24px;letter-spacing:-.65px;line-height:1.35;font-weight:700}
+#dt-desktop .dt-shell .dt-pin{width:44px;height:44px;flex-shrink:0;padding:10px;border-radius:50%}
+#dt-desktop .dt-pin[aria-pressed=true]{background:var(--dt-tint)}
+#dt-desktop .dt-facts{display:flex;align-items:center;flex-wrap:wrap;gap:16px;color:var(--dt-sub);font-size:12px;margin-top:11px}
+#dt-desktop .dt-facts span{display:inline-flex;align-items:center;gap:6px}
+#dt-desktop .dt-facts svg{width:15px;height:15px}
+#dt-desktop .dt-ingredient-head{display:flex;justify-content:space-between;align-items:center;margin:22px 0 6px;gap:12px}
+#dt-desktop .dt-ingredient-head h3{font-size:15px;font-weight:700}
+#dt-desktop .dt-ingredients{list-style:none;padding:0;margin:0 0 18px}
+#dt-desktop .dt-ingredients li{display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--dt-line);font-size:13px}
+#dt-desktop .dt-ingredients li span:first-child{min-width:0;overflow-wrap:anywhere}
+#dt-desktop .dt-ingredients li span:last-child{color:var(--dt-sub);white-space:nowrap;flex-shrink:0}
+#dt-desktop .dt-shell .dt-recipe-button{width:100%;display:flex}
+#dt-desktop .dt-empty-preview{padding:32px 25px;min-height:400px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+#dt-desktop .dt-empty-preview>.dt-empty-mark{display:grid;place-items:center;width:64px;height:64px;background:var(--dt-tint);color:var(--dt-blue);border-radius:20px;margin-bottom:24px}
+#dt-desktop .dt-empty-mark svg{width:28px;height:28px;stroke-width:1.5}
+#dt-desktop .dt-empty-preview p:not(.dt-kicker){font-size:14px;color:var(--dt-sub);line-height:1.8;margin:14px 0 24px;max-width:370px}
+#dt-desktop .dt-rest-preview{background:var(--dt-sage)}
+#dt-desktop .dt-rest-preview .dt-kicker,#dt-desktop .dt-rest-preview h2,#dt-desktop .dt-rest-preview p:not(.dt-kicker){color:var(--dt-green)}
+#dt-desktop .dt-rest-preview .dt-empty-mark{background:transparent;color:var(--dt-green)}
+#dt-desktop .dt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px 16px;align-items:start}
+#dt-desktop .dt-grid-day{min-width:0}
+#dt-desktop .dt-grid-heading{display:flex;justify-content:space-between;align-items:center;gap:5px;margin-bottom:13px;padding:0 2px}
+#dt-desktop .dt-grid-heading span{font-size:11px;color:var(--dt-sub)}
+#dt-desktop .dt-grid-heading strong{font-size:19px;font-weight:400}
+#dt-desktop .dt-shell .dt-grid-card{display:block;min-width:0;padding:0;width:100%;border-radius:var(--dt-radius);overflow:hidden;background:var(--dt-surface);text-align:left;color:var(--dt-text);position:relative}
+#dt-desktop .dt-grid-card>img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+#dt-desktop .dt-grid-card-copy{padding:13px 12px 16px}
+#dt-desktop .dt-grid-card-copy strong{font-size:13px;line-height:1.45;min-height:40px;display:block;overflow-wrap:anywhere}
+#dt-desktop .dt-grid-card-copy small{display:block;font-size:11px;color:var(--dt-sub);margin-top:12px}
+#dt-desktop .dt-grid-fixed{position:absolute;right:8px;top:8px;display:grid;place-items:center;width:29px;height:29px;border-radius:50%;background:var(--dt-surface);color:var(--dt-blue)}
+#dt-desktop .dt-grid-fixed svg{width:15px;height:15px}
+#dt-desktop .dt-shell .dt-grid-strip{grid-template-columns:minmax(0,1fr) 17px;gap:5px;padding:10px 10px;font-size:12px;line-height:1.5;min-height:44px}
+#dt-desktop .dt-status{font-size:11px;color:var(--dt-sub);margin-top:18px!important;min-height:17px}
+#dt-desktop .dt-overlay{position:absolute;inset:0;z-index:10;padding:max(26px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) max(26px,env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));background:light-dark(#202b3a59,#00000080);display:flex;justify-content:center;align-items:flex-start;overflow:auto}
+#dt-desktop .dt-shell{position:relative}
+#dt-desktop .dt-dialog{width:min(640px,100%);max-height:min(calc(100dvh - 52px),100%);overflow:auto;background:var(--dt-surface);border:1px solid var(--dt-line);border-radius:22px;box-shadow:0 16px 60px #00000026;position:relative}
+#dt-desktop .dt-dialog-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 15px 8px 22px;background:var(--dt-surface);position:sticky;top:0;z-index:2}
+#dt-desktop .dt-dialog-bar>span{color:var(--dt-sub);font-size:12px}
+#dt-desktop .dt-dialog-bar button{width:44px;height:44px;border-radius:50%;padding:10px;color:var(--dt-sub)}
+#dt-desktop .dt-dialog .dt-detail-photo{height:200px}
+#dt-desktop .dt-dialog .dt-detail{border-radius:0}
+#dt-desktop .dt-dialog-body{padding:12px 24px 25px}
+#dt-desktop .dt-dialog-body h2{font-size:24px;line-height:1.35;letter-spacing:-.6px}
+#dt-desktop .dt-dialog-body>p{font-size:14px;line-height:1.8;color:var(--dt-sub);margin-top:13px}
+#dt-desktop .dt-steps{padding-left:21px;margin:18px 0 0}
+#dt-desktop .dt-steps li{font-size:14px;line-height:1.8;padding-left:4px;margin-bottom:14px}
+#dt-desktop .dt-choose-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px}
+#dt-desktop .dt-shell .dt-choose-grid button{display:block;text-align:left;border-radius:14px;background:var(--dt-bg);padding:0;overflow:hidden;color:var(--dt-text);font-size:13px}
+#dt-desktop .dt-choose-grid img{display:block;width:100%;height:110px;object-fit:cover}
+#dt-desktop .dt-choose-grid strong{display:block;padding:12px;min-height:64px}
+#dt-desktop .dt-pantry{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:22px 0}
+#dt-desktop .dt-pantry label{display:flex;align-items:center;gap:9px;padding:11px;background:var(--dt-bg);border-radius:12px;min-height:48px;font-size:14px}
+#dt-desktop .dt-pantry input{width:20px;height:20px;accent-color:var(--dt-blue);margin:0;flex-shrink:0}
+#dt-desktop .dt-dialog-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:9px;margin-top:24px}
+#dt-desktop .dt-week-choice{display:grid;gap:9px;margin-top:22px}
+#dt-desktop .dt-week-choice button{justify-content:space-between;border:1px solid var(--dt-line);border-radius:12px;color:var(--dt-text)}
+#dt-desktop .dt-week-choice button[aria-pressed=true]{background:var(--dt-tint);color:var(--dt-blue)}
+@container desktop-preview (min-width:1280px){#dt-desktop .dt-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}}
+@container desktop-preview (max-width:1100px){
+ #dt-desktop .dt-shell{grid-template-columns:172px minmax(0,1fr)}
+ #dt-desktop .dt-sidebar{padding:28px 12px 20px}
+ #dt-desktop .dt-main{padding:28px 24px 24px}
+ #dt-desktop .dt-agenda-body{grid-template-columns:minmax(260px,.9fr) minmax(0,1.1fr);gap:20px}
+ #dt-desktop .dt-shell .dt-day-row{grid-template-columns:34px 48px minmax(0,1fr) 16px;gap:8px;padding:10px}
+ #dt-desktop .dt-day-row>img{width:48px;height:58px}
+ #dt-desktop .dt-day-copy strong{font-size:12px}
+ #dt-desktop .dt-detail-content{padding:18px}
+ #dt-desktop .dt-detail-photo{height:200px}
+ #dt-desktop .dt-detail h2{font-size:22px}
+}
+@container desktop-preview (max-width:900px){
+ #dt-desktop .dt-shell{grid-template-columns:70px minmax(0,1fr)}
+ #dt-desktop .dt-sidebar{padding:26px 8px 20px}
+ #dt-desktop .dt-sidebar button{justify-content:center;padding:12px 8px}
+ #dt-desktop .dt-sidebar button span{display:none}
+ #dt-desktop .dt-main{padding:26px 20px}
+ #dt-desktop .dt-agenda-body{grid-template-columns:minmax(235px,.92fr) minmax(0,1.08fr);gap:16px}
+ #dt-desktop .dt-shell .dt-day-row{grid-template-columns:30px 44px minmax(0,1fr) 14px;gap:7px;padding:9px}
+ #dt-desktop .dt-day-row>img{width:44px;height:55px}
+ #dt-desktop .dt-detail-content{padding:16px}
+}
+@container desktop-preview (max-width:700px){
+ #dt-desktop .dt-stage{min-height:1920px;padding-top:12px}
+ #dt-desktop .dt-shell{display:block;min-height:0}
+ #dt-desktop .dt-sidebar{padding:12px 12px 10px;border-right:0;border-bottom:1px solid var(--dt-line);gap:9px}
+ #dt-desktop .dt-side-nav{grid-template-columns:repeat(4,minmax(0,1fr));gap:3px}
+ #dt-desktop .dt-sidebar .dt-side-nav button{flex-direction:column;gap:5px;min-width:0;padding:7px 0;font-size:11px}
+ #dt-desktop .dt-sidebar .dt-side-nav button span{display:block}
+ #dt-desktop .dt-profile{display:flex;justify-content:flex-end;gap:8px;border:0;padding:0;margin:0}
+ #dt-desktop .dt-profile button{width:auto;min-height:44px;padding:6px 9px;font-size:11px}
+ #dt-desktop .dt-profile button span{display:block}
+ #dt-desktop .dt-main{padding:22px 16px}
+ #dt-desktop .dt-header{margin-bottom:22px;gap:8px}
+ #dt-desktop .dt-header h1{font-size:26px}
+ #dt-desktop .dt-period{font-size:11px}
+ #dt-desktop .dt-plan-menu>summary{font-size:12px;padding:10px 12px}
+ #dt-desktop .dt-agenda-body{display:grid;grid-template-columns:1fr;gap:22px}
+ #dt-desktop .dt-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 12px}
+ #dt-desktop .dt-dialog{max-height:min(calc(100dvh - 24px),100%)}
+ #dt-desktop .dt-overlay{padding:12px}
+ #dt-desktop .dt-dialog-body{padding:10px 18px 20px}
+}
+@container desktop-preview (max-width:380px){#dt-desktop .dt-grid{grid-template-columns:1fr}#dt-desktop .dt-stage{min-height:2380px}}
+@media(prefers-reduced-motion:reduce){#dt-desktop .dt-shell *{animation:none;transition:none}}
+</style>
+<script>
+(()=>{
+ const root=document.getElementById('dt-desktop');
+ const assets=__ASSETS__;
+ const icon=n=>`<i data-lucide="${n}" aria-hidden="true"></i>`;
+ const safe=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const names=['Spaghetti Bolognese','Tofu-Curry mit Reis','Lachs mit Kartoffeln','Kartoffelgratin'];
+ const times=[30,30,45,60];
+ const days=[{dish:0,pinned:true},{dish:1},{rest:true},{dish:2},{},{},{dish:3}];
+ const choices={agenda:0,calendar:0};
+ let weekOffset=0,overlay=null,focusReturn=null,dialogShell=null,pendingRefresh=false;
+ const dayDate=i=>new Date(Date.UTC(2026,10,16+weekOffset*7+i));
+ const fmt=(i,options)=>new Intl.DateTimeFormat('de-DE',{timeZone:'UTC',...options}).format(dayDate(i));
+ const short=i=>fmt(i,{weekday:'short'}).replace('.','');
+ const number=i=>String(dayDate(i).getUTCDate());
+ const long=i=>fmt(i,{weekday:'long',day:'numeric',month:'long'});
+ const period=()=>`${number(0)}. – ${number(6)}. ${fmt(6,{month:'long',year:'numeric'})}`;
+ const img=id=>`<img src="${assets.photos[id]}" alt="${safe(names[id])}" decoding="sync">`;
+ const ingredientList=id=>`<ul class="dt-ingredients">${assets.recipes[id].ingredients.map(i=>`<li><span>${safe(i.name)}</span><span>${i.amount===undefined?'':new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(i.amount)} ${safe(i.unit||'')}</span></li>`).join('')}</ul>`;
+ function sidebar(){return `<aside class="dt-sidebar"><nav class="dt-side-nav" aria-label="Hauptnavigation">${[['calendar-days','Wochenplan'],['book-open','Gerichte'],['cooking-pot','Zubereiten'],['shopping-basket','Einkauf']].map(([i,n],index)=>`<button type="button" ${index===0?'aria-current="page"':'data-placeholder="'+n+'"'} aria-label="${n}">${icon(i)}<span>${n}</span></button>`).join('')}</nav><div class="dt-profile"><button type="button" data-placeholder="Profil" aria-label="Profil">${icon('user-round')}<span>Profil</span></button><button type="button" data-placeholder="Einstellungen" aria-label="Einstellungen">${icon('settings-2')}<span>Einstellungen</span></button></div></aside>`}
+ function header(){return `<header class="dt-header"><div><h1>Wochenplan</h1><p class="dt-period">${period()}</p></div><details class="dt-plan-menu"><summary class="cursor-interaction">${icon('sliders-horizontal')}Planen</summary><div class="dt-menu-options"><button type="button" data-command="week">${icon('calendar-days')}Woche wählen</button><button type="button" data-command="mix">${icon('shuffle')}7 Tage mischen</button><button type="button" data-placeholder="Profil & Einstellungen">${icon('user-round')}Profil & Einstellungen</button></div></details></header>`}
+ function row(i,selected){
+  const day=days[i],has=day.dish!==undefined;
+  if(!has)return `<button type="button" class="dt-day-strip ${day.rest?'dt-rest':''} cursor-interaction" data-day="${i}" aria-pressed="${selected===i}" aria-label="${long(i)}: ${day.rest?'Resteabend':'nicht geplant'}"><span class="dt-short-date">${short(i)}, ${number(i)}.</span><span>${day.rest?'Resteabend':'Nicht geplant'}</span>${icon(day.rest?'rotate-ccw':'plus')}</button>`;
+  return `<button type="button" class="dt-day-row cursor-interaction" data-day="${i}" aria-pressed="${selected===i}" aria-label="${long(i)}: ${names[day.dish]}${day.pinned?', fixiert':''}"><span class="dt-date">${short(i)}<strong>${number(i)}</strong></span>${img(day.dish)}<span class="dt-day-copy"><strong>${names[day.dish]}</strong><small>${times[day.dish]} Min. · 2 Portionen</small></span>${icon(day.pinned?'pin':'chevron-right')}</button>`;
+ }
+ function detail(i,modal=false){
+  const day=days[i],id=day.dish;
+  if(id===undefined)return `<section class="dt-detail dt-empty-preview ${day.rest?'dt-rest-preview':''}" aria-label="${long(i)}"><span class="dt-empty-mark">${icon(day.rest?'rotate-ccw':'calendar-plus')}</span><p class="dt-kicker">${long(i)}</p><h2>${day.rest?'Resteabend':'Nicht geplant'}</h2><p>${day.rest?'Für diesen Abend sind Reste vorgesehen. Es ist kein neues Gericht eingeplant.':'Für diesen Tag ist noch kein Gericht eingeplant.'}</p>${day.rest?'':`<button type="button" class="dt-primary" data-choose="${i}">${icon('plus')}Gericht auswählen</button>`}</section>`;
+  return `<section class="dt-detail" aria-label="Gerichtsvorschau ${safe(names[id])}">${img(id).replace('<img ','<img class="dt-detail-photo" ')}<div class="dt-detail-content"><p class="dt-kicker">${long(i)}</p><div class="dt-detail-title"><h2>${names[id]}</h2><button type="button" class="dt-pin" data-pin="${i}" aria-label="${safe(names[id])} fixieren" aria-pressed="${!!day.pinned}">${icon('pin')}</button></div><div class="dt-facts"><span>${icon('clock-3')}${times[id]} Min.</span><span>${icon('users-round')}2 Portionen</span></div><div class="dt-ingredient-head"><h3>Zutaten</h3><span class="dt-meta">${assets.recipes[id].ingredients.length} Zutaten</span></div>${ingredientList(id)}${modal?`<h3>Zubereitung</h3><ol class="dt-steps">${assets.recipes[id].steps.map(s=>`<li>${safe(s)}</li>`).join('')}</ol>`:`<button type="button" class="dt-primary dt-recipe-button" data-recipe="${i}">${icon('book-open')}Rezept ansehen</button>`}</div></section>`;
+ }
+ function grid(){return `<div class="dt-grid" aria-label="Sieben Tage im Wochenraster">${days.map((day,i)=>`<section class="dt-grid-day"><div class="dt-grid-heading"><span>${fmt(i,{weekday:'long'})}</span><strong>${number(i)}.</strong></div>${day.dish===undefined?`<button type="button" class="dt-day-strip dt-grid-strip ${day.rest?'dt-rest':''}" data-day="${i}" aria-label="${long(i)}: ${day.rest?'Resteabend':'nicht geplant'}"><span>${day.rest?'Resteabend':'Nicht geplant'}</span>${icon(day.rest?'rotate-ccw':'plus')}</button>`:`<button type="button" class="dt-grid-card cursor-interaction" data-day="${i}" aria-label="${long(i)}: ${names[day.dish]}">${img(day.dish)}${day.pinned?`<span class="dt-grid-fixed" aria-label="Fixiert">${icon('pin')}</span>`:''}<div class="dt-grid-card-copy"><strong>${names[day.dish]}</strong><small>${times[day.dish]} Min.<br>2 Portionen</small></div></button>`}</section>`).join('')}</div>`}
+ function render(shell){
+  const layout=shell.dataset.layout;
+  shell.innerHTML=sidebar()+`<main class="dt-main">${header()}${layout==='agenda'?`<div class="dt-agenda-body"><div class="dt-week-list" aria-label="Tage der Woche">${days.map((_,i)=>row(i,choices.agenda)).join('')}</div><div data-detail aria-live="polite">${detail(choices.agenda)}</div></div>`:grid()}<p class="dt-status" aria-live="polite"></p></main>`;
+ }
+ function renderAll(){root.querySelectorAll('.dt-shell').forEach(render);refresh()}
+ function refresh(){if(globalThis.lucide)lucide.createIcons()}
+ function setStatus(shell,text){shell.querySelector('.dt-status').textContent=text}
+ function closeDialog(restore=true){
+  if(!overlay)return;
+  const returnDay=focusReturn?.dataset.day;
+  overlay.remove();overlay=null;
+  if(dialogShell){dialogShell.querySelectorAll(':scope > .dt-sidebar,:scope > .dt-main').forEach(el=>el.inert=false)}
+  if(pendingRefresh){pendingRefresh=false;renderAll();if(returnDay!==undefined)focusReturn=dialogShell.querySelector('[data-day="'+returnDay+'"]')}
+  if(restore&&focusReturn?.isConnected)focusReturn.focus({preventScroll:true});
+ }
+ function showDialog(shell,title,html,trigger){
+  const previousReturn=focusReturn,fromOverlay=overlay?.contains(trigger);
+  closeDialog(false);dialogShell=shell;
+  focusReturn=fromOverlay?previousReturn:trigger?.closest('.dt-plan-menu')?.querySelector('summary')||trigger||document.activeElement;
+  shell.querySelectorAll(':scope > .dt-sidebar,:scope > .dt-main').forEach(el=>el.inert=true);
+  overlay=document.createElement('div');overlay.className='dt-overlay';
+  overlay.innerHTML=`<section class="dt-dialog" role="dialog" aria-modal="true" aria-label="${safe(title)}"><header class="dt-dialog-bar"><span>${safe(title)}</span><button type="button" data-close aria-label="Schließen">${icon('x')}</button></header>${html}</section>`;
+  shell.append(overlay);refresh();
+  overlay.querySelector('[data-close]').focus({preventScroll:true});
+  const rect=overlay.querySelector('.dt-dialog').getBoundingClientRect();
+  if(rect.top<0||rect.top>window.innerHeight-80)overlay.querySelector('.dt-dialog').scrollIntoView({block:'start',behavior:'instant'});
+ }
+ function chooseDish(shell,i,trigger){
+  showDialog(shell,'Gericht auswählen',`<div class="dt-dialog-body"><h2>${long(i)}</h2><p>Wähle ein Gericht aus deiner Sammlung.</p><div class="dt-choose-grid">${names.map((name,id)=>`<button type="button" data-assign="${id}" data-for-day="${i}">${img(id)}<strong>${name}</strong></button>`).join('')}</div></div>`,trigger);
+ }
+ renderAll();
+ root.addEventListener('click',e=>{
+  const theme=e.target.closest('[data-dt-theme]');
+  if(theme){root.style.colorScheme=theme.dataset.dtTheme;root.querySelectorAll('[data-dt-theme]').forEach(b=>b.setAttribute('aria-pressed',String(b===theme)));return}
+  if(overlay&&e.target===overlay){closeDialog();return}
+  const button=e.target.closest('button');if(!button)return;
+  const shell=button.closest('.dt-shell');if(!shell)return;
+  if(button.hasAttribute('data-close')){closeDialog();return}
+  if(button.dataset.placeholder){setStatus(shell,`${button.dataset.placeholder}: Dieser Entwurf zeigt den Wochenplan.`);shell.querySelectorAll('details').forEach(d=>d.open=false);return}
+  if(button.dataset.day!==undefined){
+   const i=Number(button.dataset.day);choices[shell.dataset.layout]=i;
+   if(shell.dataset.layout==='agenda'){
+    shell.querySelectorAll('[data-day]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.day)===i)));
+    shell.querySelector('[data-detail]').innerHTML=detail(i);refresh();
+   }else showDialog(shell,long(i),detail(i,true),button);
+  }
+  if(button.dataset.recipe!==undefined)showDialog(shell,'Rezept',detail(Number(button.dataset.recipe),true),button);
+  if(button.dataset.choose!==undefined)chooseDish(shell,Number(button.dataset.choose),button);
+  if(button.dataset.assign!==undefined){days[Number(button.dataset.forDay)]={dish:Number(button.dataset.assign)};closeDialog(false);renderAll();shell.querySelector('[data-day="'+button.dataset.forDay+'"]')?.focus({preventScroll:true})}
+  if(button.dataset.pin!==undefined){
+   const i=Number(button.dataset.pin),wasModal=!!overlay;days[i].pinned=!days[i].pinned;
+   if(wasModal){pendingRefresh=true;overlay.querySelector('[data-pin]').setAttribute('aria-pressed',String(days[i].pinned));root.querySelectorAll('.dt-shell').forEach(s=>{if(s!==shell)render(s)});refresh()}
+   else{renderAll();shell.querySelector('[data-pin="'+i+'"]')?.focus({preventScroll:true})}
+  }
+  if(button.dataset.command){
+   shell.querySelector('.dt-plan-menu').open=false;
+   if(button.dataset.command==='mix')showDialog(shell,'7 Tage mischen',`<div class="dt-dialog-body"><h2>Was hast du schon da?</h2><p>Vorräte können bei der Reihenfolge berücksichtigt werden. Fixierte Gerichte bleiben erhalten.</p><div class="dt-pantry">${['Tofu','Reis','Kartoffeln','Karotten'].map(n=>`<label><input type="checkbox" value="${n}" data-pantry>${n}</label>`).join('')}</div><div class="dt-dialog-actions"><button type="button" data-mix="skip">Überspringen & mischen</button><button type="button" class="dt-primary" data-mix="pantry">Mit Vorräten mischen</button></div></div>`,button);
+   else showDialog(shell,'Woche wählen',`<div class="dt-dialog-body"><h2>November 2026</h2><div class="dt-week-choice">${[-1,0,1].map(offset=>`<button type="button" data-week="${offset}" aria-pressed="${weekOffset===offset}"><span>${16+offset*7}. – ${22+offset*7}. November</span>${weekOffset===offset?icon('check'):icon('chevron-right')}</button>`).join('')}</div><p>Die Vorschau verwendet in jeder Woche dieselben Beispielgerichte.</p></div>`,button);
+  }
+  if(button.dataset.week!==undefined){weekOffset=Number(button.dataset.week);closeDialog(false);renderAll();shell.querySelector('summary').focus({preventScroll:true})}
+  if(button.dataset.mix){
+   const pantry=button.dataset.mix==='pantry'?[...overlay.querySelectorAll('[data-pantry]:checked')].map(e=>e.value.toLocaleLowerCase('de')):[];
+   const indices=days.map((d,i)=>({d,i})).filter(({d})=>d.dish!==undefined&&!d.pinned).map(x=>x.i);
+   let dishes=indices.map(i=>days[i].dish);if(dishes.length>1)dishes=[...dishes.slice(1),dishes[0]];
+   if(pantry.length)dishes.sort((a,b)=>{
+    const matches=id=>assets.recipes[id].ingredients.some(ing=>pantry.some(p=>ing.name.toLocaleLowerCase('de').includes(p)));
+    return Number(matches(b))-Number(matches(a));
+   });
+   indices.forEach((i,n)=>days[i].dish=dishes[n]);closeDialog(false);renderAll();
+   setStatus(shell,'Beispielplan neu gemischt. Fixierte Gerichte, Resteabend und freie Tage bleiben erhalten.');shell.querySelector('summary').focus({preventScroll:true});
+  }
+ });
+ document.addEventListener('pointerdown',e=>{root.querySelectorAll('.dt-plan-menu[open]').forEach(menu=>{if(!menu.contains(e.target))menu.open=false})});
+ root.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(overlay){e.preventDefault();closeDialog()}else root.querySelectorAll('details[open]').forEach(d=>d.open=false);return}
+  if(e.key==='Tab'&&overlay){const focusable=[...overlay.querySelectorAll('button,input')].filter(el=>!el.disabled);const first=focusable[0],last=focusable.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}
+ });
+ if(globalThis.Tweak)root.querySelectorAll('.dt-shell').forEach(shell=>{const state={radius:18};const tweak=new Tweak({container:shell,onChange:()=>shell.style.setProperty('--dt-radius',state.radius+'px')});tweak.addSlider(state,'radius',{label:'Kartenrundung',min:10,max:24,unit:'px',reference:'--dt-radius'})});
+})();
+</script>

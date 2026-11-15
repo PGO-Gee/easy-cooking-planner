@@ -1,6 +1,6 @@
 // Curated German ingredient vocabulary and exact aliases. Unknown ingredients
 // remain available as entered; only explicitly listed variants are combined.
-(() => {
+((root) => {
   function aliasKey(value) {
     return String(value || '')
       .trim()
@@ -132,6 +132,34 @@
     ['Backkakao', 'Ungesüßtes Kakaopulver']
   ].forEach(([canonical, ...variants]) => addAliases(canonical, variants));
 
+  // Explicit number variants only: never stem arbitrary product names.
+  [
+    ['Kirschtomaten', 'Kirschtomate'], ['Cherrytomaten', 'Cherrytomate'],
+    ['Cocktailtomaten', 'Cocktailtomate'], ['Rispentomaten', 'Rispentomate'],
+    ['Fleischtomaten', 'Fleischtomate'], ['Salatgurken', 'Salatgurke'],
+    ['Gewürzgurken', 'Gewürzgurke'], ['Speisekartoffeln', 'Speisekartoffel'],
+    ['Paprika', 'Paprikas', 'Paprikaschote', 'Paprikaschoten'],
+    ['Spitzpaprika', 'Spitzpaprikas'], ['Knoblauchzehen', 'Knoblauchzehe'],
+    ['Bio-Zitronen', 'Bio-Zitrone'], ['Bio-Limetten', 'Bio-Limette'],
+    ['Tellerlinsen', 'Tellerlinse'], ['Belugalinsen', 'Belugalinse'],
+    ['Borlotti-Bohnen', 'Borlotti-Bohne'], ['Oliven', 'Olive'],
+    ['Haselnüsse', 'Haselnuss'], ['Pistazien', 'Pistazie'],
+    ['Lasagneplatten', 'Lasagneplatte'], ['Bandnudeln', 'Bandnudel'],
+    ['Suppennudeln', 'Suppennudel'], ['Reisnudeln', 'Reisnudel'],
+    ['Glasnudeln', 'Glasnudel'], ['Muskatnuss', 'Muskatnüsse'],
+    ['Lachsfilet', 'Lachsfilets'], ['Kabeljaufilet', 'Kabeljaufilets'],
+    ['Seelachsfilet', 'Seelachsfilets'], ['Thunfischfilet', 'Thunfischfilets'],
+    ['Forellenfilet', 'Forellenfilets'], ['Fischfilet', 'Fischfilets'],
+    ['Hähnchenfilet', 'Hähnchenfilets'], ['Putenfilet', 'Putenfilets'],
+    ['Putenbrustfilet', 'Putenbrustfilets'], ['Entenfilet', 'Entenfilets'],
+    ['Entenbrust', 'Entenbrüste'], ['Entenbrustfilet', 'Entenbrustfilets'],
+    ['Rinderfilet', 'Rinderfilets'], ['Schweinefilet', 'Schweinefilets'],
+    ['Lammfilet', 'Lammfilets'], ['Schweineschnitzel', 'Schweineschnitzeln'],
+    ['Rindersteak', 'Rindersteaks'], ['Schweinesteak', 'Schweinesteaks'],
+    ['Schweinenackensteak', 'Schweinenackensteaks'], ['Rinderrouladen', 'Rinderroulade'],
+    ['Putenkeule', 'Putenkeulen'], ['Lammkeule', 'Lammkeulen'], ['Lammkotelett', 'Lammkoteletts']
+  ].forEach(([canonical, ...variants]) => addAliases(canonical, variants));
+
   function normalize(value) {
     const name = typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
     if (!name) return '';
@@ -232,7 +260,7 @@
   }
 
   function manualName(value) {
-    return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ') : '';
+    return normalize(value);
   }
 
   function manualKey(value) {
@@ -288,7 +316,10 @@
       ...value,
       dishes: (Array.isArray(value.dishes) ? value.dishes : [])
         .filter(dish => dish && typeof dish === 'object')
-        .map(dish => ({ ...dish, ingredients: unique(dish.ingredients) })),
+        .map(dish => ({ ...dish, ingredients: unique(dish.ingredients),
+          ...(dish.recipe && Array.isArray(dish.recipe.ingredients) ? {recipe: {...dish.recipe,
+            ingredients: dish.recipe.ingredients.map(item => item && typeof item === 'object' ? {...item, name: normalize(item.name)} : item)
+          }} : {}) })),
       pantryIngredients: normalizeWeekValues(value.pantryIngredients, unique),
       shoppingChecks: normalizeWeekValues(value.shoppingChecks, normalizeChecks),
       hiddenShoppingItems: normalizeWeekValues(value.hiddenShoppingItems, values => [...new Set((Array.isArray(values) ? values : []).map(manualKey).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'de-DE'))),
@@ -318,10 +349,12 @@
     ...aliasNames, ...pantryNames
   ]);
 
-  window.WochentischIngredients = Object.freeze({
+  const api = Object.freeze({
     normalize, key, pantryKey, pantryMatches, unique, normalizeQuantities, normalizeChecks, normalizeKeys,
     normalizeStateIngredients, manualName, manualKey
   });
-  window.COMMON_INGREDIENTS = canonicalIngredients;
-  window.COMMON_MAIN_INGREDIENTS = [...new Map([...canonicalIngredients, ...aliasNames].map(name => [aliasKey(name), name])).values()];
-})();
+  root.WochentischIngredients = api;
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.COMMON_INGREDIENTS = canonicalIngredients;
+  root.COMMON_MAIN_INGREDIENTS = canonicalIngredients.slice();
+})(typeof window === 'object' ? window : {});

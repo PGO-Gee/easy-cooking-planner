@@ -95,13 +95,13 @@ test('general pantry categories match varieties without equating different varie
   assert.equal(ingredients.pantryMatches('Eigene Zutat', 'Eigene Zutaten'), false);
 });
 
-test('deduplicates recipe ingredients and preserves exact shopping items', () => {
+test('deduplicates ingredient aliases and combines their shopping quantities', () => {
   assert.deepEqual(Array.from(ingredients.unique(['Zwiebel', 'Zwiebeln', 'Rinderfilet', 'Rinderhackfleisch'])), ['Zwiebeln', 'Rinderfilet', 'Rinderhackfleisch']);
-  assert.deepEqual({ ...ingredients.normalizeQuantities({ zwiebel: 2, zwiebeln: 3, basmatireis: 1 }) }, { zwiebel: 2, zwiebeln: 3, basmatireis: 1 });
+  assert.deepEqual({ ...ingredients.normalizeQuantities({ zwiebel: 2, zwiebeln: 3, basmatireis: 1 }) }, { zwiebeln: 5, basmatireis: 1 });
 });
 
-test('removes the legacy manual prefix and preserves exact checked items', () => {
-  assert.deepEqual({ ...ingredients.normalizeChecks({ 'manual:zwiebel': true, zwiebeln: false, 'rinderhackfleisch': false }) }, { zwiebel: true });
+test('removes the legacy manual prefix and keeps checks under the canonical key', () => {
+  assert.deepEqual({ ...ingredients.normalizeChecks({ 'manual:zwiebel': true, zwiebeln: false, 'rinderhackfleisch': false }) }, { zwiebeln: true });
 });
 
 test('normalizes a saved household state and is idempotent', () => {
@@ -121,8 +121,8 @@ test('normalizes a saved household state and is idempotent', () => {
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.pantryIngredients['2026-10-26'])), ['Basmatireis', 'Reis', 'Zwiebeln']);
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.manualShoppingItems['2026-10-26'])), ['Mozzarella', 'Käse']);
   assert.deepEqual(JSON.parse(JSON.stringify(migrated.hiddenShoppingItems['2026-10-26'])), ['rinderfilet', 'rindfleisch']);
-  assert.deepEqual({ ...migrated.shoppingChecks['2026-10-26'] }, { zwiebel: true, zwiebeln: true });
-  assert.deepEqual({ ...migrated.shoppingQuantities }, { zwiebel: 2, zwiebeln: 3, basmatireis: 1, reis: 2 });
+  assert.deepEqual({ ...migrated.shoppingChecks['2026-10-26'] }, { zwiebeln: true });
+  assert.deepEqual({ ...migrated.shoppingQuantities }, { zwiebeln: 5, basmatireis: 1, reis: 2 });
   assert.deepEqual(JSON.parse(JSON.stringify(migratedAgain)), JSON.parse(JSON.stringify(migrated)));
 });
 
@@ -152,4 +152,48 @@ test('treats inherited object names as ordinary shopping keys', () => {
   const checks = ingredients.normalizeChecks(JSON.parse('{"__proto__":true,"constructor":true}'));
   assert.deepEqual({ ...quantities }, { ['__proto__']: 2, constructor: 3 });
   assert.deepEqual({ ...checks }, { ['__proto__']: true, constructor: true });
+});
+
+test('all suggestion sources use canonical unique names, including the shopping catalog', () => {
+  for (const catalog of [window.COMMON_INGREDIENTS, window.COMMON_MAIN_INGREDIENTS]) {
+    const names = Array.from(catalog);
+    assert.equal(new Set(names.map(ingredients.key)).size, names.length);
+    for (const name of names) assert.equal(name, ingredients.normalize(name));
+    for (const alias of ['Karotte', 'Kartoffel', 'Zwiebel', 'Lachsfilets', 'Kirschtomate']) assert(!names.includes(alias), alias);
+    assert(names.includes('Karotten'));
+    assert(names.includes('Kartoffeln'));
+  }
+});
+
+test('manual entries share exact ingredient aliases but not pantry substitutions', () => {
+  for (const [variant, canonical] of [['Karotte', 'Karotten'], ['Möhre', 'Karotten'], ['Kartoffel', 'Kartoffeln'],
+    ['Süßkartoffel', 'Süßkartoffeln'], ['Kirschtomate', 'Kirschtomaten'], ['Lachsfilets', 'Lachsfilet']]) {
+    assert.equal(ingredients.manualName(variant), canonical);
+    assert.equal(ingredients.manualKey(variant), ingredients.key(canonical));
+  }
+  for (const [a,b] of [['Kartoffeln','Süßkartoffeln'],['Tomaten','Tomatenmark'],['Lachs','Lachsfilet'],
+    ['Parmesan','Mozzarella'],['Karotten','TK-Karotten'],['Eigene Zutat','Eigene Zutaten']]) {
+    assert.notEqual(ingredients.manualKey(a), ingredients.manualKey(b));
+  }
+});
+
+test('migrates saved recipes and shopping aliases without losing quantities, notes or checks', () => {
+  const week = '2026-11-16';
+  const old = { dishes: [{id:'recipe', recipe:{servings:2, steps:['Karotte schneiden.'], ingredients:[
+    {name:'Karotte', amount:1, unit:'Stück', note:'für die Sauce'},
+    {name:'Karotten', amount:200, unit:'g', note:'für den Salat'}]}, ingredients:['Karotte','Karotten']}],
+    manualShoppingItems:{[week]:['Karotte','Karotten','Möhre','Kartoffel','Süßkartoffel','Eigener Artikel']},
+    pantryIngredients:{[week]:['Karotte','Möhren']}, shoppingChecks:{[week]:{'manual:Karotte':true,Karotten:false}},
+    hiddenShoppingItems:{[week]:['Kartoffel','Kartoffeln']}, shoppingQuantities:{Karotte:2,Karotten:3,Kartoffel:4} };
+  const snapshot=JSON.stringify(old);
+  const migrated=JSON.parse(JSON.stringify(ingredients.normalizeStateIngredients(old)));
+  assert.deepEqual(migrated.manualShoppingItems[week],['Karotten','Kartoffeln','Süßkartoffeln','Eigener Artikel']);
+  assert.deepEqual(migrated.shoppingChecks[week],{karotten:true});
+  assert.deepEqual(migrated.shoppingQuantities,{karotten:5,kartoffeln:4});
+  assert.deepEqual(migrated.hiddenShoppingItems[week],['kartoffeln']);
+  assert.deepEqual(migrated.pantryIngredients[week],['Karotten']);
+  assert.deepEqual(migrated.dishes[0].recipe.ingredients,old.dishes[0].recipe.ingredients.map(item=>({...item,name:'Karotten'})));
+  assert.deepEqual(migrated.dishes[0].recipe.steps,old.dishes[0].recipe.steps);
+  assert.equal(JSON.stringify(old),snapshot,'migration must not mutate the original snapshot');
+  assert.equal(JSON.stringify(ingredients.normalizeStateIngredients(migrated)),JSON.stringify(migrated));
 });

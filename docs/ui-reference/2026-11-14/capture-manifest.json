@@ -1,0 +1,39 @@
+{
+  "designDate": "2026-11-14",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "deviceScaleFactor": 1,
+  "browser": "157.0.8103.78",
+  "screens": 7,
+  "screenshots": 22,
+  "files": [
+    "screenshots/light/01-wochenplan.png",
+    "screenshots/light/02-gerichte.png",
+    "screenshots/light/03-rezeptdetails.png",
+    "screenshots/light/04-zubereiten.png",
+    "screenshots/light/05-kochmodus.png",
+    "screenshots/light/06-einkaufszettel.png",
+    "screenshots/light/07-rezept-bearbeiten.png",
+    "screenshots/light/08-wochenplan-menue.png",
+    "screenshots/light/09-einkaufsfilter.png",
+    "screenshots/light/10-artikel-gerichtzuordnung.png",
+    "screenshots/light/11-artikel-abgehakt.png",
+    "screenshots/dark/01-wochenplan.png",
+    "screenshots/dark/02-gerichte.png",
+    "screenshots/dark/03-rezeptdetails.png",
+    "screenshots/dark/04-zubereiten.png",
+    "screenshots/dark/05-kochmodus.png",
+    "screenshots/dark/06-einkaufszettel.png",
+    "screenshots/dark/07-rezept-bearbeiten.png",
+    "screenshots/dark/08-wochenplan-menue.png",
+    "screenshots/dark/09-einkaufsfilter.png",
+    "screenshots/dark/10-artikel-gerichtzuordnung.png",
+    "screenshots/dark/11-artikel-abgehakt.png"
+  ],
+  "sourceSha256": "72590566d4c0b933a6a6db3099fbf3ff5ca5d76ed8a6a06d82ffc9a90741722e",
+  "remoteRequests": [],
+  "errors": [],
+  "notes": "Full-content captures of mobile mockups in desktop Chrome with touch emulation; no real iPhone/Safari test."
+}

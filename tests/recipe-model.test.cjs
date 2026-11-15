@@ -24,10 +24,10 @@ test('leaves free text and missing amounts unchanged', () => {
   assert.equal(recipes.parseAmount('0'), null);
 });
 
-test('recipe ingredient names provide the shopping projection while retaining their wording', () => {
+test('recipe ingredient names provide a canonical shopping projection', () => {
   assert.deepEqual(recipes.shoppingIngredients({ ingredients: [
     { name: 'Parmesan', amount: 20 }, { name: 'Parmesan', amount: 5 }, { name: 'Zitrone', amount: null }
-  ] }, ['alt']), ['Parmesan', 'Zitrone']);
+  ] }, ['alt']), ['Parmesan', 'Zitronen']);
   assert.deepEqual(recipes.shoppingIngredients(null, ['Kartoffeln']), ['Kartoffeln']);
 });
 
@@ -58,4 +58,18 @@ test('per-portion recipes scale to the selected serving count', () => {
 test('existing ingredient notes and nonstandard units survive normalization', () => {
   const ingredient = { name: 'Tomaten', amount: 2, unit: 'Handvoll', note: 'halbiert' };
   assert.deepEqual(recipes.editableIngredients({ servings: 4, ingredients: [ingredient] }), [ingredient]);
+});
+
+test('normalizes recipe names for editing and cooking without combining separate recipe rows', () => {
+  const original={servings:2,ingredients:[{name:'Karotte',amount:1,unit:'Stück',note:'Sauce'},
+    {name:'Karotten',amount:200,unit:'g',note:'Salat'},{name:'Kartoffel',amount:3,unit:'Stück'}],steps:['Karotte schneiden.']};
+  const recipe=recipes.normalizeRecipe(original);
+  assert.deepEqual(recipe.ingredients.map(i=>i.name),['Karotten','Karotten','Kartoffeln']);
+  assert.deepEqual(recipe.ingredients.map(i=>i.amount),[1,200,3]);
+  assert.equal(recipe.ingredients[0].note,'Sauce');
+  assert.equal(recipe.ingredients[1].note,'Salat');
+  assert.deepEqual(recipe.steps,original.steps);
+  assert.deepEqual(recipes.shoppingIngredients(original),['Karotten','Kartoffeln']);
+  assert.deepEqual(recipes.editableIngredients(null,['Karotte','Kartoffel']).map(i=>i.name),['Karotten','Kartoffeln']);
+  assert.deepEqual(recipes.normalizeRecipe(recipe),recipe);
 });

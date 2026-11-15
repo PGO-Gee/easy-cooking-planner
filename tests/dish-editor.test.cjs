@@ -5,11 +5,11 @@ const vm = require('node:vm');
 const recipes = require('../recipe-model.js');
 
 // Exercise the same form-to-recipe conversion used by the editor with rows
-// that may be offscreen in the mobile pager.
+// that may be inside a collapsed editor section.
 function readEditorValue(servings, ingredients, steps = []) {
   const source = fs.readFileSync(require.resolve('../app.js'), 'utf8');
   const start = source.indexOf('function recipeEditorValue(){');
-  const end = source.indexOf('// The creation wizard', start);
+  const end = source.indexOf('// The section-based editor', start);
   assert.ok(start >= 0 && end > start);
   const rows = ingredients.map(item => ({
     querySelectorAll: () => Object.entries(item).map(([field, value]) => ({
@@ -71,4 +71,15 @@ test('cooking view displays imported quantities unchanged when portions are unkn
   vm.runInNewContext(`${source.slice(start, end)}\nappendRecipeIngredients(container,dish,4)`, context);
   assert.match(container.children[0].textContent, /unverändert/);
   assert.equal(container.children[1].children[0].children[0].textContent, '450 g');
+});
+
+test('saving manually typed ingredients canonicalizes names without merging recipe rows', () => {
+  const recipe = readEditorValue('2', [
+    {name:'Karotte',amount:'1',unit:'Stück',note:'Sauce'},
+    {name:'Karotten',amount:'200',unit:'g',note:'Salat'}
+  ]);
+  assert.deepEqual(JSON.parse(JSON.stringify(recipe.ingredients)), [
+    {name:'Karotten',amount:1,unit:'Stück',note:'Sauce'},
+    {name:'Karotten',amount:200,unit:'g',note:'Salat'}
+  ]);
 });
