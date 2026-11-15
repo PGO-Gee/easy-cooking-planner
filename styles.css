@@ -551,7 +551,7 @@ html.design .meal-nutrition { display:none; }
 html.design .add-meal { display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:44px;height:auto;margin:0;padding:8px;border:0;border-radius:12px;background:transparent;color:var(--action);font-size:12px; }
 html.design .day-content:has(.meal-card) > .add-meal { border-top:1px solid var(--line);font-size:11px; }
 html.design #calendar .day-content:has(.meal-card) > .add-meal { display:none; }
-html.design #calendar .meal-card:not(.focus-meal) .meal-pin { display:none; }
+html.design #calendar .meal-pin[aria-pressed=true] .ui-icon svg { fill:currentColor; }
 html.design #calendar .empty-day { background:transparent;border:1px solid var(--line); }
 html.design .empty-day .add-meal { justify-content:space-between;color:var(--muted); }
 html.design #calendar .is-rest-day { background:var(--rest);color:var(--on-rest); }

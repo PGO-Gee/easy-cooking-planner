@@ -1691,3 +1691,10 @@ html.design #pantry-dialog .dialog-actions { margin:16px 0 0; padding:12px 0 max
 
 #cooking-entry-dialog h2 { overflow-wrap:anywhere; min-width:0; }
 #cooking-entry-dialog > button { min-height:44px; white-space:normal; }
+
+/* Center the dish menu in the available viewport, including keyboard space. */
+html.design #cooking-entry-dialog[open] {
+  top:calc(var(--visual-viewport-top,0px) + env(safe-area-inset-top,0px) + 12px);
+  bottom:calc(100dvh - var(--visual-viewport-top,0px) - var(--visual-viewport-height,100dvh) + env(safe-area-inset-bottom,0px) + 12px);
+  margin:auto;
+}

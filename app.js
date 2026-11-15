@@ -2003,7 +2003,8 @@ function animateMealDrop(ghost,destination){
 function finishMealDrop(drag,cancelled=false){
   if(drag.dragging)suppressedMealOpenUntil=Date.now()+700;
   if(drag.dragging&&!cancelled)updateMealDropTarget(drag.clientX,drag.clientY);
-  const dates=drag.activeWeekTarget&&!cancelled?rangeDates():null;
+  const usesCookingPlan=Boolean(window.WochentischCookingPlan);
+  const dates=!usesCookingPlan&&drag.activeWeekTarget&&!cancelled?rangeDates():null;
   const affectedDates=dates?[dates[drag.sourceDay],dates[drag.targetDay]]:null;
   const before=affectedDates?snapshotPlanDays(affectedDates):null;
   const destination=drag.dragging&&!cancelled?moveMealToDropTarget(drag):null,dish=state.dishes.find(item=>item.id===drag.dishId);
@@ -2011,6 +2012,9 @@ function finishMealDrop(drag,cancelled=false){
   if(!destination)return;
   const after=before?snapshotPlanDays(affectedDates):null;
   save();renderCalendar({droppedMeal:destination}).then(rendered=>{if(rendered)animateMealDrop(drag.ghost,destination);else drag.ghost?.remove()});
+  // Cooking blocks already saved a complete undo in moveMealToDropTarget().
+  // Keep it: restoring only source/target days duplicates displaced blocks.
+  if(usesCookingPlan)return;
   const weekday=destination.date.toLocaleDateString('de-DE',{weekday:'long'});
   showToast(`${dish?.name||'Gericht'} auf ${weekday} verschoben.`,before?{
     actionLabel:'Rückgängig',duration:6500,onAction:()=>undoRestInsertion(before,after)

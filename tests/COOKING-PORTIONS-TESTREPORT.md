@@ -1,5 +1,28 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: sichtbare Fixierung, mittiger Gerichtdialog und Drag-Undo
+
+- Pinnadeln erscheinen rechts an allen Gerichten. Aktive Fixierungen sind mit
+  Hintergrund und gefülltem Symbol markiert; die Ziele bleiben mindestens 44 × 44 px.
+- „Kochmenge ändern“ trägt ein Kochtopf-Symbol. Der Gerichtdialog ist im
+  verfügbaren Visual Viewport zentriert und bei kleiner Höhe weiterhin scrollbar.
+- Drag & Drop bewahrt die vollständige Rückgängig-Aktion des Kochplanmodells.
+  Die ältere Rückgängig-Aktion für nur zwei Tage überschrieb diese zuvor und
+  ließ weitergeschobene Gerichte beim Zurücksetzen als Duplikate stehen.
+- 213 Node-Tests bestanden, einschließlich dreimaligem Verschieben und Undo
+  mit Verdrängung mehrerer Kochblöcke über einen Wochenwechsel und Restetagen.
+- Im Browser tatsächlich per Maus dreimal auf einen belegten Tag gezogen und
+  den Toast-Button „Rückgängig“ betätigt: jedes Mal identischer Ausgangsplan.
+  Fixieren eines späteren Gerichts über das Menü, sichtbare rechte Pinnadel
+  und direktes Aufheben der Fixierung ebenfalls geprüft.
+- 50 gezielte und 126 allgemeine Browserkombinationen bestanden. Größen:
+  320 × 568, 390 × 844, 393 × 852, 430 × 932, 844 × 390, 852 × 393,
+  1024 × 768, 1280 × 800, 1440 × 900 sowie gezielt 390 × 360; Light/Dark
+  und reduzierte Bewegung. Zentrierung vor dem Ausklappen der Kochmenge
+  gemessen; Menü-Screenshots in beiden Themes bei 390 × 844 visuell geprüft.
+- Keine echte iPhone-/Safari- oder iOS-Tastaturprüfung. Die geringe Höhe
+  simuliert verfügbaren Eingabeplatz. App-Shell v136, UI-Assets `20261115-8`.
+
 ## Ergänzung: Haushalt als Planungsstandard und gemeinsamer Gerichtdialog
 
 - „7 Tage mischen“ und die einzelne Gerichtauswahl verwenden den Haushalt

@@ -44,3 +44,21 @@ test('undo snapshots ignore empty weeks and padded false pin arrays added by syn
  assert.deepEqual(c.cookingPlanSnapshot(afterSync),beforeSync);
  const changed=structuredClone(afterSync);Object.values(changed.cookingEntries)[0].portions=5;assert.notDeepEqual(c.cookingPlanSnapshot(changed),beforeSync);
 });
+
+function dragFixture(){
+ const c=fixture(),app=fs.readFileSync(require.resolve('../app.js'),'utf8');
+ Object.assign(c,{sameValue:(a,b)=>JSON.stringify(a)===JSON.stringify(b),renderCalendar:()=>Promise.resolve(true),showToast:(message,options)=>{c.lastToast={message,...options}},updateMealDropTarget(){},clearMealDragVisuals(){},animateMealDrop(){},suppressedMealOpenUntil:0,mealDragState:null});
+ vm.runInContext(app.slice(app.indexOf('function moveMealToDropTarget('),app.indexOf('function animateMealDrop(')),c);
+ vm.runInContext(app.slice(app.indexOf('function finishMealDrop('),app.indexOf('function finishMealPointerDrag(')),c);
+ return c;
+}
+for(const activeWeekTarget of [true,false])test('drag undo restores every displaced block without duplicates (week target '+activeWeekTarget+')',()=>{
+ const c=dragFixture();c.state=model.add(c.state,'a','2026-11-14',2.5,1,'source');c.state=model.add(c.state,'fixed','2026-11-15',3,2,'displaced');c.state=model.add(c.state,'a','2026-11-17',4,1,'following');
+ const before=JSON.stringify(c.cookingPlanSnapshot(c.state));
+ for(let attempt=0;attempt<3;attempt++){
+  c.finishMealDrop({dragging:true,activeWeekTarget,sourceDay:5,targetDay:6,mealIndex:0,dishId:'a',ghost:null,clientX:0,clientY:0});
+  assert.equal(c.state.cookingEntries.source.date,'2026-11-15');assert.equal(c.state.cookingEntries.displaced.date,'2026-11-16');assert.equal(c.state.cookingEntries.following.date,'2026-11-18');
+  assert.equal(typeof c.lastToast.onAction,'function');c.lastToast.onAction();
+  assert.equal(JSON.stringify(c.cookingPlanSnapshot(c.state)),before);assert.equal(Object.keys(c.state.cookingEntries).length,3);
+ }
+});
