@@ -97,17 +97,17 @@ function renderWeekPreview(){
   const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
   const pin=uiButton('',()=>setMealPinned(entry.date,uiSelectedMeal,dish.id),{icon:'pin',className:'preview-pin'});pin.setAttribute('aria-label','Gericht fixieren');pin.setAttribute('aria-pressed',String(Boolean(pinnedMealsForDate(entry.date)[uiSelectedMeal])));
   body.append(date,title,pin,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
-  body.append(uiButton('Kochmenge anpassen',()=>openCookingEntryOptions(entry.date,uiSelectedMeal),{className:'secondary-button'}));
+  body.append(uiButton('Kochmenge ändern',()=>openCookingEntryOptions(entry.date,uiSelectedMeal,{editQuantity:true}),{className:'secondary-button'}));
   body.append(uiButton('Rezept ansehen',()=>openRecipe(dish.id,{from:'week',servings:window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal))}),{icon:'dishes',className:'primary-button'}));
-  body.append(uiButton('Weiteres Rezept hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));
+  body.append(uiButton('Weiteres Gericht hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));
   if(dishes.length>1){const others=document.createElement('div');others.className='preview-other';dishes.forEach((item,index)=>{const b=uiButton(item.name,()=>{uiSelectedMeal=index;renderWeekPreview()});b.setAttribute('aria-pressed',String(index===uiSelectedMeal));others.append(b)});body.append(others)}
   preview.append(body);
 }
 function openMealActions(day,mealIndex){openCookingEntryOptions(rangeDates()[day],mealIndex)}
 function appendCookingEntryActions(dialog,date,mealIndex,dishId){
   const day=rangeDates().findIndex(target=>keyFor(target)===keyFor(date));
-  dialog.append(uiButton(pinnedMealsForDate(date)[mealIndex]?'Fixierung aufheben':'Gericht fixieren',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Rezept hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
-  const label=document.createElement('label');label.className='cooking-entry-move';label.textContent='Verschieben nach';const select=document.createElement('select');rangeDates().forEach((target,index)=>select.add(new Option(formatChooserDate(target),index)));select.value=String(day);label.append(select);dialog.append(label,uiButton('Verschieben',()=>{if(moveMealToDropTarget({sourceDay:day,targetDay:Number(select.value),mealIndex,dishId,insertIndex:planForDate(rangeDates()[Number(select.value)]).length})){save();renderCalendar()}dialog.close()}),uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
+  dialog.append(uiButton(pinnedMealsForDate(date)[mealIndex]?'Fixierung aufheben':'Gericht fixieren',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Gericht hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
+  dialog.append(uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
 }
 
 function showDesktopRecipe(){

@@ -48,12 +48,12 @@ function commitCookingChange(create,message){
 }
 function plannedServingsForMeal(meal){const date=rangeDates()[Number(meal.closest('.day-content')?.dataset.day)],entry=date&&window.WochentischCookingPlan.entryAt(state,keyFor(date),Number(meal.dataset.mealIndex));return entry?window.WochentischCookingPlan.total(entry):null}
 function plannedEntryLabel(date,position){const model=window.WochentischCookingPlan,entry=model.entryAt(state,keyFor(date),position);return entry?`${window.WochentischRecipes.formatAmount(model.total(entry))} Portionen${entry.restDates.length?` · für ${1+entry.restDates.length} Tage`:''}`:'Portionen unbekannt'}
-function openCookingEntryOptions(date,position){
+function openCookingEntryOptions(date,position,{editQuantity=false}={}){
   const model=window.WochentischCookingPlan,entry=model.entryAt(state,keyFor(date),position);if(!entry)return;
   const dish=state.dishes.find(d=>d.id===entry.dishId);if(!dish)return;
   const dialog=uiDialog('cooking-entry-dialog',dish.name);dialog.querySelector('h2').textContent=dish.name;dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());
   const dateLabel=document.createElement('p');dateLabel.textContent=formatChooserDate(date);dialog.append(dateLabel,uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(dish.id,{from:'week',servings:model.total(entry)})},{icon:'dishes',className:'primary-button'}));
-  const form=document.createElement('form'),options=document.createElement('div');options.className='planning-options';renderPlanningFields(options,{...state.planningSettings,mode:'custom',portions:entry.portions,days:1+entry.restDates.length});
+  const form=document.createElement('form'),options=document.createElement('div');form.id='cooking-entry-quantity';form.hidden=!editQuantity;const quantityButton=uiButton('Kochmenge ändern',()=>{form.hidden=!form.hidden;quantityButton.setAttribute('aria-expanded',String(!form.hidden))});quantityButton.setAttribute('aria-expanded',String(editQuantity));quantityButton.setAttribute('aria-controls',form.id);dialog.append(quantityButton);options.className='planning-options';renderPlanningFields(options,{...state.planningSettings,mode:'custom',portions:entry.portions,days:1+entry.restDates.length});
   if(dish.type==='baking'){options.querySelector('[data-planning="days"]').value='1';options.querySelector('[data-planning="days"]').disabled=true;options.querySelector('.text-button').hidden=true;options.dispatchEvent(new Event('change'))}
   const hint=document.createElement('p');hint.textContent='Zusätzliche Restetage verschieben belegte Folgetage. Fixierte Gerichte bleiben geschützt.';
   const error=document.createElement('p');error.setAttribute('role','alert');
