@@ -80,3 +80,37 @@ Die Migration `20261107203423_baking_recipe_type.sql` vor der Veröffentlichung 
 `python3 supabase/build-weeknight-catalog.py` erzeugt daraus `supabase/catalog-weeknight-additions.sql`. Dieses Datenskript nach den vorhandenen Katalogmigrationen im Supabase SQL Editor ausführen. Es überspringt bereits vorhandene Namen und erhält bestehende Katalogeinträge und Haushaltskopien. Buchweizen-Eintopf ist bereits vollständig vorhanden und wird nicht erneut angelegt. Die zusätzlichen Einträge werden nicht durch das ältere `catalog_additions.sql` erzeugt.
 
 Die zugehörigen KI-generierten JPEGs liegen einschließlich kleiner Vorschaubilder in `images/recipes/`; die App ordnet sie über ihre normalisierten Gerichtsnamen zu. Herkunft und vollständige Bildprompts stehen in `images/recipes/weeknight-image-prompts.json`. Datenskript und statische Bilddateien müssen für eine neue Instanz beide bereitgestellt werden.
+
+## Haushaltsportionen und Kochen für mehrere Tage
+
+Unter **Profil & Haushalt** lassen sich Erwachsene, Kinder und die Portionen je
+Kind speichern (Standard: 0,5). Im Dialog **Planen → 7 Tage mischen** wählst du
+„Nur für mich“, „Unser Haushalt“ oder eine eigene Portionszahl und 1–7 Tage pro
+Gericht. „Doppelte Haushaltsmenge“ ist eine Schnellwahl für Besuch. Die Angaben
+werden als Vorgabe für neue Einträge gespeichert; bestehende Kochmengen ändern
+sich bei einer neuen Haushaltsgröße nicht.
+
+Ein Kochblock besteht aus dem Kochtag und seinen verknüpften Restetagen. Über
+**Kochmenge anpassen** am geplanten Gericht lassen sich Portionen und Dauer
+ändern. Verlängern verschiebt belegte Folgetage einschließlich ihrer Kochblöcke,
+auch über die sichtbare Woche hinaus. Muss dabei ein anderes fixiertes Gericht
+verschoben werden, bleibt der Plan unverändert. Ein ausdrücklich ausgewählter
+Kochblock lässt sich mitsamt seiner Fixierung verschieben. Restetage öffnen das
+zugehörige Rezept und können einzeln entfernt werden.
+
+Die Einkaufsliste verwendet `Zutatenmenge × Gesamtportionen / Basis-Portionen`.
+2,5 Portionen für zwei Tage ergeben 5 Kochportionen; 200 g für zwei Rezeptportionen
+werden zu 500 g. Restetage erzeugen keinen weiteren Einkaufsbedarf. g/kg und
+ml/l werden zusammengefasst; andere Einheiten bleiben separat. Angaben ohne
+berechenbare Menge bleiben sichtbar. Die Mengenanzeige lässt sich aufklappen,
+pro Einkaufswoche korrigieren und auf den berechneten Bedarf zurücksetzen.
+Rezeptfilter zeigen den anteiligen Bedarf; Korrekturen erfolgen in der Gesamtübersicht.
+
+**Vor Veröffentlichung des Clients** die Migration
+`supabase/migrations/20261115095535_household_cooking_portions.sql` anwenden.
+Sie ergänzt die v3-RPCs und schützt gespeicherte Kochblöcke vor Änderungen durch
+ältere Clients. Die Migration wurde lokal und anschließend auf der verbundenen Datenbank mit
+zurückgerollten synthetischen Daten geprüft. Sie ist dort seit dem 15. November
+2026 als `20261115140525_household_cooking_portions` angewendet. Bei weiteren
+Instanzen wird sie nicht durch GitHub Pages ausgeführt. Prüfungen und Grenzen stehen in
+[Tests zu Haushaltsportionen](tests/COOKING-PORTIONS-TESTREPORT.md).

@@ -57,7 +57,7 @@ test('unused-pantry feedback uses the same product and category matching as plan
     const ctx = {window: {}, state: {dishes: [{ingredients: [recipe]}]}, pantryDraft: [pantry],
       $: selector => selector === '#pantry-form' ? {addEventListener: (_, callback) => {submit = callback;}} : {close() {}},
       replaceRangePlan: () => false, renderCalendar: async () => true,
-      showToast: message => messages.push(message)};
+      showCookingPlanToast: message => messages.push(message)};
     vm.runInNewContext(catalog + '\n' + matching + '\n' + submitRegistration, ctx);
     await submit({preventDefault() {}});
     assert.equal(messages.length, 1);

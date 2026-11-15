@@ -212,3 +212,18 @@ test('reads clean state without a mutation and still saves local changes with th
   assert.equal(pushes, 1);
   assert.deepEqual(await store.get('records', 'app-state:other'), state(['other']));
 });
+
+test('v3 upgrades an older pending base through the shared-state normalizer', async () => {
+  const store=memoryStore();let sent;
+  const shared=value=>({...toShared(value),cookingEntries:value.cookingEntries||{},planningSettings:value.planningSettings||{days:1},quantityOverrides:value.quantityOverrides||{}});
+  const options={store,userId:'upgrade-user',householdId:'upgrade-household',apiVersion:3,newRequestId:()=> 'new-v3',toShared:shared,api:{sync:async request=>{sent=request;return {state:request.local,revision:1,conflicts:[]}}}};
+  const coordinator=create(options);await store.put('records',coordinator.keys.base,state([]));await store.put('records',coordinator.keys.pending,{base:state([])});await store.put('records',coordinator.keys.state,state(['later edit']));await coordinator.flush();
+  assert.equal(sent.version,3);assert.deepEqual(sent.base.planningSettings,{days:1});assert.deepEqual(sent.base.cookingEntries,{});assert.deepEqual(sent.local.dishes,['later edit']);
+});
+
+test('a rejected persisted legacy sync is upgraded durably with a new ID and v3 conflict routing', async () => {
+ const store=memoryStore(),sent=[];let counter=0;const shared=value=>({...toShared(value),cookingEntries:value.cookingEntries||{},planningSettings:{days:1},quantityOverrides:{}});
+ const options={store,userId:'u',householdId:'h',apiVersion:3,toShared:shared,newRequestId:()=>`upgrade-${++counter}`,api:{sync:async request=>{sent.push(structuredClone(request));if(request.version===2)throw Object.assign(new Error('Bitte die App aktualisieren, bevor du Kochmengen oder den Wochenplan änderst.'),{code:'22023'});assert(await store.get('records','sync-upgrade:u:h:legacy-id'),'upgraded request must be durable before send');return {state:request.local,revision:2,conflicts:[{id:'cooking-plan:[]',kind:'cooking-plan',key:[],label:'Plan',basePresent:true,baseValue:{},localPresent:true,localValue:{},remotePresent:true,remoteValue:{}}]}}}};
+ const coordinator=create(options);await store.put('records',coordinator.keys.base,state([]));await store.put('records',coordinator.keys.state,state(['legacy edit']));const original={operation:'sync',version:2,householdId:'h',requestId:'legacy-id',base:toShared(state([])),local:toShared(state(['legacy edit']))};await store.put('records',coordinator.keys.request,original);await coordinator.flush();
+ assert.deepEqual(sent[0],original);assert.equal(sent[1].version,3);assert.equal(sent[1].requestId,'upgrade-1');assert.equal(await store.get('records',coordinator.keys.request),undefined);assert.equal(await store.get('records','sync-upgrade:u:h:legacy-id'),undefined);assert.equal((await store.get('conflicts','u:h:cooking-plan:[]')).apiVersion,3);
+});

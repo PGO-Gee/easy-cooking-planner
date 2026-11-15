@@ -49,7 +49,7 @@
     }
     function endpointVersion(request) {
       const version = request?.version === undefined ? 1 : request.version;
-      if (![1, 2].includes(version)) throw new TypeError('Unbekannte Sync-Version.');
+      if (![1, 2, 3].includes(version)) throw new TypeError('Unbekannte Sync-Version.');
       return version;
     }
     function sync(request) {
@@ -66,7 +66,7 @@
     }
     async function pull(householdId) {
       try {
-        return await call('read_household_v2', { p_household_id: householdId });
+        return await call('read_household_v3', { p_household_id: householdId });
       } catch (error) {
         // Older deployments can still use the transactional sync endpoint.
         if (error?.code === 'PGRST202') return null;

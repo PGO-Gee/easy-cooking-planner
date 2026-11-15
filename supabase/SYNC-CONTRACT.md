@@ -100,3 +100,52 @@ die Abnahme sind zusätzlich echte PWA-Sitzungen und Offline-Wechsel zu prüfen.
 ## Rezeptart
 
 Die Migration `20261107203423_baking_recipe_type.sql` erweitert den v2-Gerätezustand um `type` (`meal` oder `baking`) und die Katalogeinträge um `recipe_type`. Fehlende Werte werden als `meal` behandelt; ältere v1- und v2-Writer erhalten die gespeicherte Rezeptart, wenn sie kein `type` senden. Die Migration muss vor der zugehörigen App-Version bereitgestellt werden.
+
+## v3: Haushaltsportionen und Kochblöcke
+
+Neue Clients verwenden `read_household_v3`, `sync_household_v3` und
+`resolve_household_conflict_v3` mit denselben Argumenten und Antwortfeldern wie
+v2. Der Zustand enthält zusätzlich:
+
+- `planningSettings`: `configured`, `adults`, `children`, `childFactor`, `mode`
+  (`self`, `household`, `custom`), `portions` und `days` (1–7).
+- `cookingEntries`: Objekt mit stabiler Eintrags-ID als Schlüssel. Jeder Wert
+  enthält `id`, `dishId`, `date`, `position`, `portions` (pro Esstag), `restDates`
+  und `pinned`. Die Gesamtkochmenge ist `portions × (1 + restDates.length)`.
+- `quantityOverrides`: positive Mengen unter einem JSON-Array als Stringschlüssel
+  `[Einkaufswochen-Montag, normalisierter Zutatenname, normalisierte Einheit]`.
+
+`plans`, `pinnedMeals` und `restDays` bleiben die Kalenderprojektion. Einträge
+werden serverseitig gegen diese Projektion geprüft. Ohne gespeicherte Metadaten
+entstehen deterministische IDs `legacy:Datum:Position:Rezept-ID`; Portionen
+entsprechen den Rezept-Basisportionen, ersatzweise 2 bei unbekannter Basis.
+Unbekannte Rezeptmengen werden trotzdem nicht als berechenbar behandelt.
+
+Kalenderprojektion und sämtliche Kochblöcke bilden gemeinsam die atomare
+Merge-Einheit `cooking-plan:[]`. Auch Änderungen an verschiedenen Tagen können
+also einen gemeinsamen Konflikt auslösen. Das ist bewusst konservativ, damit
+Verschiebeketten über mehrere Wochen niemals teilweise übernommen werden.
+`planning-settings:[]` wird getrennt abgeglichen, Mengenkorrekturen je Schlüssel
+als `quantity-override`. Zutatenbedarf wird aus Rezept und Block abgeleitet und
+nicht zusätzlich persistiert.
+
+Die Zusatzdaten liegen in `wochentisch_private.cooking_state`, ohne direkte
+Clientrechte. Die öffentlichen Wrapper prüfen Haushaltsmitgliedschaft über die
+bestehenden Transaktionshilfen beziehungsweise beim Lesen. Einstellungen ändern
+die Haushaltsrevision und lösen über `households.updated_at` einen Realtime-Abgleich
+aus. Die Migration ergänzt diese Tabelle in der bestehenden Veröffentlichung.
+
+v1/v2 bleiben für gespeicherte Anfragen und Konflikte verfügbar. Nach dem ersten
+v3-Schreiben werden ältere Änderungen an Plan, Restemarkierungen und alten
+Mengenwerten mit einem Update-Hinweis abgelehnt; reine unveränderte Wiederholungen
+bleiben im Request-Journal idempotent. Neue v3-Anfragen normalisieren ältere
+Ausgangsstände. Ein abgelehnter alter Schreibrequest bleibt zur Datensicherung
+lokal erhalten und wird nicht stillschweigend als erfolgreich behandelt.
+
+Wird ein noch nicht bestätigter v1/v2-Sync nach der v3-Aktivierung abgelehnt,
+legt der neue Client vor dem Versand eine separate normalisierte v3-Anfrage mit
+neuer ID dauerhaft ab. Die ursprüngliche Anfrage bleibt bis zur gemeinsamen
+Bestätigung erhalten. Auch nach einem Neustart wird dieselbe v3-Anfrage
+wiederholt; zurückgegebene Konflikte werden über v3 aufgelöst. Alte gespeicherte
+Konfliktentscheidungen behalten ihre ursprüngliche API-Version und werden bei
+geschützten Änderungen weiterhin explizit abgelehnt.

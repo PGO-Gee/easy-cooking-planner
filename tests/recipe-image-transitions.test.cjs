@@ -17,7 +17,7 @@ function element(){
 }
 function calendar(){
   const elements=new Map(),photos=[];
-  const context={calendarRenderSequence:0,authScope:1,currentHouseholdId:'household',renderedCalendarSnapshot:null,
+  const context={window:{WochentischCookingPlan:{normalizeEntries:()=>({})}},calendarRenderSequence:0,authScope:1,currentHouseholdId:'household',renderedCalendarSnapshot:null,
     state:{dishes:[{id:'pasta',name:'Pasta'}]},version:1,
     document:{createElement:element,createDocumentFragment:element},
     $:selector=>{if(!elements.has(selector))elements.set(selector,element());return elements.get(selector)},
