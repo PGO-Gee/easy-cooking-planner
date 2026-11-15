@@ -782,3 +782,33 @@ html.design .password-sign-in-button { background:var(--action);color:var(--on-a
 @media(prefers-reduced-motion:reduce) {
   html.design *,html.design *::before,html.design *::after { animation:none!important;transition:none!important;scroll-behavior:auto!important; }
 }
+
+/* Shared ingredient picker: readable touch rows in every editor and theme. */
+html.design :is(#dish-dialog, body) .pantry-suggestions {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--paper); box-shadow: 0 8px 24px rgb(0 0 0 / 10%);
+  overscroll-behavior: contain; scroll-padding-block: 4px;
+}
+html.design :is(#dish-dialog, body) .pantry-suggestions .pantry-suggestion {
+  min-height: 48px; gap: 10px; padding: 10px 12px;
+  border: 0; border-bottom: 1px solid var(--line);
+  background: var(--paper); color: var(--ink); font: 400 15px/1.5 var(--sans);
+}
+html.design :is(#dish-dialog, body) .pantry-suggestion:last-child { border-bottom: 0; }
+html.design :is(#dish-dialog, body) .pantry-suggestion .pantry-ingredient-icon {
+  flex: 0 0 28px; width: 28px; height: 28px; background: var(--canvas);
+}
+html.design :is(#dish-dialog, body) .ingredient-suggestion-label { min-width: 0; overflow-wrap: anywhere; }
+html.design :is(#dish-dialog, body) .ingredient-suggestion-label mark { background: transparent; color: var(--action); font-weight: 700; }
+html.design :is(#dish-dialog, body) .pantry-suggestions .pantry-suggestion:is(:hover,:focus-visible,[aria-selected="true"]) {
+  background: var(--selection); color: var(--ink);
+}
+html.design :is(#dish-dialog, body) .pantry-suggestion:focus-visible { outline: 2px solid var(--action); outline-offset: -3px; }
+html.design :is(#dish-dialog, body) .shopping-item-suggestions.opens-below { top: calc(100% + 6px); bottom: auto; }
+
+html.design :is(#pantry-dialog, #dish-dialog) .pantry-suggestions {
+  position: static; max-height: 196px; margin: 6px 0 0;
+}
+@media (max-width: 600px), (max-height: 500px) {
+  html.design :is(#pantry-dialog, #dish-dialog) .pantry-suggestions { max-height: 156px; }
+}
