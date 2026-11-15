@@ -1,5 +1,31 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: Gerichtmenü ohne nativen Modal-Öffnungsschritt
+
+- Nach erneuter iPhone-Rückmeldung wird das Gerichtmenü in einer eigenen festen
+  Überlagerung zentriert. Es verwendet weder natives `showModal()` noch dessen
+  automatische Fokussierung. Andere Dialoge behalten ihren bestehenden Ablauf.
+- `aria-modal`, inaktiver Hintergrund, begrenzter Tab-Zyklus, Escape, Schließen
+  über den Hintergrund und Fokusrückgabe ohne Scrollen sind explizit umgesetzt.
+  Das Menü scrollt bei kleiner Höhe und berücksichtigt den Visual Viewport und
+  Safe Areas. Freigabe von Fokus und Scrollsperre erfolgt vor einem Rezeptwechsel.
+- 213 Node-Tests bestanden. Zusätzlich läuft der gezielte Browserprüfer jetzt
+  wahlweise mit Chromium oder WebKit (`WOCHENTISCH_BROWSER_ENGINE=webkit`).
+  Die Testdaten warten vor dem Einrichten auf den asynchronen App-Start.
+- In beiden Engines: 50 Ansichts-/Theme-Kombinationen und 50 Öffnungen an
+  verschiedenen Scrollpositionen, jeweils erste Layoutmessung plus acht Frames,
+  sowie ein verkleinerter Visual Viewport mit zusätzlichem vertikalem Offset.
+  Die Prüfung zählt native `showModal()`-Aufrufe für das Gerichtmenü: null.
+- WebKit 26.5 auf Windows ist zusätzlich zu Chromium tatsächlich ausgeführt.
+  Light/Dark-Menü bei 390 × 844 anhand der WebKit-Screenshots visuell geprüft.
+  Beide Engines prüfen Hintergrund-Inaktivität, Tab/Shift+Tab, Escape und
+  Schließen durch Tippen außerhalb. Chromium prüft außerdem Touch-Scrollen,
+  langes Drücken, Touch-Drag und Undo. Keine echte iPhone-/Safari-Liveprüfung.
+- Der allgemeine Chromium-Regressionstest mit 126 Kombinationen einschließlich
+  Menü-zu-Rezept-Wechsel, lokalem OCR und Offline-Neustart bestand ebenfalls.
+- App-Shell v140; geänderte UI-Assets `20261115-12`. Die Behebung auf dem
+  betroffenen iPhone ist weiterhin nicht bestätigt.
+
 ## Ergänzung: Sprung in der iPhone-Aufnahme nachvollzogen
 
 - Originalaufnahme `NGRS9062.mp4.MP4` (1180 × 2556, 14,65 s) lokal ausgewertet.

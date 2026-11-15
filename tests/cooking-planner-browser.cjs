@@ -1,14 +1,15 @@
-const {chromium}=require(process.env.WOCHENTISCH_PLAYWRIGHT_MODULE||'playwright');
+const {chromium,webkit}=require(process.env.WOCHENTISCH_PLAYWRIGHT_MODULE||'playwright');
 const fs=require('node:fs'),http=require('node:http'),path=require('node:path'),assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'..'),out=process.env.WOCHENTISCH_UI_OUTPUT||'/private/tmp/cooking-portions-ui';
 const mime={'.html':'text/html','.js':'text/javascript','.css':'text/css','.json':'application/json','.svg':'image/svg+xml','.ttf':'font/ttf','.jpg':'image/jpeg'};
 const server=http.createServer((req,res)=>{const file=path.resolve(root,'.'+new URL(req.url,'http://localhost').pathname.replace(/\/$/,'/index.html'));if(!file.startsWith(root+path.sep)){res.writeHead(403);return res.end()}fs.readFile(file,(error,data)=>{res.writeHead(error?404:200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(error?'Not found':data)})});
 async function fixture(page){await page.evaluate(async()=>{
+ await initializeOfflineData();await ensureAuthentication();appInitialized=true;
  document.querySelectorAll('dialog[open]').forEach(d=>d.close());state=emptyState();
  state.dishes=Array.from({length:8},(_,i)=>({id:`dish-${i}`,name:i?'Reisgericht '+i:'Testcurry',type:'meal',time:30,ingredients:['Hähnchenbrust','Salz'],recipe:{servings:2,ingredients:[{name:'Hähnchenbrust',amount:200,unit:'g'},{name:'Salz',amount:null,unit:'',note:'nach Geschmack'}],steps:['Garen.']}}));
  offlineMode=true;currentUserId='cooking-browser-fixture';currentHouseholdId='';cloudReady=false;$('#startup-gate').hidden=true;$('#auth-gate').hidden=true;$('.app-shell').hidden=false;await initializeOfflineData();await renderCalendar();setView('week');
 })}
-(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,channel:'chrome',timeout:20000}),errors=[],results=[];
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));fs.mkdirSync(out,{recursive:true});const engine=process.env.WOCHENTISCH_BROWSER_ENGINE||'chromium',browser=await (engine==='webkit'?webkit:chromium).launch({headless:true,...(engine==='webkit'?{}:{channel:'chrome'}),timeout:20000}),errors=[],results=[];
 try{const context=await browser.newContext({serviceWorkers:'block'});await context.route('https://**/*',r=>r.abort());const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>typeof initializePlanningUI==='function'&&document.documentElement.classList.contains('design'));await fixture(page);
  await page.evaluate(()=>$('#household-dialog').showModal());await page.locator('#household-adults').fill('2');await page.locator('#household-children').fill('1');await page.locator('#household-child-factor').fill('0.5');await page.locator('#household-portions-form button').click();assert.equal(await page.evaluate(()=>state.planningSettings.configured),true);assert.match(await page.locator('#household-portions-preview').innerText(),/2,5/);await page.evaluate(()=>$('#household-dialog').close());
  await page.evaluate(()=>chooseDish(0));assert.equal(await page.locator('#choose-plan-options input,#choose-plan-options select').count(),0);await page.locator('#choose-dish-list .choose-item').filter({hasText:'Testcurry'}).click();await page.waitForTimeout(100);
@@ -73,6 +74,7 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
   }
   const beforePin=await touchPage.evaluate(()=>window.__menuOpens);await touchCard.locator('.meal-pin').tap();await touchPage.waitForTimeout(100);assert.equal(await touchPage.locator('dialog[open]').count(),0);assert.equal(await touchPage.evaluate(()=>window.__menuOpens),beforePin);
  }
+ if(engine==='chromium'){
  const cdp=await touchContext.newCDPSession(touchPage);
  async function startTouch(){await touchTitle.scrollIntoViewIfNeeded();const b=await touchTitle.boundingBox();const point={x:b.x+b.width/2,y:b.y+b.height/2};await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[point]});return point}
  // A scroll lasting beyond the old suppression timeout must not become a tap.
@@ -85,15 +87,25 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
  const drop=await touchPage.locator('.meal-week-target[data-drop-day="2"]').boundingBox();await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:drop.x+drop.width/2,y:drop.y+drop.height/2}]});await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await touchPage.waitForTimeout(100);
  assert.equal(await touchPage.evaluate(()=>state.cookingEntries['touch-1'].date),await touchPage.evaluate(()=>keyFor(rangeDates()[2])));assert.equal(await touchPage.locator('dialog[open],.meal-week-targets,.meal-drag-ghost').count(),0);
  await touchPage.locator('#toast button').tap();await touchPage.waitForTimeout(100);assert(await touchPage.evaluate(()=>sameValue(cookingPlanSnapshot(state),window.__beforeTouchDrag)));
+ }
  // Keyboard focus is still visible after touch input.
  await touchTitle.scrollIntoViewIfNeeded();await touchCard.focus();await touchPage.keyboard.press('Tab');assert.equal(await touchPage.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle),'solid');await touchCard.press('Enter');assert(await touchDialog.isVisible());assert.equal(await touchDialog.locator('.close-button').evaluate(el=>getComputedStyle(el).outlineStyle),'solid');await touchPage.keyboard.press('Escape');
 
+
+ // The overlay remains modal for assistive technology and keyboard interaction.
+ await touchPage.evaluate(()=>openCookingEntryOptions(rangeDates()[0],0));assert.equal(await touchDialog.getAttribute('aria-modal'),'true');assert(await touchPage.locator('.app-shell').evaluate(el=>el.inert));
+ await touchDialog.locator('.close-button').focus();await touchPage.keyboard.press('Shift+Tab');assert.equal(await touchPage.evaluate(()=>document.activeElement.textContent),'Gericht entfernen');await touchPage.keyboard.press('Tab');assert(await touchDialog.locator('.close-button').evaluate(el=>el===document.activeElement));
+ await touchPage.keyboard.press('Escape');assert.equal(await touchPage.locator('.cooking-entry-overlay:not([hidden])').count(),0);assert.equal(await touchPage.locator('.app-shell').evaluate(el=>el.inert),false);assert.equal(await touchPage.evaluate(()=>dialogScrollLockCount),0);
+ await touchPage.evaluate(()=>openCookingEntryOptions(rangeDates()[0],0));await touchPage.locator('.cooking-entry-overlay').tap({position:{x:2,y:2}});assert.equal(await touchPage.locator('dialog[open]').count(),0);assert.equal(await touchPage.evaluate(()=>dialogScrollLockCount),0);
  // Sample the first visible layout and eight frames at several page scroll offsets.
  await touchPage.evaluate(async()=>{
   const dishes=state.dishes;state=emptyState();state.dishes=dishes;for(let i=0;i<7;i++)state=WochentischCookingPlan.add(state,dishes[i].id,keyFor(rangeDates()[i]),2.5,1,'scroll-'+i);await renderCalendar();
-  document.querySelector('#cooking-entry-dialog')?.remove();const nativeShow=HTMLDialogElement.prototype.showModal;
+  document.querySelector('#cooking-entry-dialog')?.parentElement.remove();const nativeShow=HTMLDialogElement.prototype.showModal,nativeAttribute=Element.prototype.setAttribute;window.__nativeMenuOpens=0;
   HTMLDialogElement.prototype.showModal=function(){
-   const lockedBeforeShow=document.body.classList.contains('has-open-dialog');nativeShow.call(this);if(this.id!=='cooking-entry-dialog')return;
+   if(this.id==='cooking-entry-dialog')window.__nativeMenuOpens++;return nativeShow.call(this);
+  };
+  Element.prototype.setAttribute=function(name,value){
+   const lockedBeforeShow=document.body.classList.contains('has-open-dialog');nativeAttribute.call(this,name,value);if(this.id!=='cooking-entry-dialog'||name!=='open')return;
    const measure=()=>{const b=this.getBoundingClientRect();return {y:b.y,height:b.height,x:b.x,width:b.width}};window.__openingFrames=[measure()];window.__lockedBeforeShow=lockedBeforeShow;
    const sample=()=>{window.__openingFrames.push(measure());if(window.__openingFrames.length<9)requestAnimationFrame(sample)};requestAnimationFrame(sample);
   };
@@ -105,7 +117,7 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
    await touchPage.evaluate(f=>window.scrollTo(0,(document.documentElement.scrollHeight-innerHeight)*f),fraction);await touchPage.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
    const tap=await touchPage.evaluate(()=>{const cards=[...document.querySelectorAll('#calendar .meal-card')];const visible=cards.map(el=>el.getBoundingClientRect()).find(b=>b.bottom>12&&b.top<innerHeight-90);if(!visible)throw Error('No visible dish');return {x:visible.x+visible.width/2,y:(Math.max(visible.top,12)+Math.min(visible.bottom,innerHeight-90))/2,scrollY}});
    await touchPage.touchscreen.tap(tap.x,tap.y);await touchPage.waitForFunction(()=>window.__openingFrames?.length===9);
-   const measured=await touchPage.evaluate(()=>({frames:window.__openingFrames,locked:window.__lockedBeforeShow}));assert(measured.locked,'scroll lock must precede native dialog focus/layout');
+   const measured=await touchPage.evaluate(()=>({frames:window.__openingFrames,locked:window.__lockedBeforeShow}));assert(measured.locked,'scroll lock must precede menu layout');assert.equal(await touchPage.evaluate(()=>window.__nativeMenuOpens),0,'menu must not enter the native showModal positioning path');
    const first=measured.frames[0];for(const frame of measured.frames){assert(Math.abs(frame.y-first.y)<=1&&Math.abs(frame.height-first.height)<=1,'menu must stay still from first layout');assert(Math.abs(frame.y+frame.height/2-height/2)<=2,'menu starts centered')}
    await touchDialog.locator('.close-button').tap();await touchPage.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert(Math.abs(await touchPage.evaluate(()=>scrollY)-tap.scrollY)<=1,'closing restores the page scroll position');scrollChecks.push({width,height,theme,fraction,scrollY:tap.scrollY});
   }
@@ -119,5 +131,5 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
  await touchPage.evaluate(()=>{document.querySelector('#cooking-entry-dialog').close();Object.defineProperty(window,'visualViewport',window.__actualViewport);syncVisualViewport()});
  fs.writeFileSync(path.join(out,'scroll-opening.json'),JSON.stringify(scrollChecks,null,2));
  await touchContext.close();
- assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, seven household days, per-dish leftovers and displacement, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
+ assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto,engine},null,2));console.log(`Passed ${engine}: household setup, 500 g calculation, 600 g override/reset, offline persistence, seven household days, per-dish leftovers and displacement, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});

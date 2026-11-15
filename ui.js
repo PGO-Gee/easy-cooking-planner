@@ -41,11 +41,52 @@ const uiIcons={
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
 function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
+function cookingEntryOverlay(dialog){
+  // Keep this menu out of the native dialog top layer: iOS can reposition it
+  // after showModal() has focused its contents on a scrolled page.
+  const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
+  dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false;
+  const close=dialog.close.bind(dialog);
+  const release=()=>{
+    layer.hidden=true;
+    inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
+    if(locked){locked=false;unlockPageScroll()}
+  };
+  dialog.showModal=()=>{
+    if(dialog.open)return;
+    opener=document.activeElement;lockPageScroll();locked=true;
+    try{
+      syncVisualViewport();
+      inertSiblings=[...document.body.children].filter(element=>element!==layer&&!element.inert);
+      inertSiblings.forEach(element=>{element.inert=true});
+      layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
+      dialog.querySelector('.close-button').focus({preventScroll:true});
+    }catch(error){dialog.removeAttribute('open');release();throw error}
+  };
+  dialog.close=(...args)=>{
+    if(!dialog.open)return;
+    close(...args);release();
+    if(opener?.isConnected)opener.focus({preventScroll:true});
+  };
+  dialog.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();dialog.close();return}
+    if(event.key!=='Tab')return;
+    const targets=[...dialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(element=>!element.disabled&&element.tabIndex>=0&&element.getClientRects().length);
+    const first=targets[0],last=targets.at(-1);
+    if(event.shiftKey&&event.target===first){event.preventDefault();last?.focus({preventScroll:true})}
+    else if(!event.shiftKey&&event.target===last){event.preventDefault();first?.focus({preventScroll:true})}
+  });
+  layer.addEventListener('pointerdown',event=>{backdropPressed=event.target===layer});
+  layer.addEventListener('click',event=>{if(event.target===layer&&backdropPressed)dialog.close()});
+  return dialog;
+}
 function uiDialog(id,title){
   let dialog=document.getElementById(id);if(dialog)return dialog;
   dialog=document.createElement('dialog');dialog.id=id;dialog.className='ui-dialog';dialog.setAttribute('aria-labelledby',`${id}-title`);
   const head=document.createElement('div');head.className='dialog-head';const heading=document.createElement('h2');heading.id=`${id}-title`;heading.textContent=title;
   const close=uiButton('×',()=>dialog.close(),{className:'close-button'});close.setAttribute('aria-label','Schließen');head.append(heading,close);dialog.append(head);document.body.append(dialog);
+  if(id==='cooking-entry-dialog')return cookingEntryOverlay(dialog);
   let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;lockPageScroll();try{syncVisualViewport();show()}catch(error){unlockPageScroll();throw error}};
   dialog.addEventListener('close',()=>{unlockPageScroll();if(opener?.isConnected)opener.focus({preventScroll:true})});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
