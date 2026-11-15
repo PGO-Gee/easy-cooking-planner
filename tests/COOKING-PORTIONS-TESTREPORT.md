@@ -1,5 +1,22 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: Sprung in der iPhone-Aufnahme nachvollzogen
+
+- Originalaufnahme `NGRS9062.mp4.MP4` (1180 × 2556, 14,65 s) lokal ausgewertet.
+  Bei ca. 2,70 s erscheint das Gerichtmenü zunächst tiefer, bei ca. 2,75 s
+  steht es höher in der Mitte. Der Seitenhintergrund bleibt dabei stehen.
+  Die vorherigen Chromium-Tests haben diesen Safari-Effekt nicht nachgebildet.
+- Der Gerichtdialog erhält nun explizite feste Koordinaten am Mittelpunkt
+  des Visual Viewports und eine Translation um die halbe eigene Größe.
+  Die bisherige Ausrichtung über `top`, `bottom` und automatische Ränder entfällt.
+  Die Regel gilt bereits am geschlossenen Dialog; Safe Areas und scrollbar
+  begrenzte Höhe bleiben berücksichtigt.
+- 213 Node-Tests und der gezielte Chromium-Browserlauf mit 50 Ansichts-/Theme-
+  Kombinationen sowie 50 Öffnungen an Scrollpositionen bestanden.
+- Die Änderung wurde noch nicht auf einem echten iPhone verifiziert. Die
+  Videoanalyse belegt den ursprünglichen Fehler, nicht dessen Behebung am Gerät.
+- App-Shell v139; geänderte UI-Assets `20261115-11`.
+
 ## Ergänzung: ruhiges Öffnen an gescrollten Positionen
 
 - Dynamische UI-Dialoge sperren die Seite jetzt vor `showModal()` und gleichen

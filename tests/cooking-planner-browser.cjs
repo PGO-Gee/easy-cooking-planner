@@ -110,6 +110,13 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
    await touchDialog.locator('.close-button').tap();await touchPage.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert(Math.abs(await touchPage.evaluate(()=>scrollY)-tap.scrollY)<=1,'closing restores the page scroll position');scrollChecks.push({width,height,theme,fraction,scrollY:tap.scrollY});
   }
  }
+
+ // Center within an offset visual viewport as iOS uses during zoom/keyboard changes.
+ await touchPage.setViewportSize({width:390,height:844});
+ await touchPage.evaluate(()=>{window.__actualViewport=Object.getOwnPropertyDescriptor(window,'visualViewport');const actual=window.visualViewport;Object.defineProperty(window,'visualViewport',{configurable:true,value:new Proxy(actual,{get(target,key){if(key==='height')return 360;if(key==='offsetTop')return 120;const value=Reflect.get(target,key,target);return typeof value==='function'?value.bind(target):value}})});syncVisualViewport();openCookingEntryOptions(rangeDates()[0],0)});
+ const offsetBounds=await touchDialog.boundingBox();assert(Math.abs(offsetBounds.y+offsetBounds.height/2-300)<2,'center respects the visual viewport offset');assert(offsetBounds.y>=132&&offsetBounds.y+offsetBounds.height<=468,'menu remains inside the available viewport');
+ await touchDialog.getByRole('button',{name:'Kochmenge ändern',exact:true}).click();await touchDialog.locator('button[type=submit]').scrollIntoViewIfNeeded();assert(await touchDialog.locator('button[type=submit]').isVisible());
+ await touchPage.evaluate(()=>{document.querySelector('#cooking-entry-dialog').close();Object.defineProperty(window,'visualViewport',window.__actualViewport);syncVisualViewport()});
  fs.writeFileSync(path.join(out,'scroll-opening.json'),JSON.stringify(scrollChecks,null,2));
  await touchContext.close();
  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, seven household days, per-dish leftovers and displacement, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
