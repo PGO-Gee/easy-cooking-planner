@@ -87,6 +87,30 @@ try{const context=await browser.newContext({serviceWorkers:'block'});await conte
  await touchPage.locator('#toast button').tap();await touchPage.waitForTimeout(100);assert(await touchPage.evaluate(()=>sameValue(cookingPlanSnapshot(state),window.__beforeTouchDrag)));
  // Keyboard focus is still visible after touch input.
  await touchTitle.scrollIntoViewIfNeeded();await touchCard.focus();await touchPage.keyboard.press('Tab');assert.equal(await touchPage.evaluate(()=>getComputedStyle(document.activeElement).outlineStyle),'solid');await touchCard.press('Enter');assert(await touchDialog.isVisible());assert.equal(await touchDialog.locator('.close-button').evaluate(el=>getComputedStyle(el).outlineStyle),'solid');await touchPage.keyboard.press('Escape');
+
+ // Sample the first visible layout and eight frames at several page scroll offsets.
+ await touchPage.evaluate(async()=>{
+  const dishes=state.dishes;state=emptyState();state.dishes=dishes;for(let i=0;i<7;i++)state=WochentischCookingPlan.add(state,dishes[i].id,keyFor(rangeDates()[i]),2.5,1,'scroll-'+i);await renderCalendar();
+  document.querySelector('#cooking-entry-dialog')?.remove();const nativeShow=HTMLDialogElement.prototype.showModal;
+  HTMLDialogElement.prototype.showModal=function(){
+   const lockedBeforeShow=document.body.classList.contains('has-open-dialog');nativeShow.call(this);if(this.id!=='cooking-entry-dialog')return;
+   const measure=()=>{const b=this.getBoundingClientRect();return {y:b.y,height:b.height,x:b.x,width:b.width}};window.__openingFrames=[measure()];window.__lockedBeforeShow=lockedBeforeShow;
+   const sample=()=>{window.__openingFrames.push(measure());if(window.__openingFrames.length<9)requestAnimationFrame(sample)};requestAnimationFrame(sample);
+  };
+ });
+ const scrollChecks=[];
+ for(const [width,height] of [[320,568],[390,844],[844,390],[1440,900],[390,360]])for(const theme of ['light','dark']){
+  await touchPage.setViewportSize({width,height});await touchPage.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await touchPage.evaluate(()=>{themeOverride=null;applyTheme()});
+  for(const fraction of [0,.25,.5,.75,1]){
+   await touchPage.evaluate(f=>window.scrollTo(0,(document.documentElement.scrollHeight-innerHeight)*f),fraction);await touchPage.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));
+   const tap=await touchPage.evaluate(()=>{const cards=[...document.querySelectorAll('#calendar .meal-card')];const visible=cards.map(el=>el.getBoundingClientRect()).find(b=>b.bottom>12&&b.top<innerHeight-90);if(!visible)throw Error('No visible dish');return {x:visible.x+visible.width/2,y:(Math.max(visible.top,12)+Math.min(visible.bottom,innerHeight-90))/2,scrollY}});
+   await touchPage.touchscreen.tap(tap.x,tap.y);await touchPage.waitForFunction(()=>window.__openingFrames?.length===9);
+   const measured=await touchPage.evaluate(()=>({frames:window.__openingFrames,locked:window.__lockedBeforeShow}));assert(measured.locked,'scroll lock must precede native dialog focus/layout');
+   const first=measured.frames[0];for(const frame of measured.frames){assert(Math.abs(frame.y-first.y)<=1&&Math.abs(frame.height-first.height)<=1,'menu must stay still from first layout');assert(Math.abs(frame.y+frame.height/2-height/2)<=2,'menu starts centered')}
+   await touchDialog.locator('.close-button').tap();await touchPage.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))));assert(Math.abs(await touchPage.evaluate(()=>scrollY)-tap.scrollY)<=1,'closing restores the page scroll position');scrollChecks.push({width,height,theme,fraction,scrollY:tap.scrollY});
+  }
+ }
+ fs.writeFileSync(path.join(out,'scroll-opening.json'),JSON.stringify(scrollChecks,null,2));
  await touchContext.close();
  assert.deepEqual(errors,[]);fs.writeFileSync(path.join(out,'results.json'),JSON.stringify({checks:results.length,results,errors,auto},null,2));console.log(`Passed household setup, 500 g calculation, 600 g override/reset, offline persistence, seven household days, per-dish leftovers and displacement, legacy leftover cleanup, undo after cloud padding, editing and ${results.length} viewport/theme checks.`);
  }finally{await browser.close();await new Promise(r=>server.close(r))}})().catch(e=>{console.error(e);process.exitCode=1});

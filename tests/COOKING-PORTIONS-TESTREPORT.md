@@ -1,5 +1,24 @@
 # Haushaltsportionen und Kochblöcke – 15. November 2026
 
+## Ergänzung: ruhiges Öffnen an gescrollten Positionen
+
+- Dynamische UI-Dialoge sperren die Seite jetzt vor `showModal()` und gleichen
+  den Visual Viewport vor der nativen Fokus-/Layoutberechnung ab. Zuvor wurde
+  die Scrollsperre erst nach dem Öffnen gesetzt. Fehlgeschlagenes Öffnen gibt
+  die Sperre wieder frei.
+- Der Touch-Browserlauf öffnet das Gerichtmenü in Light/Dark jeweils bei
+  0, 25, 50, 75 und 100 Prozent des scrollbaren Bereichs. Gemessen werden die
+  erste synchrone Layoutposition und acht weitere Animation-Frames: kein
+  Positions- oder Höhensprung über 1 px, Mitte innerhalb 2 px des Viewports.
+  Nach Schließen wird der ursprüngliche Scrollstand innerhalb 1 px hergestellt.
+- Größen: 320 × 568 (0–495 px Scroll), 390 × 844 (0–192 px), 844 × 390
+  (0–873 px) und 390 × 360 (0–676 px). Bei 1440 × 900 passt der Testplan
+  ohne Scrollen auf den Bildschirm; dort ist die obere Position geprüft.
+  Insgesamt 50 Öffnungen, Ergebnisse lokal in `.ui-check/cooking-entry/scroll-opening.json`.
+- Die bisherigen 50 gezielten Browserkombinationen und 213 Node-Tests bestanden
+  ebenfalls. Touch-Emulation in Chromium; keine echte iPhone-/Safari-Prüfung.
+- App-Shell v138; geänderte UI-Assets `20261115-10`.
+
 ## Ergänzung: Touch-Aktivierung und Fokus im Wochenplan
 
 - Touch- und Mausbedienung hinterlassen im Wochenplan und dessen Aktionsdialogen

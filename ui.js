@@ -46,7 +46,7 @@ function uiDialog(id,title){
   dialog=document.createElement('dialog');dialog.id=id;dialog.className='ui-dialog';dialog.setAttribute('aria-labelledby',`${id}-title`);
   const head=document.createElement('div');head.className='dialog-head';const heading=document.createElement('h2');heading.id=`${id}-title`;heading.textContent=title;
   const close=uiButton('×',()=>dialog.close(),{className:'close-button'});close.setAttribute('aria-label','Schließen');head.append(heading,close);dialog.append(head);document.body.append(dialog);
-  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;show();lockPageScroll()};
+  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;lockPageScroll();try{syncVisualViewport();show()}catch(error){unlockPageScroll();throw error}};
   dialog.addEventListener('close',()=>{unlockPageScroll();if(opener?.isConnected)opener.focus({preventScroll:true})});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
   return dialog;
