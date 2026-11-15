@@ -124,3 +124,20 @@ außerhalb des Zeitraums und Rückgängig nach einem simulierten Cloud-Abgleich.
 Der Fehler wurde auf dem iPhone bestätigt; die Korrektur wurde lokal geprüft und
 noch nicht auf der veröffentlichten iPhone-App getestet. Keine zusätzliche
 Datenbankmigration erforderlich.
+
+## Kürzere Texte und kompakter Planungsdialog
+
+Restetage tragen in der Übersicht und im Restedialog nur noch „Reste“; der
+Rezeptbezug bleibt für die Aktionen erhalten. Der Dialog „7 Tage planen“ zeigt
+Portionsauswahl, Kochdauer, eine kurze Rechnung und optionale Vorräte. Lange
+Erklärungen, doppelte Überschriften und der leere Auswahlkasten entfallen.
+Beim Öffnen wird kein Zutatenfeld fokussiert und damit keine Tastatur angefordert.
+
+211 Node-Tests und 50 Chromium-Prüfungen bestanden. Der Standarddialog passt
+auch mit einer ausgewählten Zutat bei 320×568 und 390×844 vollständig in den
+Viewport, einschließlich Speichern-Button, jeweils in Light und Dark. Weitere
+Prüfungen: 844×390, 1440×900 und 390×360 mit reduziertem Platz bei Eingabe sowie
+`prefers-reduced-motion: reduce`. Screenshots in Light/Dark visuell geprüft.
+Viele ausgewählte Vorräte und kleine Querformat-/Tastaturansichten bleiben
+scrollbar. Diese Text-/Layoutänderung wurde lokal geprüft, nicht erneut auf dem
+physischen iPhone. Keine Datenbankänderung erforderlich.

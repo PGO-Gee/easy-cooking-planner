@@ -1675,3 +1675,22 @@ html.design .shopping-tile-shell:has(.shopping-recipe-quantity) > .shopping-tile
 html.design .shopping-tile-shell .shopping-recipe-quantity { padding:0 0 10px 32px; }
 html.design .shopping-recipe-quantity details[open] { display:block; }
 html.design .shopping-recipe-quantity details > :not(summary) { margin-bottom:8px; }
+
+/* Keep the weekly planner concise and usable without opening the keyboard. */
+html.design #pantry-dialog .dialog-head { margin-bottom:16px; }
+#pantry-dialog .dialog-head .eyebrow, #plan-options > h3 { display:none; }
+#plan-options { margin:0 0 18px; padding:0; border:0; border-radius:0; }
+#plan-options .planning-fields { grid-template-columns:minmax(0,1fr); gap:12px; }
+#plan-options .planning-fields > label:last-child { flex-direction:row; align-items:center; justify-content:space-between; }
+#plan-options .planning-fields > label:last-child select { width:120px; }
+#plan-options > .text-button { padding:6px 0; margin-top:4px; }
+#plan-options .planning-preview { margin:4px 0 0; font-size:14px; color:var(--muted); }
+#pantry-dialog .pantry-label { flex-direction:row; align-items:baseline; gap:4px; margin-bottom:8px; }
+#pantry-dialog .pantry-optional { font-weight:400; color:var(--muted); }
+#pantry-dialog .pantry-selected-area { margin:10px 0 0; padding:0; border:0; background:transparent; }
+#pantry-dialog .pantry-selected-area:has(#pantry-empty-selection:not([hidden])) { display:none; }
+#pantry-dialog .pantry-selected-heading { display:none; }
+#pantry-dialog #pantry-selected { max-height:88px; overflow-y:auto; }
+html.design #pantry-dialog .dialog-actions { margin:16px 0 0; padding:12px 0 max(0px,env(safe-area-inset-bottom)); gap:8px; border-top:1px solid var(--line); background:var(--canvas); }
+#pantry-dialog .dialog-actions button { min-height:44px; }
+#pantry-dialog .pantry-search { min-height:44px; }

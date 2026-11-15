@@ -6,12 +6,12 @@ function renderPlanningFields(container,value){
   const title=document.createElement('h3');title.textContent='Kochmenge';
   const fields=document.createElement('div');fields.className='planning-fields';
   const label=document.createElement('label');label.textContent='Für wen?';const mode=document.createElement('select');mode.dataset.planning='mode';
-  mode.add(new Option('Nur für mich · 1 Portion','self'));mode.add(new Option(settings.configured?`Unser Haushalt · ${window.WochentischRecipes.formatAmount(model.householdPortions(settings))} Portionen`:'Rezeptportionen (Haushalt noch nicht eingerichtet)','household'));mode.add(new Option('Eigene Portionszahl','custom'));mode.value=settings.mode;label.append(mode);
+  mode.add(new Option('Nur für mich · 1 Portion','self'));mode.add(new Option(settings.configured?`Haushalt · ${window.WochentischRecipes.formatAmount(model.householdPortions(settings))} Portionen`:'Wie im Rezept','household'));mode.add(new Option('Eigene Portionszahl','custom'));mode.value=settings.mode;label.append(mode);
   const custom=document.createElement('label');custom.textContent='Portionen pro Tag';const portions=document.createElement('input');portions.type='number';portions.min='0.1';portions.max='100';portions.step='any';portions.inputMode='decimal';portions.dataset.planning='portions';portions.value=settings.portions;custom.append(portions);
   const duration=document.createElement('label');duration.textContent='Tage pro Gericht';const days=document.createElement('select');days.dataset.planning='days';for(let n=1;n<=7;n++)days.add(new Option(`${n} ${n===1?'Tag':'Tage'}`,n));days.value=settings.days;duration.append(days);
   const preview=document.createElement('p');preview.className='planning-preview';preview.setAttribute('role','status');
-  const double=document.createElement('button');double.type='button';double.className='text-button';double.textContent='Doppelte Haushaltsmenge';double.hidden=!settings.configured;double.onclick=()=>{mode.value='custom';portions.value=model.householdPortions(settings)*2;update()};
-  const update=()=>{custom.hidden=mode.value!=='custom';portions.required=!custom.hidden;const p=model.dailyPortions({...settings,mode:mode.value,portions:portions.value}),d=Number(days.value);preview.textContent=!settings.configured&&mode.value==='household'?`Rezeptportionen × ${d} ${d===1?'Tag':'Tage'}; richte deinen Haushalt unter „Profil & Haushalt“ ein.`:`${window.WochentischRecipes.formatAmount(p)} Portionen × ${d} ${d===1?'Tag':'Tage'} = ${window.WochentischRecipes.formatAmount(p*d)} Portionen kochen`;};
+  const double=document.createElement('button');double.type='button';double.className='text-button';double.textContent='Doppelte Menge';double.hidden=!settings.configured;double.onclick=()=>{mode.value='custom';portions.value=model.householdPortions(settings)*2;update()};
+  const update=()=>{custom.hidden=mode.value!=='custom';portions.required=!custom.hidden;const p=model.dailyPortions({...settings,mode:mode.value,portions:portions.value}),d=Number(days.value);preview.textContent=!settings.configured&&mode.value==='household'?`Rezeptmenge × ${d} ${d===1?'Tag':'Tage'}`:`${window.WochentischRecipes.formatAmount(p)} × ${d} ${d===1?'Tag':'Tage'} = ${window.WochentischRecipes.formatAmount(p*d)} Portionen`;};
   fields.append(label,custom,duration);container.append(title,fields,double,preview);container.oninput=update;container.onchange=update;update();
 }
 function readPlanningFields(container){
@@ -49,8 +49,8 @@ function openCookingEntryOptions(date,position){
 }
 function openLinkedRest(date){
   const model=window.WochentischCookingPlan,entries=model.restsAt(state,keyFor(date));if(!entries.length){chooseDish(rangeDates().findIndex(d=>keyFor(d)===keyFor(date)));return}
-  const dialog=uiDialog('linked-rest-dialog','Restetag');dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());
-  for(const entry of entries){const dish=state.dishes.find(d=>d.id===entry.dishId);const p=document.createElement('p');p.textContent=`Reste: ${dish?.name||'Gericht'} vom ${formatChooserDate(new Date(entry.date+'T12:00:00'))}`;dialog.append(p,uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(entry.dishId,{from:'week',servings:model.total(entry)})}),uiButton('Diesen Restetag entfernen',()=>{if(commitCookingChange(()=>model.removeRest(state,entry.id,keyFor(date)),'Restetag entfernt und Kochmenge angepasst.'))dialog.close()},{className:'text-button'}))}dialog.showModal();
+  const dialog=uiDialog('linked-rest-dialog','Reste');dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());
+  for(const entry of entries){dialog.append(uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(entry.dishId,{from:'week',servings:model.total(entry)})}),uiButton('Diesen Restetag entfernen',()=>{if(commitCookingChange(()=>model.removeRest(state,entry.id,keyFor(date)),'Restetag entfernt und Kochmenge angepasst.'))dialog.close()},{className:'text-button'}))}dialog.showModal();
 }
 function replaceCookingRange(pantry){
   const model=window.WochentischCookingPlan,options=readPlanningFields($('#plan-options')),dates=rangeDates(),keys=dates.map(keyFor),before=cookingPlanSnapshot(state),oldSettings=structuredClone(state.planningSettings);

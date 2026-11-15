@@ -585,6 +585,12 @@ html.design .recipe-type-switch { display:flex;width:100%;background:var(--line)
 html.design .recipe-type-switch button { flex:1;color:var(--muted);background:transparent;border:0;border-radius:9px;box-shadow:none;font-size:13px;padding:8px; }
 html.design .recipe-type-switch button[aria-pressed=true] { background:var(--paper);color:var(--ink); }
 html.design #dish-list { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 20px;background:transparent;border:0;box-shadow:none; }
+html.design #dish-list { touch-action:pan-y pinch-zoom; }
+html.design .dish-pagination { display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;margin:0 0 16px;scroll-margin-top:12px; }
+html.design .dish-pagination[hidden] { display:none; }
+html.design .dish-pagination .secondary-button { min-width:44px;min-height:44px;height:auto;padding:10px;font-size:13px; }
+html.design .dish-pagination .secondary-button:disabled { opacity:.45;cursor:default; }
+html.design .dish-page-status { min-width:0;text-align:center;color:var(--muted);font-size:12px;line-height:1.5;text-wrap:balance; }
 html.design #dish-list .dish-row { display:flex;flex-direction:column;align-items:stretch;gap:0;min-width:0;min-height:0;padding:0;margin:0;border:0;border-radius:16px;background:var(--paper);overflow:hidden;box-shadow:none; }
 html.design #dish-list .recipe-list-photo { width:100%;height:auto;aspect-ratio:1.35;flex:0 0 auto;object-fit:cover;border-radius:0; }
 html.design #dish-list .dish-icon { display:grid;place-items:center;width:100%;height:110px;margin:0;background:var(--line);font-size:0;border-radius:0; }
