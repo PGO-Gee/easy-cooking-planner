@@ -717,8 +717,34 @@ html.design .shopping-quantity button { min-width:44px;min-height:44px;border:0;
 html.design .shopping-quantity output { padding:8px;min-width:35px;text-align:center;color:var(--ink); }
 html.design .shopping-overview { background:var(--selection);color:var(--action);border:0;border-radius:12px;padding:10px 14px;margin:0 0 20px; }
 html.design .form-error,html.design .danger-action { color:var(--error); }
-html.design .sync-status { margin:0 0 18px;background:var(--warning-bg);color:var(--warning);border-color:var(--line); }
-html.design #toast { background:var(--ink);color:var(--canvas);font-size:14px;bottom:calc(85px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 28px); }
+.sync-status {
+  position:fixed;z-index:60;
+  top:calc(12px + env(safe-area-inset-top,0px));
+  left:max(14px,env(safe-area-inset-left,0px));right:max(14px,env(safe-area-inset-right,0px));
+  width:fit-content;max-width:520px;margin:0 auto;
+  max-height:calc(100dvh - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+  overflow:auto;overflow-wrap:anywhere;
+  box-shadow:0 3px 12px rgb(0 0 0 / 8%);
+}
+#sync-status-message { min-width:0; }
+html.design .sync-status { background:var(--warning-bg);color:var(--warning);border-color:var(--line); }
+html.design #toast {
+  background:var(--paper);color:var(--ink);border:1px solid var(--line);
+  border-radius:10px;padding:9px 12px;font-size:12px;line-height:1.4;
+  box-shadow:0 3px 12px rgb(0 0 0 / 8%);
+  bottom:calc(85px + env(safe-area-inset-bottom,0px));
+  width:max-content;max-width:min(420px,calc(100vw - 28px));
+  transform:translate(-50%,4px);transition:opacity .16s ease,transform .16s ease;
+}
+html.design #toast.show { transform:translate(-50%,0); }
+html.design #toast.has-action { padding:3px 6px 3px 12px;gap:8px; }
+html.design #toast .toast-message { overflow-wrap:anywhere; }
+html.design #toast .toast-action {
+  min-height:44px;padding:0 8px;border:0;border-radius:6px;
+  background:transparent;color:var(--action);font-size:12px;font-weight:600;
+}
+html.design #toast .toast-action:hover,
+html.design #toast .toast-action:focus-visible { background:var(--selection); }
 html.design .auth-gate,html.design #startup-gate { background:var(--canvas);color:var(--ink); }
 html.design .auth-card { background:var(--paper);color:var(--ink);border:1px solid var(--line);box-shadow:none; }
 html.design .auth-card h1,html.design .auth-card label,html.design .auth-brand { color:var(--ink); }

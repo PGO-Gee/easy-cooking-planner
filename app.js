@@ -1035,7 +1035,11 @@ function subscribeToHouseholdChanges(){
   });
   realtimeChannel=channel;
   channel.subscribe(status=>{
-    if(status==='SUBSCRIBED')scheduleCloudSync({notify:true});
+    if(channel!==realtimeChannel)return;
+    if(status==='SUBSCRIBED'){
+      if($('#sync-status-message').textContent==='Live-Sync pausiert – beim Öffnen wird die Liste aktualisiert.')updateSyncStatus('');
+      scheduleCloudSync({notify:true});
+    }
     else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')updateSyncStatus('Live-Sync pausiert – beim Öffnen wird die Liste aktualisiert.');
   });
 }
