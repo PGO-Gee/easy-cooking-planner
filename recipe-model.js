@@ -44,7 +44,7 @@
 
   function scaledAmount(amount, servings, baseServings) {
     const numeric = parseAmount(amount);
-    if (numeric === null || !Number.isInteger(Number(servings)) || Number(servings) < 1 || !Number.isInteger(Number(baseServings)) || Number(baseServings) < 1) return null;
+    if (numeric === null || !Number.isFinite(Number(servings)) || Number(servings) <= 0 || !Number.isInteger(Number(baseServings)) || Number(baseServings) < 1) return null;
     return numeric * Number(servings) / Number(baseServings);
   }
 

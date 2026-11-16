@@ -41,12 +41,76 @@ const uiIcons={
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
 function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
+function cookingEntryOverlay(dialog){
+  // Keep this menu out of the native dialog top layer: iOS can reposition it
+  // after showModal() has focused its contents on a scrolled page.
+  const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
+  dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null;
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const stopMotion=()=>{if(motion){motion.onfinish=null;motion.cancel();motion=null}};
+  const offscreenTransform=()=>`translateY(-${dialog.getBoundingClientRect().bottom+16}px)`;
+  const close=dialog.close.bind(dialog);
+  const release=()=>{
+    inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
+    if(locked){locked=false;unlockPageScroll()}
+  };
+  dialog.showModal=()=>{
+    if(dialog.open)return;
+    stopMotion();layer.classList.remove('is-closing');dialog.inert=false;
+    opener=document.activeElement;lockPageScroll();locked=true;
+    try{
+      syncVisualViewport();
+      inertSiblings=[...document.body.children].filter(element=>element!==layer&&!element.inert);
+      inertSiblings.forEach(element=>{element.inert=true});
+      layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
+      dialog.querySelector('.close-button').focus({preventScroll:true});
+      if(!reducedMotion.matches)motion=dialog.animate([{transform:offscreenTransform()},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+    }catch(error){dialog.removeAttribute('open');layer.hidden=true;release();throw error}
+  };
+  dialog.close=(...args)=>{
+    if(!dialog.open)return;
+    const transform=getComputedStyle(dialog).transform;
+    stopMotion();
+    // Close logically now so actions can open the recipe or chooser immediately.
+    // The inert menu remains visible only for its exit animation.
+    layer.classList.add('is-closing');dialog.inert=true;
+    close(...args);release();
+    if(opener?.isConnected)opener.focus({preventScroll:true});
+    const finish=()=>{layer.hidden=true;layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
+    if(reducedMotion.matches){finish();return}
+    motion=dialog.animate([{transform},{transform:offscreenTransform()}],{duration:200,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    motion.onfinish=finish;
+  };
+  dialog.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){event.preventDefault();event.stopPropagation();dialog.close();return}
+    if(event.key!=='Tab')return;
+    const targets=[...dialog.querySelectorAll('button,input,select,textarea,a[href],[tabindex]')].filter(element=>!element.disabled&&element.tabIndex>=0&&element.getClientRects().length);
+    const first=targets[0],last=targets.at(-1);
+    if(event.shiftKey&&event.target===first){event.preventDefault();last?.focus({preventScroll:true})}
+    else if(!event.shiftKey&&event.target===last){event.preventDefault();first?.focus({preventScroll:true})}
+  });
+  const revealQuantityInput=()=>requestAnimationFrame(()=>{
+    const focused=document.activeElement;if(!dialog.open||!focused?.matches('#cooking-entry-quantity input, #cooking-entry-quantity select'))return;
+    const bounds=dialog.getBoundingClientRect(),field=focused.getBoundingClientRect();
+    const top=bounds.top+12,bottom=bounds.bottom-16;
+    if(field.bottom>bottom)dialog.scrollTop+=field.bottom-bottom;
+    else if(field.top<top)dialog.scrollTop-=top-field.top;
+  });
+  dialog.addEventListener('focusin',revealQuantityInput);
+  window.visualViewport?.addEventListener('resize',revealQuantityInput);
+  window.visualViewport?.addEventListener('scroll',revealQuantityInput);
+  layer.addEventListener('pointerdown',event=>{backdropPressed=event.target===layer});
+  layer.addEventListener('click',event=>{if(event.target===layer&&backdropPressed)dialog.close()});
+  return dialog;
+}
 function uiDialog(id,title){
   let dialog=document.getElementById(id);if(dialog)return dialog;
   dialog=document.createElement('dialog');dialog.id=id;dialog.className='ui-dialog';dialog.setAttribute('aria-labelledby',`${id}-title`);
   const head=document.createElement('div');head.className='dialog-head';const heading=document.createElement('h2');heading.id=`${id}-title`;heading.textContent=title;
   const close=uiButton('×',()=>dialog.close(),{className:'close-button'});close.setAttribute('aria-label','Schließen');head.append(heading,close);dialog.append(head);document.body.append(dialog);
-  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;show();lockPageScroll()};
+  if(id==='cooking-entry-dialog')return cookingEntryOverlay(dialog);
+  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;lockPageScroll();try{syncVisualViewport();show()}catch(error){unlockPageScroll();throw error}};
   dialog.addEventListener('close',()=>{unlockPageScroll();if(opener?.isConnected)opener.focus({preventScroll:true})});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
   return dialog;
@@ -69,7 +133,7 @@ function enhanceWeekView(days){
     const dayHead=card.querySelector('.day-head');dayHead.replaceChildren();
     const dayButton=uiButton(days[index].date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric'}),()=>{uiSelectedDay=index;uiSelectedMeal=0;if(uiDesktop())renderWeekPreview();else chooseDish(index)},{className:'day-select'});
     dayButton.setAttribute('aria-label',`${formatChooserDate(days[index].date)} auswählen`);dayHead.append(dayButton);
-    const rest=card.querySelector('.rest-day-tile');if(rest){const label=document.createElement('span');label.textContent='Reste';rest.replaceChildren(label,uiIcon('rest'));rest.addEventListener('click',()=>{uiSelectedDay=index;uiSelectedMeal=0;if(uiDesktop())renderWeekPreview();else chooseDish(index)});rest.tabIndex=0;rest.role='button';rest.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();rest.click()}})}
+    const rest=card.querySelector('.rest-day-tile');if(rest){const label=document.createElement('span');const linked=window.WochentischCookingPlan.restsAt(state,keyFor(days[index].date));label.className='linked-rest-copy';label.textContent='Reste';rest.replaceChildren(label,uiIcon('rest'));rest.addEventListener('click',()=>{uiSelectedDay=index;uiSelectedMeal=0;if(linked.length)openLinkedRest(days[index].date);else if(uiDesktop())renderWeekPreview();else chooseDish(index)});rest.tabIndex=0;rest.role='button';rest.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();rest.click()}})}
     if(card.classList.contains('empty-day')){const add=card.querySelector('.add-meal');add.replaceChildren(document.createTextNode('Nicht geplant'),uiIcon('plus'));if(uiDesktop()){add.onclick=event=>{event.stopImmediatePropagation();uiSelectedDay=index;uiSelectedMeal=0;renderWeekPreview()};add.addEventListener('click',add.onclick,{capture:true})}}
     card.querySelectorAll('.meal-card').forEach((meal,mealIndex)=>{
       const dish=state.dishes.find(d=>d.id===meal.dataset.dishId);if(!dish)return;
@@ -77,13 +141,16 @@ function enhanceWeekView(days){
       if(meal.classList.contains('focus-meal')){const date=document.createElement('p');date.className='meal-date';date.textContent=formatChooserDate(days[index].date);meal.querySelector('.meal-title').before(date)}
       const picture=meal.querySelector('.recipe-list-photo');if(picture&&meal.classList.contains('focus-meal')){const full=recipePhoto(dish);if(full)picture.src=full.src}
       if(!picture)meal.prepend(uiPlaceholder('meal-image-placeholder'));
-      meal.querySelector('.meal-ingredient').textContent=`${dish.recipe?.servings||'–'} Portionen`;
+      meal.querySelector('.meal-ingredient').textContent=plannedEntryLabel(days[index].date,mealIndex);
       meal.querySelector('.meal-time').textContent=`${dish.time||30} Min.`;
       meal.querySelector('.meal-nutrition').hidden=true;
-      const pin=meal.querySelector('.meal-pin');pin.replaceChildren(uiIcon('pin'));
-      const remove=meal.querySelector('.meal-remove');remove.hidden=true;
-      const actions=uiButton('',event=>{event.stopPropagation();openMealActions(index,mealIndex,dish.id)},{className:'meal-more',icon:meal.classList.contains('is-pinned')&&!meal.classList.contains('focus-meal')?'pin':'more'});actions.setAttribute('aria-label',`Aktionen für ${dish.name}`);actions.addEventListener('pointerdown',event=>event.stopPropagation());actions.addEventListener('touchstart',event=>event.stopPropagation(),{passive:true});meal.querySelector('.meal-actions').append(actions);
-      meal.addEventListener('keydown',event=>{if(uiDesktop()&&event.target===meal&&['Enter',' '].includes(event.key)){event.preventDefault();event.stopImmediatePropagation();selectDesktopMeal(meal)} });
+      meal.querySelector('.meal-actions')?.remove();
+      if(meal.classList.contains('is-pinned')){
+        const indicator=uiIcon('pin');indicator.classList.add('meal-pin-indicator');indicator.title='Fixiert';
+        meal.querySelector('.meal-name').prepend(indicator);
+        meal.setAttribute('aria-label',`${dish.name} öffnen, fixiert`);
+      }
+
     });
   });
   $('#week-period').textContent=formatRange(days[0].date);renderWeekPreview();
@@ -92,22 +159,24 @@ function renderWeekPreview(){
   const days=planDaysInRange(),entry=days[uiSelectedDay]||days[0],preview=$('#week-preview');if(!preview||!entry)return;
   $('#calendar').querySelectorAll('.day-card').forEach((card,index)=>{card.classList.toggle('selected-day',index===uiSelectedDay);card.querySelector('.day-select').setAttribute('aria-pressed',String(index===uiSelectedDay))});
   preview.replaceChildren();const dishes=entry.day.map(id=>state.dishes.find(d=>d.id===id)).filter(Boolean);uiSelectedMeal=Math.min(uiSelectedMeal,Math.max(0,dishes.length-1));const dish=dishes[uiSelectedMeal];
-  if(!dish){const body=document.createElement('div');body.className='week-preview-body empty-preview';const date=document.createElement('p');date.textContent=formatChooserDate(entry.date);const h=document.createElement('h2');h.textContent=entry.isRest?'Resteabend':'Nicht geplant';const copy=document.createElement('p');copy.textContent=entry.isRest?'Heute ist Zeit für Reste.':'Wähle ein Gericht aus deiner Sammlung.';body.append(date,h,copy,uiButton('Gericht auswählen',()=>chooseDish(uiSelectedDay),{className:'primary-button',icon:'plus'}));preview.append(body);preview.classList.toggle('rest-preview',entry.isRest);return}
+  if(!dish){const body=document.createElement('div');body.className='week-preview-body empty-preview';const date=document.createElement('p');date.textContent=formatChooserDate(entry.date);const h=document.createElement('h2');h.textContent=entry.isRest?'Reste':'Nicht geplant';const copy=document.createElement('p'),linked=window.WochentischCookingPlan.restsAt(state,keyFor(entry.date));copy.textContent=entry.isRest?'':'Wähle ein Gericht aus deiner Sammlung.';if(linked.length)body.append(uiButton('Restetag ansehen',()=>openLinkedRest(entry.date),{className:'primary-button'}));body.append(date,h,copy,uiButton('Gericht auswählen',()=>chooseDish(uiSelectedDay),{className:'primary-button',icon:'plus'}));preview.append(body);preview.classList.toggle('rest-preview',entry.isRest);return}
   preview.classList.remove('rest-preview');const photo=recipePhoto(dish);if(photo)preview.append(photo);else{const placeholder=document.createElement('div');placeholder.className='recipe-placeholder';placeholder.append(uiIcon('dishes'));preview.append(placeholder)}
   const body=document.createElement('div');body.className='week-preview-body';const date=document.createElement('p');date.className='recipe-date';date.textContent=formatChooserDate(entry.date);
-  const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.time||30} Min. · ${dish.recipe?.servings||'–'} Portionen`;
-  const pin=uiButton('',()=>setMealPinned(entry.date,uiSelectedMeal,dish.id),{icon:'pin',className:'preview-pin'});pin.setAttribute('aria-label','Gericht fixieren');pin.setAttribute('aria-pressed',String(Boolean(pinnedMealsForDate(entry.date)[uiSelectedMeal])));
-  body.append(date,title,pin,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,dish.recipe?.servings||2);
-  body.append(uiButton('Rezept ansehen',()=>openRecipe(dish.id,{from:'week'}),{icon:'dishes',className:'primary-button'}));
-  body.append(uiButton('Weiteres Rezept hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));
+  const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
+  body.append(date,title,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
+  body.append(uiButton('Kochmenge ändern',()=>openCookingEntryOptions(entry.date,uiSelectedMeal,{editQuantity:true}),{className:'secondary-button'}));
+  body.append(uiButton('Rezept ansehen',()=>openRecipe(dish.id,{from:'week',servings:window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal))}),{icon:'dishes',className:'primary-button'}));
+  body.append(uiButton('Weiteres Gericht hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));
   if(dishes.length>1){const others=document.createElement('div');others.className='preview-other';dishes.forEach((item,index)=>{const b=uiButton(item.name,()=>{uiSelectedMeal=index;renderWeekPreview()});b.setAttribute('aria-pressed',String(index===uiSelectedMeal));others.append(b)});body.append(others)}
   preview.append(body);
 }
-function openMealActions(day,mealIndex,dishId){
-  const dialog=uiDialog('meal-actions-dialog','Gericht planen');dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());const date=rangeDates()[day];
-  dialog.append(uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(dishId,{from:'week'})},{icon:'dishes'}),uiButton('Fixierung ändern',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Rezept hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
-  const label=document.createElement('label');label.textContent='Verschieben nach';const select=document.createElement('select');rangeDates().forEach((target,index)=>select.add(new Option(formatChooserDate(target),index)));select.value=String(day);label.append(select);dialog.append(label,uiButton('Verschieben',()=>{if(moveMealToDropTarget({sourceDay:day,targetDay:Number(select.value),mealIndex,dishId,insertIndex:planForDate(rangeDates()[Number(select.value)]).length})){save();renderCalendar()}dialog.close()}),uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));dialog.showModal();
+function openMealActions(day,mealIndex){openCookingEntryOptions(rangeDates()[day],mealIndex)}
+function appendCookingEntryActions(dialog,date,mealIndex,dishId){
+  const day=rangeDates().findIndex(target=>keyFor(target)===keyFor(date));
+  dialog.append(uiButton(pinnedMealsForDate(date)[mealIndex]?'Fixierung aufheben':'Gericht fixieren',()=>{dialog.close();setMealPinned(date,mealIndex,dishId)},{icon:'pin'}),uiButton('Weiteres Gericht hinzufügen',()=>{dialog.close();chooseDish(day)},{icon:'plus'}));
+  dialog.append(uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
 }
+
 function showDesktopRecipe(){
   if(!uiDesktop()||recipeDetailPreviousView!=='week')return;
   const dialog=uiDialog('recipe-detail-dialog','Rezept');const content=$('#cooking-content');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();
@@ -202,6 +271,10 @@ function renderRecipeForm(){
   updateDishTypeFields();
 }
 function initializeDesign(){
+  // Keep touch/mouse focus quiet while retaining visible keyboard navigation.
+  document.addEventListener('pointerdown',()=>{document.documentElement.dataset.inputModality='pointer'},true);
+  document.addEventListener('keydown',event=>{if(!event.metaKey&&!event.ctrlKey&&!event.altKey)document.documentElement.dataset.inputModality='keyboard'},true);
+
   document.documentElement.classList.add('design');
   const nav=document.createElement('nav');nav.className='mobile-nav';nav.setAttribute('aria-label','Hauptnavigation');
   [['week','Wochenplan'],['dishes','Gerichte'],['cooking','Zubereiten'],['shopping','Einkauf']].forEach(([view,label])=>{const button=uiButton(label,()=>{if(view==='cooking'){void saveCookingProgress();cookingStage='list';selectedRecipeDishId=''}setView(view);window.scrollTo(0,0)},{icon:view,className:'mobile-nav-item'});button.dataset.view=view;nav.append(button);const desktop=$(`#sidebar .nav-item[data-view="${view}"]`);desktop.replaceChildren(uiIcon(view),document.createTextNode(label));if(view==='cooking')desktop.addEventListener('click',event=>{event.stopImmediatePropagation();void saveCookingProgress();cookingStage='list';selectedRecipeDishId='';setView('cooking');closeMobileMenu()},{capture:true});});

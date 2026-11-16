@@ -6,7 +6,7 @@
 
   // The UI drains its local write queue before snapshots and uses the write
   // barrier to preserve edits made during the IndexedDB transaction.
-  function create({ store, api, userId, householdId, stateKey = 'app-state', newRequestId, toShared, beforeSnapshot = async () => {}, writeBarrier, readMemory, applyMemory, locks, requireLock, requireConditional }) {
+  function create({ store, api, userId, householdId, stateKey = 'app-state', newRequestId, toShared, beforeSnapshot = async () => {}, writeBarrier, readMemory, applyMemory, locks, requireLock, requireConditional, apiVersion = 2 }) {
     if (!store || !api || !userId || !householdId || typeof newRequestId !== 'function' || typeof toShared !== 'function') {
       throw new TypeError('Synchronisierung ist nicht vollständig eingerichtet.');
     }
@@ -43,28 +43,44 @@
           if (pending || !equal(toShared(state), toShared(base))) throw new Error('Bitte zuerst ausstehende Änderungen synchronisieren.');
           return { operation: 'resolve', version: stored.apiVersion || 1, householdId, requestId: newRequestId(), local: toShared(state), conflict: stored, storageKey: decision.storageKey, choice: decision.choice };
         }
-        const sharedBase = pending?.base || toShared(base);
+        const sharedBase = pending?.base ? toShared(pending.base) : toShared(base);
         const local = toShared(state);
         const operation = api.pull && !pending && equal(sharedBase, local) ? 'pull' : 'sync';
-        return { operation, version: 2, householdId, requestId: newRequestId(), base: sharedBase, local };
+        return { operation, version: apiVersion, householdId, requestId: newRequestId(), base: sharedBase, local };
       },
       async send(request) {
-        if (request.operation === 'resolve') return api.resolve(request);
-        if (request.operation === 'pull' && api.pull) {
-          const snapshot = await api.pull(request.householdId);
-          if (snapshot) return snapshot;
+        // Keep an old persisted request intact. If the server rejects its legacy
+        // plan writer after v3 activation, persist a separately identified v3
+        // request before retrying the same intent against the new merge units.
+        const upgradeKey = `sync-upgrade:${suffix}:${request.requestId}`;
+        const priorUpgrade = apiVersion >= 3 && request.operation === 'sync' && (request.version || 1) < 3
+          ? await store.get('records', upgradeKey) : null;
+        if (priorUpgrade) return { ...await api.sync(priorUpgrade), apiVersion: 3, upgradeKey };
+        try {
+          if (request.operation === 'resolve') return await api.resolve(request);
+          if (request.operation === 'pull' && api.pull) {
+            const snapshot = await api.pull(request.householdId);
+            if (snapshot) return snapshot;
+          }
+          return await api.sync(request);
+        } catch (error) {
+          if (apiVersion < 3 || request.operation !== 'sync' || (request.version || 1) >= 3 ||
+              error?.code !== '22023' || !String(error.message).includes('Bitte die App aktualisieren')) throw error;
+          const upgrade = { operation: 'sync', version: 3, householdId, requestId: newRequestId(), base: toShared(request.base), local: toShared(request.local) };
+          await store.put('records', upgradeKey, upgrade);
+          return { ...await api.sync(upgrade), apiVersion: 3, upgradeKey };
         }
-        return api.sync(request);
       },
       async acknowledgementWrites(request, response) {
         await beforeSnapshot();
         const latest = await store.get('records', keys.state);
         if (!latest) throw new Error('Lokaler Zustand für die Sync-Bestätigung fehlt.');
-        const hasLaterChanges = !equal(toShared(latest), request.local);
+        const hasLaterChanges = !equal(toShared(latest), toShared(request.local));
         const next = hasLaterChanges ? latest : { ...response.state, noteHidden: Boolean(latest.noteHidden) };
         const writes = [put('records', keys.state, next), put('records', keys.backup, next), put('records', keys.base, response.state), put('records', keys.revision, response.revision)];
         if (hasLaterChanges) writes.push(put('records', keys.pending, { base: request.local }));
         else writes.push(remove('records', keys.pending));
+        if (response.upgradeKey) writes.push(remove('records', response.upgradeKey));
         const conditions = [{ store: 'records', key: keys.state, exists: true, value: latest }];
         if (request.operation === 'resolve') {
           const currentConflict = await store.get('conflicts', request.storageKey);
@@ -74,7 +90,7 @@
         }
         for (const conflict of response.conflicts) {
           const storageKey = `${suffix}:${conflict.id}`;
-          const displayed = { ...conflict, apiVersion: request.version || 1, userId, householdId, storageKey };
+          const displayed = { ...conflict, apiVersion: response.apiVersion || request.version || 1, userId, householdId, storageKey };
           for (const side of ['base', 'local', 'remote']) {
             if (!conflict[`${side}Present`]) displayed[`${side}Value`] = undefined;
           }

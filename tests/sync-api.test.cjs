@@ -29,7 +29,7 @@ test('routes v2 requests to the recipe-aware RPCs and rejects unknown versions',
   await api.resolve({ version: 2, householdId: 'h', requestId: 'r3', conflict, choice: 'local' });
   assert.deepEqual(calls.map(call => call.name), ['sync_household_v2', 'resolve_household_conflict_v2']);
   assert.equal(calls[0].args.p_local.dishes[0].catalogSourceVersion, 3);
-  assert.throws(() => api.sync({ version: 3 }), /Unbekannte Sync-Version/);
+  assert.throws(() => api.sync({ version: 4 }), /Unbekannte Sync-Version/);
 });
 
 test('converts legacy conflicts and distinguishes deletion from a present null', () => {
@@ -51,7 +51,7 @@ test('errors and invalid responses fail before acknowledgement', async () => {
 
 test('uses the read-only snapshot endpoint and falls back only when it is unavailable', async () => {
   const api = create({ rpc: async (name, args) => {
-    assert.equal(name, 'read_household_v2');
+    assert.equal(name, 'read_household_v3');
     assert.deepEqual(args, { p_household_id: 'h' });
     return { data: response() };
   } });
@@ -59,4 +59,13 @@ test('uses the read-only snapshot endpoint and falls back only when it is unavai
   assert.equal(await create({ rpc: async () => ({ error: { code: 'PGRST202' } }) }).pull('h'), null);
   const forbidden = { code: '42501' };
   await assert.rejects(create({ rpc: async () => ({ error: forbidden }) }).pull('h'), error => error === forbidden);
+});
+
+test('v3 transports stable cooking occurrences, household defaults and measured quantity overrides', async () => {
+  const calls=[];const api=create({rpc:async(name,args)=>{calls.push({name,args});return {data:response(),error:null}}});
+  const state={dishes:[],plans:{},cookingEntries:{batch:{portions:2.5,restDates:['2026-11-16']}},planningSettings:{adults:2,children:1},quantityOverrides:{'["2026-11-09","reis","g"]':600}};
+  await api.sync({version:3,householdId:'h',requestId:'v3',base:state,local:state});
+  assert.equal(calls[0].name,'sync_household_v3');assert.deepEqual(calls[0].args.p_local,state);
+  await api.resolve({version:3,householdId:'h',requestId:'v3-resolve',choice:'local',conflict:{kind:'cooking-plan',key:[],localValue:state,remoteValue:state}});
+  assert.equal(calls[1].name,'resolve_household_conflict_v3');
 });

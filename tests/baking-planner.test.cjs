@@ -96,6 +96,8 @@ test('a specific cheese prioritizes its own recipe and never checks another chee
 test('normalizing existing dishes recovers precise names from full recipes only', () => {
   const c = setup([]);
   c.window.WochentischRecipes = require('../recipe-model.js');
+  c.window.WochentischCookingPlan = require('../cooking-plan.js');
+  c.normalizeQuantityOverrides = value => value || {};
   c.cleanIngredients = c.window.WochentischIngredients.unique;
   c.cleanNutrition = value => value;
   vm.runInContext(source.slice(source.indexOf('function normalizeState('), source.indexOf('async function initializeOfflineData(')), c);

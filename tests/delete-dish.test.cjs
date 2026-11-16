@@ -15,7 +15,7 @@ function deleteRecipe(confirmed, id = 'a') {
   };
   const calls = [];
   const context = {
-    state,
+    state, window: {},
     $: selector => selector === '#dish-id' ? { value: id } : { close: () => calls.push('close') },
     confirm: message => { calls.push(message); return confirmed; },
     removeCatalogImportForDish: value => calls.push(`import:${value}`),
