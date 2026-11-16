@@ -46,15 +46,18 @@ function cookingEntryOverlay(dialog){
   // after showModal() has focused its contents on a scrolled page.
   const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
   dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
-  let opener=null,inertSiblings=[],locked=false,backdropPressed=false;
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null;
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  const stopMotion=()=>{if(motion){motion.onfinish=null;motion.cancel();motion=null}};
+  const offscreenTransform=()=>`translateY(-${dialog.getBoundingClientRect().bottom+16}px)`;
   const close=dialog.close.bind(dialog);
   const release=()=>{
-    layer.hidden=true;
     inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
     if(locked){locked=false;unlockPageScroll()}
   };
   dialog.showModal=()=>{
     if(dialog.open)return;
+    stopMotion();layer.classList.remove('is-closing');dialog.inert=false;
     opener=document.activeElement;lockPageScroll();locked=true;
     try{
       syncVisualViewport();
@@ -62,12 +65,22 @@ function cookingEntryOverlay(dialog){
       inertSiblings.forEach(element=>{element.inert=true});
       layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
       dialog.querySelector('.close-button').focus({preventScroll:true});
-    }catch(error){dialog.removeAttribute('open');release();throw error}
+      if(!reducedMotion.matches)motion=dialog.animate([{transform:offscreenTransform()},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+    }catch(error){dialog.removeAttribute('open');layer.hidden=true;release();throw error}
   };
   dialog.close=(...args)=>{
     if(!dialog.open)return;
+    const transform=getComputedStyle(dialog).transform;
+    stopMotion();
+    // Close logically now so actions can open the recipe or chooser immediately.
+    // The inert menu remains visible only for its exit animation.
+    layer.classList.add('is-closing');dialog.inert=true;
     close(...args);release();
     if(opener?.isConnected)opener.focus({preventScroll:true});
+    const finish=()=>{layer.hidden=true;layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
+    if(reducedMotion.matches){finish();return}
+    motion=dialog.animate([{transform},{transform:offscreenTransform()}],{duration:200,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    motion.onfinish=finish;
   };
   dialog.addEventListener('keydown',event=>{
     if(event.key==='Escape'){event.preventDefault();event.stopPropagation();dialog.close();return}

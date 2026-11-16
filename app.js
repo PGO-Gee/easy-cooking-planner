@@ -149,11 +149,8 @@ function syncVisualViewport(){
   if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
 }
 function revealChooserResults(){
-  const search=$('#choose-dish-search'),content=$('.choose-dialog-content'),result=$('#choose-dish-list .choose-item:not([hidden])');
-  if(!window.matchMedia('(max-width: 700px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse)').matches||document.activeElement!==search||!result)return;
-  const bounds=content.getBoundingClientRect(),searchBounds=search.getBoundingClientRect(),resultBounds=result.getBoundingClientRect();
-  const needed=Math.max(0,resultBounds.bottom-bounds.bottom+12);
-  content.scrollTop+=Math.min(needed,Math.max(0,searchBounds.top-bounds.top-8));
+  const search=$('#choose-dish-search'),list=$('#choose-dish-list');
+  if(document.activeElement===search)list.scrollTop=0;
 }
 syncVisualViewport();
 window.visualViewport?.addEventListener('resize',syncVisualViewport);
@@ -2664,17 +2661,19 @@ function renderRestConfirmation({forceConfirm=false}={}){
   if(!selected.meals.length&&!forceConfirm){setRestDay(selected.date,true);save();const after=capturePlanDays(dates);$('#choose-dialog').close();renderCalendar();showToast('Als Reste markiert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>undoRestInsertion(before,after,index,index)});return}
   preview.textContent=selected.meals.length?'Die folgenden Kochblöcke rücken einen Tag weiter, auch über diese Ansicht hinaus. Fixierte Gerichte bleiben geschützt.':'Der Tag ist inzwischen frei. Nur Reste werden eingetragen.';
   $('#choose-rest-commit').textContent=selected.meals.length?'Reste eintragen und Plan verschieben':'Reste eintragen';
-  $('#choose-plan-options').hidden=true;$('#choose-rest-action').hidden=true;$('#choose-rest-confirm').hidden=false;$('#choose-dish-type').hidden=true;$('#choose-dish-search').parentElement.hidden=true;$('#choose-dish-list').hidden=true;
+  $('#choose-more-options').hidden=true;$('#choose-plan-options').hidden=true;$('#choose-rest-action').hidden=true;$('#choose-rest-confirm').hidden=false;$('#choose-dish-type').hidden=true;$('#choose-dish-search').parentElement.hidden=true;$('#choose-dish-list').hidden=true;
   $('#choose-rest-commit').focus({preventScroll:true});
 }
 function chooseDish(day){
   chooseDishDay=Number(day);chooseDishDateKey=keyFor(rangeDates()[day]);chooseDishOpener=document.activeElement;restPreviewSnapshot=null;$('#choose-rest-skip-confirm').checked=false;
   const targetDate=rangeDates()[day],list=$('#choose-dish-list'),search=$('#choose-dish-search'),filterType=$('#choose-dish-type');setRecipeTypeFilter(filterType,'meal');
   $('#choose-plan-options').hidden=false;renderPlanningDefault($('#choose-plan-options'));
-  $('#choose-dialog-title').textContent=`Für ${formatChooserDate(targetDate)} eintragen`;
+  $('#choose-dialog-title').textContent='Gericht auswählen';
+  $('#choose-dialog-date').textContent=formatChooserDate(targetDate);
+  $('#choose-more-options').open=false;$('#choose-more-options').hidden=false;setChooserSearchMode(false);
   $('#choose-rest-action').hidden=isRestDay(targetDate);$('#choose-rest-confirm').hidden=true;filterType.hidden=false;search.parentElement.hidden=false;list.hidden=false;
   $('#choose-rest-action').onclick=renderRestConfirmation;
-  $('#choose-rest-cancel').onclick=()=>{$('#choose-plan-options').hidden=false;restPreviewSnapshot=null;$('#choose-rest-confirm').hidden=true;filterType.hidden=false;search.parentElement.hidden=false;list.hidden=false;$('#choose-rest-action').hidden=isRestDay(rangeDates()[chooseDishDay]);$('#choose-rest-action').focus()};
+  $('#choose-rest-cancel').onclick=()=>{$('#choose-more-options').hidden=false;$('#choose-plan-options').hidden=false;restPreviewSnapshot=null;$('#choose-rest-confirm').hidden=true;filterType.hidden=false;search.parentElement.hidden=false;list.hidden=false;$('#choose-rest-action').hidden=isRestDay(rangeDates()[chooseDishDay]);$('#choose-rest-action').focus()};
   $('#choose-rest-commit').onclick=()=>{
     const current=snapshotPlanDays(rangeDates());
     if(!restPreviewSnapshot||!sameValue(restPreviewSnapshot.days.map(day=>({date:keyFor(day.date),meals:day.meals,pins:day.pins,isRest:day.isRest})),current.days.map(day=>({date:keyFor(day.date),meals:day.meals,pins:day.pins,isRest:day.isRest})))){renderRestConfirmation({forceConfirm:true});return}
@@ -2685,7 +2684,7 @@ function chooseDish(day){
   if(!state.dishes.length){
     const message=document.createElement('p');message.className='empty-state';message.textContent='Noch keine Gerichte vorhanden.';
     const add=document.createElement('button');add.type='button';add.className='primary-button';add.textContent='Gericht hinzufügen';
-    add.addEventListener('click',()=>{$('#choose-dialog').close();openRecipeCreation()});list.append(message,add);search.hidden=true;
+    add.addEventListener('click',()=>{$('#choose-dialog').close();openRecipeCreation()});list.append(message,add);search.hidden=true;search.parentElement.hidden=true;
   }else{
     search.hidden=false;
     const dishes=[...state.dishes].sort((a,b)=>a.name.localeCompare(b.name,'de-DE',{sensitivity:'base'})),entries=[];
@@ -2704,7 +2703,15 @@ function chooseDish(day){
     search.oninput=filter;filterType.onclick=event=>{const button=event.target.closest('button[data-type]');if(button){setRecipeTypeFilter(filterType,button.dataset.type);filter()}};filter();
   }
   const dialog=$('#choose-dialog');if(!dialog.open)dialog.showModal();
+  $('#close-chooser').focus({preventScroll:true});
 }
+function setChooserSearchMode(active){
+  $('#choose-dialog').classList.toggle('is-searching',active);
+  $('#choose-search-done').hidden=!active;
+}
+$('#choose-dish-search').addEventListener('focus',()=>{setChooserSearchMode(true);requestAnimationFrame(revealChooserResults)});
+$('#choose-search-done').addEventListener('click',()=>{setChooserSearchMode(false);$('#choose-dish-search').blur();$('#close-chooser').focus({preventScroll:true})});
+$('#choose-dish-search').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('#choose-search-done').click()}});
 $('#choose-dialog').addEventListener('close',()=>{
   if(!Number.isInteger(chooseDishDay))return;
   const index=rangeDates().findIndex(date=>keyFor(date)===chooseDishDateKey);

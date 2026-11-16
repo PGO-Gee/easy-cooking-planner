@@ -368,8 +368,33 @@
   flex-direction: column;
   min-height: 0;
   max-height: min(88dvh, 760px);
+  overflow-y: auto;
   padding: 25px;
 }
+
+/* The chooser keeps its search above a single scrollable results area. */
+#choose-dialog .dialog-head { flex: 0 0 auto; align-items: center; margin-bottom: 12px; gap: 8px; }
+#choose-dialog .dialog-head > div { min-width: 0; }
+#choose-dialog .dialog-head h2 { margin: 4px 0 0; font-size: 21px; overflow-wrap: anywhere; }
+#choose-dialog .dialog-head .eyebrow { display: block; color: var(--muted); font-size: 12px; letter-spacing: 0; text-transform: none; }
+#choose-dialog .close-button { flex: 0 0 44px; min-height: 44px; }
+.choose-search-row { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; margin-bottom: 12px; }
+html.design #choose-dialog .choose-search input { border: 0; border-radius: 0; background: transparent; padding: 0; box-shadow: none; outline: none; }
+#choose-dialog .choose-search:focus-within { border-color: var(--action); outline: 2px solid var(--action); outline-offset: 1px; }
+.choose-search-row .choose-search { flex: 1 1 auto; min-width: 0; margin: 0; }
+.choose-search-done { flex: 0 0 auto; min-height: 44px; padding: 0 4px; font-size: 14px; }
+.choose-search-done[hidden] { display: none; }
+.choose-more-options { flex: 0 0 auto; margin-bottom: 8px; }
+.choose-more-options[hidden] { display: none; }
+.choose-more-options summary { display: flex; align-items: center; justify-content: space-between; min-height: 44px; cursor: pointer; color: var(--ink); font-size: 14px; }
+.choose-more-options summary::after { content: '+'; font-size: 20px; }
+.choose-more-options[open] summary::after { content: '−'; }
+#choose-dialog .choose-list { max-height: none; }
+#choose-dialog .choose-item { flex: 0 0 auto; min-height: 64px; }
+#choose-dialog .choose-copy { min-width: 0; overflow-wrap: anywhere; }
+#choose-dialog .choose-copy b { font-size: 15px; }
+#choose-dialog .choose-copy small { font-size: 12px; }
+#choose-dialog.is-searching .choose-more-options { display: none; }
 
 .choose-search {
   display: flex;
@@ -1462,6 +1487,7 @@
   display: flex;
   flex-direction: column;
   max-height: min(88dvh, 760px);
+  overflow-y: auto;
   padding: 25px;
 }
 .conflict-dialog-content .dialog-head { flex: 0 0 auto; margin-bottom: 10px; }
@@ -1706,6 +1732,8 @@ html.design #pantry-dialog .dialog-actions { margin:16px 0 0; padding:12px 0 max
   background:#111b2b70;
 }
 .cooking-entry-overlay[hidden] { display:none; }
+.cooking-entry-overlay.is-closing { pointer-events:none; }
+.cooking-entry-overlay.is-closing > #cooking-entry-dialog { display:block; }
 html.design .cooking-entry-overlay > #cooking-entry-dialog {
   position:static;
   inset:auto;
