@@ -1748,3 +1748,29 @@ html.design .cooking-entry-overlay > #cooking-entry-dialog {
 #calendar, #calendar *, #cooking-entry-dialog button { -webkit-tap-highlight-color:transparent; }
 html.design[data-input-modality="pointer"] #calendar :is(.meal-card,.meal-pin,.day-select,.rest-day-tile):focus,
 html.design[data-input-modality="pointer"] :is(#cooking-entry-dialog,#linked-rest-dialog,#choose-dialog) button:focus { outline:none; }
+
+/* A focused quantity editor keeps portions ahead of secondary meal actions. */
+#cooking-entry-dialog .quantity-back[hidden] { display:none; }
+#cooking-entry-dialog.is-editing-quantity > button { display:none; }
+#cooking-entry-dialog.is-editing-quantity .dialog-head { align-items:center; gap:8px; margin-bottom:8px; }
+#cooking-entry-dialog.is-editing-quantity .dialog-head h2 { flex:1; margin:0; font-size:20px; }
+#cooking-entry-dialog .quantity-back { display:flex; align-items:center; flex:0 0 auto; min-height:44px; padding:0 4px; font-size:14px; }
+#cooking-entry-dialog .dialog-head .close-button { flex:0 0 44px; min-height:44px; }
+#cooking-entry-dialog.is-editing-quantity > p { margin:0 0 12px; font-size:14px; color:var(--muted); overflow-wrap:anywhere; }
+#cooking-entry-quantity .planning-options { padding:0; margin:0 0 12px; border:0; }
+#cooking-entry-quantity .planning-options h3 { display:none; }
+#cooking-entry-quantity .planning-fields { grid-template-columns:minmax(0,1fr); }
+#cooking-entry-quantity .quantity-more-options summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; font-size:14px; cursor:pointer; }
+#cooking-entry-quantity .quantity-more-options summary::after { content:'+'; font-size:20px; }
+#cooking-entry-quantity .quantity-more-options[open] summary::after { content:'−'; }
+#cooking-entry-quantity .quantity-more-options > label { margin:8px 0 12px; }
+#cooking-entry-quantity .planning-preview { margin-top:8px; }
+#cooking-entry-quantity p { font-size:13px; line-height:1.5; }
+#cooking-entry-quantity > [role=alert]:empty { display:none; }
+#cooking-entry-quantity > button[type=submit] { width:100%; min-height:44px; }
+@media(max-width:700px), (orientation:landscape) and (max-height:500px) and (pointer:coarse) {
+  html.design .cooking-entry-overlay > #cooking-entry-dialog.is-editing-quantity { padding:12px; }
+  #cooking-entry-dialog.is-editing-quantity .dialog-head h2 { font-size:18px; }
+  #cooking-entry-dialog.is-editing-quantity .quantity-back { font-size:0; }
+  #cooking-entry-dialog.is-editing-quantity .quantity-back .ui-icon { width:44px; height:44px; }
+}

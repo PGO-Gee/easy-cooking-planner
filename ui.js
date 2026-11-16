@@ -90,6 +90,16 @@ function cookingEntryOverlay(dialog){
     if(event.shiftKey&&event.target===first){event.preventDefault();last?.focus({preventScroll:true})}
     else if(!event.shiftKey&&event.target===last){event.preventDefault();first?.focus({preventScroll:true})}
   });
+  const revealQuantityInput=()=>requestAnimationFrame(()=>{
+    const focused=document.activeElement;if(!dialog.open||!focused?.matches('#cooking-entry-quantity input, #cooking-entry-quantity select'))return;
+    const bounds=dialog.getBoundingClientRect(),field=focused.getBoundingClientRect();
+    const top=bounds.top+12,bottom=bounds.bottom-16;
+    if(field.bottom>bottom)dialog.scrollTop+=field.bottom-bottom;
+    else if(field.top<top)dialog.scrollTop-=top-field.top;
+  });
+  dialog.addEventListener('focusin',revealQuantityInput);
+  window.visualViewport?.addEventListener('resize',revealQuantityInput);
+  window.visualViewport?.addEventListener('scroll',revealQuantityInput);
   layer.addEventListener('pointerdown',event=>{backdropPressed=event.target===layer});
   layer.addEventListener('click',event=>{if(event.target===layer&&backdropPressed)dialog.close()});
   return dialog;
@@ -134,8 +144,7 @@ function enhanceWeekView(days){
       meal.querySelector('.meal-ingredient').textContent=plannedEntryLabel(days[index].date,mealIndex);
       meal.querySelector('.meal-time').textContent=`${dish.time||30} Min.`;
       meal.querySelector('.meal-nutrition').hidden=true;
-      const pin=meal.querySelector('.meal-pin');pin.replaceChildren(uiIcon('pin'));
-      const remove=meal.querySelector('.meal-remove');remove.hidden=true;
+      meal.querySelector('.meal-actions')?.remove();
 
     });
   });
@@ -149,8 +158,7 @@ function renderWeekPreview(){
   preview.classList.remove('rest-preview');const photo=recipePhoto(dish);if(photo)preview.append(photo);else{const placeholder=document.createElement('div');placeholder.className='recipe-placeholder';placeholder.append(uiIcon('dishes'));preview.append(placeholder)}
   const body=document.createElement('div');body.className='week-preview-body';const date=document.createElement('p');date.className='recipe-date';date.textContent=formatChooserDate(entry.date);
   const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
-  const pin=uiButton('',()=>setMealPinned(entry.date,uiSelectedMeal,dish.id),{icon:'pin',className:'preview-pin'});pin.setAttribute('aria-label','Gericht fixieren');pin.setAttribute('aria-pressed',String(Boolean(pinnedMealsForDate(entry.date)[uiSelectedMeal])));
-  body.append(date,title,pin,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
+  body.append(date,title,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
   body.append(uiButton('Kochmenge ändern',()=>openCookingEntryOptions(entry.date,uiSelectedMeal,{editQuantity:true}),{className:'secondary-button'}));
   body.append(uiButton('Rezept ansehen',()=>openRecipe(dish.id,{from:'week',servings:window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal))}),{icon:'dishes',className:'primary-button'}));
   body.append(uiButton('Weiteres Gericht hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));

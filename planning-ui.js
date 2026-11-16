@@ -51,13 +51,24 @@ function plannedEntryLabel(date,position){const model=window.WochentischCookingP
 function openCookingEntryOptions(date,position,{editQuantity=false}={}){
   const model=window.WochentischCookingPlan,entry=model.entryAt(state,keyFor(date),position);if(!entry)return;
   const dish=state.dishes.find(d=>d.id===entry.dishId);if(!dish)return;
-  const dialog=uiDialog('cooking-entry-dialog',dish.name);dialog.querySelector('h2').textContent=dish.name;dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());
+  const dialog=uiDialog('cooking-entry-dialog',dish.name);dialog.querySelector('h2').textContent=dish.name;dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());dialog.querySelector('.quantity-back')?.remove();
   const dateLabel=document.createElement('p');dateLabel.textContent=formatChooserDate(date);dialog.append(dateLabel,uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(dish.id,{from:'week',servings:model.total(entry)})},{icon:'dishes',className:'primary-button'}));
-  const form=document.createElement('form'),options=document.createElement('div');form.id='cooking-entry-quantity';form.hidden=!editQuantity;const quantityButton=uiButton('Kochmenge ändern',()=>{form.hidden=!form.hidden;quantityButton.setAttribute('aria-expanded',String(!form.hidden))});quantityButton.prepend(uiIcon('cooking'));quantityButton.setAttribute('aria-expanded',String(editQuantity));quantityButton.setAttribute('aria-controls',form.id);dialog.append(quantityButton);options.className='planning-options';renderPlanningFields(options,{...state.planningSettings,mode:'custom',portions:entry.portions,days:1+entry.restDates.length});
+  const form=document.createElement('form'),options=document.createElement('div');form.id='cooking-entry-quantity';form.hidden=!editQuantity;const quantityButton=uiButton('Kochmenge ändern',()=>setQuantityEditing(true));quantityButton.prepend(uiIcon('cooking'));quantityButton.setAttribute('aria-expanded',String(editQuantity));quantityButton.setAttribute('aria-controls',form.id);dialog.append(quantityButton);options.className='planning-options';renderPlanningFields(options,{...state.planningSettings,mode:'custom',portions:entry.portions,days:1+entry.restDates.length});
+  const fields=options.querySelector('.planning-fields'),portionField=options.querySelector('[data-planning="portions"]').parentElement;
+  const advanced=document.createElement('details');advanced.className='quantity-more-options';const summary=document.createElement('summary');summary.textContent='Weitere Einstellungen';advanced.append(summary);
+  [...fields.children].filter(field=>field!==portionField).forEach(field=>advanced.append(field));advanced.append(options.querySelector('.text-button'));fields.replaceChildren(portionField,advanced);
+  const head=dialog.querySelector('.dialog-head'),back=uiButton('Zurück',()=>setQuantityEditing(false),{icon:'back',className:'quantity-back text-button'});head.prepend(back);
+  function setQuantityEditing(editing){
+    form.hidden=!editing;dialog.classList.toggle('is-editing-quantity',editing);back.hidden=!editing;
+    quantityButton.setAttribute('aria-expanded',String(editing));dialog.querySelector('h2').textContent=editing?'Kochmenge ändern':dish.name;
+    dateLabel.textContent=editing?dish.name:formatChooserDate(date);dialog.scrollTop=0;
+    if(dialog.open)(editing?back:quantityButton).focus({preventScroll:true});
+  }
+  setQuantityEditing(editQuantity);
   if(dish.type==='baking'){options.querySelector('[data-planning="days"]').value='1';options.querySelector('[data-planning="days"]').disabled=true;options.querySelector('.text-button').hidden=true;options.dispatchEvent(new Event('change'))}
   const hint=document.createElement('p');hint.textContent='Zusätzliche Restetage verschieben belegte Folgetage. Fixierte Gerichte bleiben geschützt.';
   const error=document.createElement('p');error.setAttribute('role','alert');
-  const submit=document.createElement('button');submit.className='primary-button';submit.textContent='Kochmenge speichern';submit.type='submit';form.append(options,hint,error,submit);form.onsubmit=event=>{event.preventDefault();try{const chosen=readPlanningFields(options);if(commitCookingChange(()=>model.change(state,entry.id,{portions:model.dailyPortions(chosen,dish),days:chosen.days}),'Kochmenge angepasst.'))dialog.close()}catch(e){error.textContent=e.message}};dialog.append(form);appendCookingEntryActions(dialog,date,position,dish.id);dialog.showModal();
+  const submit=document.createElement('button');submit.className='primary-button';submit.textContent='Kochmenge speichern';submit.type='submit';advanced.append(hint);form.append(options,error,submit);form.onsubmit=event=>{event.preventDefault();try{const chosen=readPlanningFields(options);if(commitCookingChange(()=>model.change(state,entry.id,{portions:model.dailyPortions(chosen,dish),days:chosen.days}),'Kochmenge angepasst.'))dialog.close()}catch(e){error.textContent=e.message}};dialog.append(form);appendCookingEntryActions(dialog,date,position,dish.id);dialog.showModal();
 }
 function openLinkedRest(date){
   const model=window.WochentischCookingPlan,entries=model.restsAt(state,keyFor(date));if(!entries.length){chooseDish(rangeDates().findIndex(d=>keyFor(d)===keyFor(date)));return}
