@@ -145,6 +145,11 @@ function enhanceWeekView(days){
       meal.querySelector('.meal-time').textContent=`${dish.time||30} Min.`;
       meal.querySelector('.meal-nutrition').hidden=true;
       meal.querySelector('.meal-actions')?.remove();
+      if(meal.classList.contains('is-pinned')){
+        const indicator=uiIcon('pin');indicator.classList.add('meal-pin-indicator');indicator.title='Fixiert';
+        meal.querySelector('.meal-name').prepend(indicator);
+        meal.setAttribute('aria-label',`${dish.name} öffnen, fixiert`);
+      }
 
     });
   });
