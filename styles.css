@@ -845,3 +845,32 @@ html.design :is(#pantry-dialog, #dish-dialog) .pantry-suggestions {
 @media (max-width: 600px), (max-height: 500px) {
   html.design :is(#pantry-dialog, #dish-dialog) .pantry-suggestions { max-height: 156px; }
 }
+
+/* Drag within the existing week list without replacing its layout. */
+html.design #calendar .day-card.is-drop-target {
+  outline: 2px solid var(--action);
+  outline-offset: 1px;
+  background: var(--selection);
+}
+html.design #calendar .is-drop-target .meal-card { background: transparent; }
+html.design .meal-drag-ghost {
+  display: flex;
+  align-items: center;
+  width: min(240px, calc(100vw - 32px)) !important;
+  height: 48px !important;
+  min-height: 0;
+  padding: 10px 12px !important;
+  border: 1px solid var(--action);
+  border-radius: 14px;
+  background: var(--paper) !important;
+  color: var(--ink);
+  overflow: hidden;
+}
+html.design .meal-drag-ghost > :not(.meal-title),
+html.design .meal-drag-ghost .meal-date { display: none; }
+html.design .meal-drag-ghost .meal-title { min-width: 0; }
+html.design .meal-drag-ghost .meal-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

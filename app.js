@@ -1752,7 +1752,7 @@ function clearMealDropPreview(drag){
 function clearMealDragVisuals(drag,{keepGhost=false}={}){
   if(drag?.scrollFrame)cancelAnimationFrame(drag.scrollFrame);
   if(drag?.touchTimer)clearTimeout(drag.touchTimer);
-  drag?.weekTargets?.remove();
+  drag?.activeDayTarget?.classList.remove('is-drop-target');
   if(!keepGhost)drag?.ghost?.remove();
   drag?.meal?.classList.remove('is-dragging');
   drag?.meal?.removeAttribute('aria-grabbed');
@@ -1842,61 +1842,43 @@ function createMealDragGhost(drag){
     ghost.style.setProperty('--meal-ghost-width',`${rect.width}px`);
     ghost.style.setProperty('--meal-ghost-height',`${rect.height}px`);
     ghost.style.setProperty('--meal-ghost-padding',style.paddingTop);
-    ghost.style.setProperty('--meal-grab-x',`${-100*drag.grabOffsetX/rect.width}%`);
-    ghost.style.setProperty('--meal-grab-y',`${-100*drag.grabOffsetY/rect.height}%`);
-    ghost.style.transformOrigin=`${100*drag.grabOffsetX/rect.width}% ${100*drag.grabOffsetY/rect.height}%`;
-    drag.grabOffsetX=0;drag.grabOffsetY=0;
+    ghost.style.transformOrigin='center';
+    drag.grabOffsetX=Math.min(240,window.innerWidth-32)/2;drag.grabOffsetY=60;
   }else{
     ghost.style.width=`${rect.width}px`;ghost.style.height=`${rect.height}px`;
     ghost.style.paddingTop=style.paddingTop;
     ghost.style.transformOrigin=`${drag.grabOffsetX}px ${drag.grabOffsetY}px`;
   }
-  ghost.style.left=`${drag.clientX-drag.grabOffsetX}px`;
-  ghost.style.top=`${drag.clientY-drag.grabOffsetY}px`;
+  positionMealDragGhost(drag,drag.clientX,drag.clientY);
   document.body.append(ghost);
   if(drag.touchGesture)ghost.getBoundingClientRect();
   requestAnimationFrame(()=>ghost.classList.add('is-held'));
 }
+function positionMealDragGhost(drag,x,y){
+  if(!drag.ghost)return;
+  const left=x-drag.grabOffsetX;
+  drag.ghost.style.left=`${drag.touchGesture?Math.max(8,Math.min(window.innerWidth-Math.min(240,window.innerWidth-32)-8,left)):left}px`;
+  drag.ghost.style.top=`${y-drag.grabOffsetY}px`;
+}
 function updateMealDragPosition(drag,clientX,clientY){
   drag.clientX=clientX;drag.clientY=clientY;
-  if(drag.ghost){drag.ghost.style.left=`${clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${clientY-drag.grabOffsetY}px`}
+  drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
+  positionMealDragGhost(drag,clientX,clientY);
   updateMealDropTarget(clientX,clientY);
-}
-function showMealWeekTargets(drag){
-  const panel=document.createElement('div'),label=document.createElement('h2'),days=document.createElement('div');
-  panel.className='meal-week-targets';
-  panel.setAttribute('aria-hidden','true');
-  label.textContent='Auf einen Tag ziehen';
-  days.className='meal-week-target-days';
-  planDaysInRange().forEach(({date,day,isRest},index)=>{
-    const target=document.createElement('span');
-    const title=document.createElement('strong'),status=document.createElement('span');
-    target.className='meal-week-target';
-    target.dataset.dropDay=index;
-    target.classList.toggle('is-source',index===drag.sourceDay);
-    title.textContent=date.toLocaleDateString('de-DE',{weekday:'short',day:'numeric',month:'numeric'});
-    status.textContent=isRest?'Reste':day.length===0?'Frei':day.length===1?'1 Gericht':`${day.length} Gerichte`;
-    target.append(title,status);
-    days.append(target);
-  });
-  panel.append(label,days);
-  $('#calendar').after(panel);
-  drag.weekTargets=panel;
 }
 function updateMealDropTarget(clientX,clientY){
   const drag=mealDragState,calendar=$('#calendar');
   if(!drag)return;
+  if(drag.touchGesture&&!drag.hasMoved)return;
   const hit=document.elementFromPoint(clientX,clientY);
-  if(drag.weekTargets){
-    drag.hasMoved ||= Math.hypot(clientX-drag.startX,clientY-drag.startY)>10;
-    if(!drag.hasMoved)return;
-    const target=drag.weekTargets.contains(hit)?hit.closest('[data-drop-day]'):null;
-    const day=target?Number(target.dataset.dropDay):null;
-    const active=day!==drag.sourceDay?target:null;
-    if(drag.activeWeekTarget!==active){
-      drag.activeWeekTarget?.classList.remove('is-target');
-      active?.classList.add('is-target');
-      drag.activeWeekTarget=active;
+  // The whole visible day row is a target, including its date and empty/rest state.
+  if(document.documentElement.classList.contains('design')){
+    const card=hit?.closest('.day-card'),day=card&&calendar.contains(card)?Number(card.dataset.dayIndex):null;
+    const active=day!==null&&day!==drag.sourceDay?card:null;
+    if(drag.activeDayTarget!==active){
+      drag.activeDayTarget?.classList.remove('is-drop-target');
+      active?.classList.add('is-drop-target');
+      drag.activeDayTarget=active;
     }
     drag.targetDay=active?day:null;
     drag.insertIndex=Infinity;
@@ -1927,10 +1909,14 @@ function updateMealDropTarget(clientX,clientY){
 function autoScrollMealDrag(){
   const drag=mealDragState;
   if(!drag?.dragging)return;
-  const edge=72,maximum=14,y=drag.clientY;
+  if(drag.touchGesture&&!drag.hasMoved){drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);return}
+  const viewport=window.visualViewport,top=viewport?.offsetTop||0;
+  const dock=document.querySelector('.mobile-nav-dock')?.getBoundingClientRect();
+  const bottom=Math.min(top+(viewport?.height||window.innerHeight),dock?.height?dock.top:Infinity);
+  const edge=Math.min(72,(bottom-top)/4),maximum=14,y=drag.clientY;
   let speed=0;
-  if(y<edge)speed=-Math.ceil(maximum*(edge-y)/edge);
-  else if(y>window.innerHeight-edge)speed=Math.ceil(maximum*(y-(window.innerHeight-edge))/edge);
+  if(y<top+edge)speed=-Math.ceil(maximum*Math.min(1,(top+edge-y)/edge));
+  else if(y>bottom-edge)speed=Math.ceil(maximum*Math.min(1,(y-(bottom-edge))/edge));
   if(speed)window.scrollBy(0,speed);
   updateMealDropTarget(drag.clientX,drag.clientY);
   drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
@@ -1964,7 +1950,7 @@ function startMealTouchDrag(event){
   mealDragState=drag;
   drag.touchTimer=setTimeout(()=>{
     if(mealDragState!==drag)return;
-    createMealDragGhost(drag);showMealWeekTargets(drag);
+    createMealDragGhost(drag);drag.scrollFrame=requestAnimationFrame(autoScrollMealDrag);
   },500);
 }
 function moveMealTouchDrag(event){
@@ -2009,7 +1995,7 @@ function finishMealDrop(drag,cancelled=false){
   if(drag.dragging)suppressedMealOpenUntil=Date.now()+700;
   if(drag.dragging&&!cancelled)updateMealDropTarget(drag.clientX,drag.clientY);
   const usesCookingPlan=Boolean(window.WochentischCookingPlan);
-  const dates=!usesCookingPlan&&drag.activeWeekTarget&&!cancelled?rangeDates():null;
+  const dates=!usesCookingPlan&&drag.targetDay!==null&&!cancelled?rangeDates():null;
   const affectedDates=dates?[dates[drag.sourceDay],dates[drag.targetDay]]:null;
   const before=affectedDates?snapshotPlanDays(affectedDates):null;
   const destination=drag.dragging&&!cancelled?moveMealToDropTarget(drag):null,dish=state.dishes.find(item=>item.id===drag.dishId);
@@ -2029,7 +2015,7 @@ function finishMealPointerDrag(event,cancelled=false){
   const drag=mealDragState;
   if(!drag||drag.pointerId===null||event.pointerId!==drag.pointerId)return;
   drag.clientX=event.clientX;drag.clientY=event.clientY;
-  if(drag.dragging&&drag.ghost){drag.ghost.style.left=`${event.clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${event.clientY-drag.grabOffsetY}px`}
+  if(drag.dragging)positionMealDragGhost(drag,event.clientX,event.clientY);
   const openAfterTap=!drag.dragging&&!cancelled,dishId=drag.dishId;finishMealDrop(drag,cancelled);
   if(openAfterTap){suppressedMealOpenUntil=Date.now()+700;openPlannedMeal(drag.meal)}
 }
@@ -2038,7 +2024,7 @@ function finishMealTouchDrag(event,cancelled=false){
   if(!drag?.touchGesture)return;
   if(drag.dragging&&event.cancelable)event.preventDefault();
   const touch=event.changedTouches?.[0];
-  if(touch){drag.clientX=touch.clientX;drag.clientY=touch.clientY;if(drag.dragging&&drag.ghost){drag.ghost.style.left=`${touch.clientX-drag.grabOffsetX}px`;drag.ghost.style.top=`${touch.clientY-drag.grabOffsetY}px`}}
+  if(touch){drag.clientX=touch.clientX;drag.clientY=touch.clientY;if(drag.dragging)positionMealDragGhost(drag,touch.clientX,touch.clientY);}
   // A touch tap opens once here; the compatibility click is suppressed.
   // Scrolling, cancelling or dropping must never open a dish on release.
   const openAfterTap=!cancelled&&!drag.cancelled&&!drag.dragging;
