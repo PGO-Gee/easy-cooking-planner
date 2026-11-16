@@ -204,7 +204,7 @@ function appStateKey(userId=currentUserId){return `app-state:${userId}`}
 function cloudBackupKey(userId=currentUserId){return `wochentisch-cloud-backup-${userId}`}
 function rememberedOfflineUser(){try{return localStorage.getItem(offlineSessionStorageKey)||''}catch(error){return''}}
 function savedView(){try{const view=localStorage.getItem(lastViewStorageKey);return ['home','week','dishes','shopping','cooking','catalog-admin'].includes(view)?view:'week'}catch(error){return 'week'}}
-function viewForSession(){return 'week'}
+function viewForSession(){return savedView()}
 function starterState(){return{cookingEntries:{},planningSettings:state.planningSettings||{},quantityOverrides:{},dishes:[],plans:{},pinnedMeals:{},restDays:{},pantryIngredients:{},noteHidden:state.noteHidden,shoppingChecks:{},hiddenShoppingItems:{},manualShoppingItems:{},shoppingQuantities:state.shoppingQuantities||{}}}
 function enqueueOfflineStoreWrite(store,key,value){
   if(!window.WochentischStore)return Promise.resolve();
@@ -1004,11 +1004,12 @@ function finishPullRefresh(){
     setPullRefreshIndicator({visible:true,refreshing:result==='success',offset:76,message});
     try{await offlineStoreWriteQueue}catch(error){
       console.error('Offline-Daten konnten vor dem Neuladen nicht gesichert werden:',error);
-      updateSyncStatus('Lokale Speicherung fehlgeschlagen – die Seite wurde nicht neu geladen.',{storageError:true});
+      updateSyncStatus('Lokale Speicherung fehlgeschlagen. Bitte versuche es erneut.',{storageError:true});
       setPullRefreshIndicator();showToast('Lokaler Speicher nicht verfügbar.');
       return;
     }
-    window.setTimeout(()=>window.location.reload(),180);
+    // Sync updates the visible view in place; keep navigation and inputs intact.
+    window.setTimeout(()=>setPullRefreshIndicator(),600);
   });
 }
 function cancelPullRefresh(){pullRefreshGesture=null;setPullRefreshIndicator()}
@@ -1444,7 +1445,9 @@ async function bootApplication(){
       await loadOfflineQueues(rememberedUser);
       startOfflineApp();void refreshCatalogEditPermission();
     }else showLogin();
-  }else showLogin();
+  }
+  // Without a remembered offline user, keep the startup screen until the SDK
+  // reports the initial session. A valid session must never flash the login form.
   void ensureAuthentication();
 }
 void bootApplication();
