@@ -25,8 +25,9 @@
 
   function parseShoppingItem(value) {
     const text = String(value ?? '').trim();
-    const match = text.match(/^(.+?)\s+((?:\d+(?:[.,]\d+)?|[.,]\d+)\s*[\p{L}]+\.?)$/u);
-    const quantity = match && parseShoppingAmount(match[2]);
+    const match = text.match(/^(.+?)\s+((?:\d+(?:[.,]\d+)?|[.,]\d+)(?:\s*[\p{L}]+\.?)?)$/u);
+    // A bare number is a count, except when explicitly marked as a product type or number.
+    const quantity = match && parseShoppingAmount(match[2], /\b(?:type?|nr\.?)$/i.test(match[1]) ? '' : 'Stück');
     return quantity
       ? { name: ingredientName(match[1]), quantity }
       : { name: ingredientName(text), quantity: null };

@@ -2616,6 +2616,7 @@ function attachShoppingEditor(shell,item,recipe,quantity,context){
   }
   form.append(actions);
   const close=({restoreFocus=true}={})=>{
+    if(form.hidden)return;
     form.hidden=true;
     form.reset();
     form.querySelectorAll('input').forEach(input=>input.setCustomValidity(''));
@@ -2667,6 +2668,7 @@ function attachShoppingEditor(shell,item,recipe,quantity,context){
   });
   shell.querySelector('.shopping-swipe-content').append(edit);
   shell.append(form);
+  return close;
 }
 function shoppingFilterLabel(name,selected,weekKeys,manualItems){
   if(name==='__manual__')return `Keinem Gericht zugeordnet (${openManualShoppingItemCount(manualItems,weekKeys)})`;
@@ -2738,6 +2740,7 @@ function renderShoppingListContent(){
           if(!Object.keys(state.shoppingChecks[week]).length)delete state.shoppingChecks[week];
         }
         if(!checking&&pendingShoppingCheckUndo?.key===checkKey)pendingShoppingCheckUndo=null;
+        if(checking)closeEditor?.({restoreFocus:false});
         tile.classList.toggle('is-checked',checking);
         tile.setAttribute('aria-pressed',String(checking));
         for(const option of filterSelect.options){
@@ -2763,7 +2766,7 @@ function renderShoppingListContent(){
         amount.textContent=amountLabel;
         heading.append(' ',amount);
       }
-      attachShoppingEditor(shell,item,recipe,quantity,{
+      const closeEditor=attachShoppingEditor(shell,item,recipe,quantity,{
         weekKeys,itemKeys:editableItemKeys,plannedWeeks,index:editorIndex++,remove
       });
       container.append(shell);

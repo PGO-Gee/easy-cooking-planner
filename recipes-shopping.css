@@ -169,28 +169,34 @@ input::placeholder,
 textarea::placeholder { color: var(--text-muted); opacity: 1; }
 html.design .shopping-swipe-row {
   --shopping-done-ink:var(--muted);
-  --shopping-done-ink:color-mix(in srgb,var(--muted) 94%,var(--paper));
+  --shopping-done-ink:color-mix(in srgb,var(--muted) 72%,var(--canvas));
 }
 html.design[data-theme="dark"] .shopping-swipe-row {
-  --shopping-done-ink:color-mix(in srgb,var(--muted) 78%,var(--paper));
+  --shopping-done-ink:color-mix(in srgb,var(--muted) 55%,var(--canvas));
 }
+.shopping-tile-shell:has(.shopping-tile.is-checked),
+.shopping-swipe-content:has(> .shopping-tile.is-checked) {
+  background:var(--canvas);
+}
+.shopping-tile.is-checked ~ .shopping-edit-button { visibility:hidden; }
 html.design .shopping-tile.is-checked .shopping-tile-copy strong {
   color:var(--shopping-done-ink);
   text-decoration:none;
 }
+html.design .shopping-tile.is-checked:focus-visible .shopping-tile-copy strong { color:var(--ink); }
 html.design .shopping-tile.is-checked .shopping-inline-amount { color:inherit; }
 html.design .shopping-tile.is-checked::before {
-  background:var(--line);
+  background:transparent;
   border-color:var(--line);
-  color:var(--muted);
+  color:var(--shopping-done-ink);
 }
 .shopping-strike {
   -webkit-box-decoration-break:clone;
   box-decoration-break:clone;
-  background:linear-gradient(currentColor,currentColor) no-repeat left 55% / 0 1.5px;
+  background:linear-gradient(currentColor,currentColor) no-repeat left 55% / 0 1px;
   transition:background-size 520ms cubic-bezier(.25,.55,.55,1);
 }
-.shopping-tile.is-checked .shopping-strike { background-size:100% 1.5px; }
+.shopping-tile.is-checked .shopping-strike { background-size:100% 1px; }
 html.design .shopping-tile-copy strong, .shopping-inline-amount {
   transition:color 420ms ease;
 }

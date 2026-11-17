@@ -80,12 +80,15 @@ test('reads German shopping quantities at the end of manual item names', () => {
     ['Milch 0,5 Liter', 'Milch', 0.5, 'l'],
     ['Wasser 750 ML', 'Wasser', 750, 'ml'],
     ['Apfel 2 stk.', 'Äpfel', 2, 'Stück'],
+    ['Apfel 2', 'Äpfel', 2, 'Stück'],
+    ['Gurken 3', 'Gurken', 3, 'Stück'],
     ['Tomatenmark 2 Dosen', 'Tomatenmark', 2, 'Dose'],
     ['Mehl Type 405 1,5 kg', 'Mehl Type 405', 1.5, 'kg']
   ]) {
     assert.deepEqual(recipes.parseShoppingItem(input), { name, quantity: { amount, unit } });
   }
   assert.deepEqual(recipes.parseShoppingItem('Mehl Type 405'), { name: 'Mehl Type 405', quantity: null });
+  assert.deepEqual(recipes.parseShoppingItem('Kaffeefilter Nr. 4'), { name: 'Kaffeefilter Nr. 4', quantity: null });
   assert.deepEqual(recipes.parseShoppingItem('Käse 45 % Fett'), { name: 'Käse 45 % Fett', quantity: null });
   assert.deepEqual(recipes.parseShoppingAmount('250', 'ml'), { amount: 250, unit: 'ml' });
   assert.equal(recipes.parseShoppingAmount('250 falsche Einheit'), null);
