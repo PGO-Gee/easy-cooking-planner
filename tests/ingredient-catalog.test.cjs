@@ -197,3 +197,25 @@ test('migrates saved recipes and shopping aliases without losing quantities, not
   assert.equal(JSON.stringify(old),snapshot,'migration must not mutate the original snapshot');
   assert.equal(JSON.stringify(ingredients.normalizeStateIngredients(migrated)),JSON.stringify(migrated));
 });
+
+test('shopping categories distinguish processed products from their ingredients', () => {
+  for (const [category, names] of [
+    ['Vorrat', ['Tomatenmark', 'Gehackte Tomaten', 'Tomaten aus der Dose', 'Apfelmus', 'Kokosmilch', 'Paprikapulver', 'Fischsauce', 'Thunfisch im eigenen Saft', 'Dosenmais', 'Zuckermais']],
+    ['Gemüse', ['Fleischtomaten', 'Kirschtomaten', 'Mangold', 'Butternutkürbis']],
+    ['Obst', ['Weintrauben', 'Äpfel']],
+    ['Fleisch & Fisch', ['Schweinefleisch', 'Kabeljau']],
+    ['Kühlregal', ['Frische Hefe', 'Burrata']],
+    ['Tiefkühl', ['TK-Brokkoli', 'Gefrorene Himbeeren', 'Fischstäbchen']],
+    ['Getränke', ['Apfelsaft', 'Mineralwasser']]
+  ]) {
+    for (const name of names) assert.equal(ingredients.shoppingCategory(name), category, name);
+  }
+});
+
+test('quantity normalization retains units alongside legacy counts', () => {
+  const original = { Mehl: { amount: 500, unit: 'Gramm' }, Äpfel: 3, Wasser: { amount: 1.5, unit: 'l' } };
+  const normalized = ingredients.normalizeQuantities(original);
+  const saved = JSON.parse(JSON.stringify(normalized));
+  assert.deepEqual(saved, { mehl: { amount: 500, unit: 'g' }, äpfel: 3, wasser: { amount: 1.5, unit: 'l' } });
+  assert.deepEqual(ingredients.normalizeQuantities(saved), normalized);
+});

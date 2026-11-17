@@ -312,8 +312,7 @@ function enhanceShoppingList(){
   // Merge each category while preserving the same name ordering for checked items.
   const groups=new Map();[open,done].forEach(container=>{let category='Sonstiges';[...container.children].forEach(child=>{if(child.tagName==='H3')category=child.textContent;else{if(!groups.has(category))groups.set(category,[]);groups.get(category).push(child)}})});
   open.replaceChildren();done.replaceChildren();
-  const order=['Gemüse','Obst','Brot & Backwaren','Fleisch & Fisch','Kühlregal','Tiefkühl','Getränke','Vorrat','Drogerie & Haushalt','Tierbedarf','Sonstiges'];
-  order.forEach(category=>{
+  window.WochentischIngredients.shoppingCategories.forEach(category=>{
     const items=groups.get(category);
     if(!items?.length)return;
     const heading=document.createElement('h3');
@@ -321,7 +320,7 @@ function enhanceShoppingList(){
     heading.textContent=category;
     open.append(heading,...items.sort((a,b)=>a.querySelector('.shopping-tile').dataset.name.localeCompare(b.querySelector('.shopping-tile').dataset.name,'de')));
   });
-  $('#shopping-done-section').hidden=true;const checked=open.querySelectorAll('.is-checked').length;$('#shopping-open-count').textContent=`${open.querySelectorAll('.shopping-tile').length-checked} offen · ${checked} erledigt`;
+  $('#shopping-done-section').hidden=true;
   $('#shopping-overview').textContent=$('#shopping-meal-filter').value?'Filter zurücksetzen':'';
 }
 function configureRecipeForm(){

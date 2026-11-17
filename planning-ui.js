@@ -102,9 +102,15 @@ function replaceCookingRange(pantry){
   }
   state=draft;save();cookingRangeUndo={before,after:cookingPlanSnapshot(state),oldSettings,options};return empty;
 }
+function shoppingAmountUnit(amount,unit){
+  if(unit==='Stück')return 'Stk.';
+  if(amount>1&&unit==='Dose')return 'Dosen';
+  if(amount>1&&unit==='Glas')return 'Gläser';
+  return unit;
+}
 function shoppingAmountLabel(amount,unit){
   const number=window.WochentischRecipes.formatAmount(amount);
-  const suffix=unit==='Stück'?'Stk.':unit;
+  const suffix=shoppingAmountUnit(amount,unit);
   return suffix?`${number} ${suffix}`:number;
 }
 function shoppingRecipeQuantity(item,filtered){

@@ -15,6 +15,23 @@
     return Number.isFinite(amount) && amount > 0 ? amount : null;
   }
 
+  function parseShoppingAmount(value, defaultUnit = '') {
+    const match = String(value ?? '').trim().match(/^(\d+(?:[.,]\d+)?|[.,]\d+)\s*([\p{L}]+\.?)?$/u);
+    if (!match) return null;
+    const amount = parseAmount(match[1]);
+    const unit = ingredientsCatalog.shoppingUnit(match[2] || defaultUnit);
+    return amount === null || !unit ? null : { amount, unit };
+  }
+
+  function parseShoppingItem(value) {
+    const text = String(value ?? '').trim();
+    const match = text.match(/^(.+?)\s+((?:\d+(?:[.,]\d+)?|[.,]\d+)\s*[\p{L}]+\.?)$/u);
+    const quantity = match && parseShoppingAmount(match[2]);
+    return quantity
+      ? { name: ingredientName(match[1]), quantity }
+      : { name: ingredientName(text), quantity: null };
+  }
+
   function normalizeAmount(value) {
     if (value === null || value === undefined || String(value).trim() === '') return null;
     const numeric = parseAmount(value);
@@ -80,5 +97,5 @@
     return (hash >>> 0).toString(16).padStart(8, '0');
   }
 
-  return Object.freeze({ parseAmount, normalizeAmount, normalizeRecipe, formatAmount, scaledAmount, shoppingIngredients, editableIngredients, fingerprint });
+  return Object.freeze({ parseAmount, parseShoppingAmount, parseShoppingItem, normalizeAmount, normalizeRecipe, formatAmount, scaledAmount, shoppingIngredients, editableIngredients, fingerprint });
 });
