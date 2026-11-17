@@ -1133,59 +1133,6 @@ html {
     font-size: 12px;
   }
 
-  .shopping-quantity {
-    right: 50%;
-    bottom: 3px;
-    display: grid;
-    grid-template-columns: 44px 44px;
-    grid-template-rows: 18px 44px;
-    width: 88px;
-    height: 62px;
-    gap: 0;
-    padding: 0;
-    border: 0 !important;
-    background: transparent !important;
-    transform: translateX(50%);
-  }
-
-  .shopping-quantity button {
-    width: 44px;
-    height: 44px;
-    flex: 0 0 44px;
-    padding: 0;
-    border: 0 !important;
-    border-radius: 50%;
-    background: transparent !important;
-    font-size: 15px;
-  }
-
-  .shopping-quantity button:first-child {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .shopping-quantity button:last-child {
-    grid-column: 2;
-    grid-row: 2;
-  }
-
-  .shopping-quantity output {
-    grid-column: 1 / -1;
-    grid-row: 1;
-    min-width: 0;
-    line-height: 18px;
-  }
-
-  .shopping-quantity button:focus-visible {
-    outline: 2px solid currentColor;
-    outline-offset: -4px;
-  }
-
-  .shopping-quantity output {
-    min-width: 16px;
-    font-size: 11px;
-  }
-
 }
 
 

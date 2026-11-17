@@ -280,13 +280,63 @@
     }, []);
   }
 
+  const shoppingUnits = new Map(Object.entries({
+    g: 'g', gr: 'g', gramm: 'g', kg: 'kg', kilogramm: 'kg', mg: 'mg', milligramm: 'mg',
+    ml: 'ml', milliliter: 'ml', cl: 'cl', dl: 'dl', l: 'l', liter: 'l',
+    st: 'Stück', stk: 'Stück', stck: 'Stück', stück: 'Stück', stueck: 'Stück', stücke: 'Stück',
+    pack: 'Pack.', pkg: 'Pack.', pck: 'Pack.', packung: 'Pack.', packungen: 'Pack.',
+    dose: 'Dose', dosen: 'Dose', fl: 'Fl.', flasche: 'Fl.', flaschen: 'Fl.',
+    becher: 'Becher', glas: 'Glas', gläser: 'Glas', bund: 'Bund',
+    el: 'EL', esslöffel: 'EL', tl: 'TL', teelöffel: 'TL'
+  }));
+
+  function shoppingUnit(value) {
+    return shoppingUnits.get(String(value ?? '').trim().toLocaleLowerCase('de-DE').replace(/\.$/, '')) || '';
+  }
+
+  const shoppingCategories = Object.freeze([
+    'Gemüse', 'Obst', 'Brot & Backwaren', 'Fleisch & Fisch', 'Kühlregal',
+    'Tiefkühl', 'Getränke', 'Vorrat', 'Drogerie & Haushalt', 'Tierbedarf', 'Sonstiges'
+  ]);
+
+  // Processing and product forms take precedence over their raw ingredients.
+  const shoppingCategoryRules = [
+    ['Tierbedarf', /hundefutter|katzenfutter|tierfutter|katzenstreu|hundeleckerli|vogelfutter|aquarienfutter/],
+    ['Drogerie & Haushalt', /spülmittel|waschmittel|weichspüler|shampoo|seife|reiniger|toilettenpapier|küchenroll|taschentuch|taschentücher|müllbeutel|müllsack|schwamm|zahnpasta|zahnbürst|windel|duschgel|backpapier|alufolie|frischhaltefolie|dosenöffner/],
+    ['Tiefkühl', /tiefkühl|gefroren|(?:^|\s)tk[-\s]|pommes|fischstäbchen|schlemmer[-\s]?filet|rahmspinat|pelmeni|(?:^|\s)speiseeis/],
+    ['Vorrat', /tomaten(?:mark|soße|sauce|püree)|(?:passierte|gehackte|geschälte|getrocknete|stückige) tomaten|dosen|konserve|\b(?:dose|konserve)\b|eingelegt|gewürzgurk|sauerkraut|kokosmilch|kondensmilch|apfelmus|marmelade|erdnussbutter|nussmus|gemüsechips|kartoffelchips|zwiebelpulver|knoblauchpulver|paprikapulver|chilipulver|zuckermais|gemüsebrühe|gemüsefond/],
+    ['Vorrat', /essig|balsamico|(?:^|[-\s])öl\b|(?:oliven|sesam|kokos|raps|sonnenblumen|pflanzen|erdnuss|lein)öl|sauce|soße|brühe|fond\b|honig|sirup|suppe im glas|pesto|ketchup|mayonnaise|senf|tahini|tamari|miso|gewürz|pfeffer|salz|kurkuma|kümmel|zimt|muskat|currypulver|currypaste|chiliflocken|oregano|thymian|rosmarin|lorbeer|majoran|italienische kräuter|kräuter der provence|(?:getrocknet|gerebelt).*(?:kräuter|basilikum|dill|petersilie)|schokolade|kakao|(?:vanille|puder|rohr|brauner )?zucker\b|rosinen|kokosraspel|getrocknet|im eigenen saft|in (?:oliven)?öl/],
+    ['Getränke', /saftschorle|saft\b|limonade|getränk|sprudel|(?:^|[-\s])(?:wasser|cola|bier|wein|sekt|prosecco)\b|(?:mineral|trink|tonic|kokos)wasser|(?:apfel|rot|weiß|weiss|glüh)wein\b|eistee|alkoholfrei/],
+    ['Kühlregal', /milch|haferdrink|sojadrink|mandeldrink|sahne|obers|schmand|jogh?urt|skyr|kefir|quark|kaese|käse|mozzarella|feta|gouda|emmentaler|edamer|gorgonzola|burrata|pecorino|grana padano|provolone|parmesan|cheddar|halloumi|ricotta|mascarpone|cr[eè]me[-\s]*(?:fra[iî]che|l[ée]g[èe]re)|(?:^|[-\s])(?:ei|eier)\b|bioeier|freilandeier|butter(?!nut)|margarine|frische hefe|tofu|tempeh|seitan|gnocchi|spätzle|blätterteig|pizzateig|filoteig/],
+    ['Fleisch & Fisch', /hähn|hühn|chicken|suppenhuhn|fleisch(?!tomat)|rinder|schwein|lamm|pute|(?:^|\s)ente|würst|wurst|salami|bacon|speck|schinken|kasseler|prosciutto|fisch|lachs|kabeljau|forelle|garnel|shrimp|sardell|hering|makrele|dorade|muschel|krabbe/],
+    ['Vorrat', /mehl|stärke|backpulver|natron|trockenhefe|panko|semme[l]brösel|haferflocken|müsli|granola|(?:^|[-\s])hafer\b|reis|nudel|spaghetti|pasta|kritharaki|penne|fusilli|makkaroni|lasagneplatten|couscous|buchweizen|bulgur|quinoa|hirse|polenta|graupen|linse|kichererbse|(?:kidney|weiße |schwarze |borlotti[-\s]?)bohne|oliven|kapern|pistaz|mandel|nuss|nüsse|kerne|sesam|leinsamen|chiasamen|kaffee|(?:^|[-\s])tee\b|(?:kräuter|kamillen|pfefferminz|früchte|schwarz|grün)tee|keks|cracker/],
+    ['Brot & Backwaren', /brot|brötchen|baguette|toast|wrap|croissant|brezel|laugen|ciabatta|pita|tortilla|semmel/],
+    ['Obst', /apfel|äpfel|aprikos|banan|birne|beere|dattel|feige|granatapfel|kirsche(?!n?tomat)|kiwi|mandarin|mango(?!ld)|melon|orange|pfirsich|pflaum|traube|zitrone|limette|ananas|nektarin|papaya|(?:^|\s)obst/],
+    ['Gemüse', /tomat|paprika|karott|möhre|brokkoli|zucchini|gurke|salat|gemüse|zwiebel|sellerie|lauch|kohl|spinat|pilz|champignon|kartoffel|knoblauch|avocado|aubergin|chicor[ée]|erbse|fenchel|bohne|kürbis|hokkaido|butternut|mais|mangold|pak[-\s]?choi|pastinak|radies|rettich|rucola|rote be[et]|schalott|spargel|wirsing|ingwer|chili|shiitake|basilikum|petersilie|schnittlauch|koriander|minze|dill/]
+  ];
+
+  function shoppingCategory(name) {
+    const value = normalize(name).toLocaleLowerCase('de-DE');
+    return shoppingCategoryRules.find(([, pattern]) => pattern.test(value))?.[0] || 'Sonstiges';
+  }
+
   function normalizeQuantities(values) {
     if (!values || typeof values !== 'object' || Array.isArray(values)) return {};
     return Object.entries(values).reduce((result, [rawName, rawQuantity]) => {
       const itemKey = manualKey(rawName);
-      const quantity = Number(rawQuantity);
-      if (!itemKey || !Number.isFinite(quantity)) return result;
-      result[itemKey] = (result[itemKey] || 0) + quantity;
+      if (!itemKey) return result;
+      const previous = result[itemKey];
+      if (rawQuantity && typeof rawQuantity === 'object') {
+        const { amount } = rawQuantity;
+        const unit = shoppingUnit(rawQuantity.unit);
+        if (unit && Number.isFinite(amount) && amount > 0) {
+          const total = previous?.unit === unit ? previous.amount + amount : amount;
+          if (Number.isFinite(total)) result[itemKey] = { amount: total, unit };
+        }
+      } else {
+        const quantity = Number(rawQuantity);
+        if (Number.isFinite(quantity) && typeof previous !== 'object') result[itemKey] = (previous || 0) + quantity;
+      }
       return result;
     }, Object.create(null));
   }
@@ -351,7 +401,7 @@
 
   const api = Object.freeze({
     normalize, key, pantryKey, pantryMatches, unique, normalizeQuantities, normalizeChecks, normalizeKeys,
-    normalizeStateIngredients, manualName, manualKey
+    normalizeStateIngredients, manualName, manualKey, shoppingUnit, shoppingCategory, shoppingCategories
   });
   root.WochentischIngredients = api;
   if (typeof module === 'object' && module.exports) module.exports = api;

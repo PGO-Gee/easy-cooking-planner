@@ -146,6 +146,7 @@ function syncVisualViewport(){
   document.documentElement.classList.toggle('dish-keyboard-open', window.innerHeight-viewport.height>150 && Boolean(document.querySelector('#dish-dialog[open] input:focus, #dish-dialog[open] textarea:focus')));
   const heightChanged=lastVisualViewportHeight!==viewport.height;lastVisualViewportHeight=viewport.height;
   const focused=document.activeElement;if(heightChanged&&document.documentElement.classList.contains('dish-keyboard-open')&&focused?.closest('#dish-dialog'))requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
+  if(heightChanged&&focused?.matches('.shopping-row-editor input'))requestAnimationFrame(()=>revealShoppingEditorField(focused));
   if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
 }
 function revealChooserResults(){
@@ -378,13 +379,14 @@ function mergeShoppingItems(baseItems={},localItems={},remoteItems={},conflicts)
   weeks.forEach(week=>{
     const base=asMap(baseItems[week]),local=asMap(localItems[week]),remote=asMap(remoteItems[week]),names=new Set([...base.keys(),...local.keys(),...remote.keys()]),merged=[];
     names.forEach(key=>{
-      const baseHas=base.has(key),localHas=local.has(key),remoteHas=remote.has(key);
-      let keep=remoteHas;
-      if(localHas!==baseHas){
-        if(remoteHas!==baseHas&&localHas!==remoteHas)conflicts.push(conflictRecord('manual-item',[week,key],`Einkaufsartikel: ${local.get(key)||remote.get(key)||key}`,base.get(key),local.get(key),remote.get(key)));
-        else keep=localHas;
+      const before=base.get(key),localName=local.get(key),remoteName=remote.get(key);
+      let name=remoteName;
+      if(localName!==before){
+        if(remoteName!==before&&localName!==remoteName){
+          conflicts.push(conflictRecord('manual-item',[week,key],`Einkaufsartikel: ${localName||remoteName||key}`,before,localName,remoteName));
+        }else name=localName;
       }
-      if(keep)merged.push(remote.get(key)||local.get(key)||base.get(key));
+      if(name!==undefined)merged.push(name);
     });
     if(merged.length)result[week]=merged;
   });
@@ -521,7 +523,7 @@ function describeConflictValue(conflict,value){
     }
     case 'pantry': return Array.isArray(value)&&value.length?value.join(', '):'Kein Vorrat ausgewählt';
     case 'rest-days': return Array.isArray(value)&&value.length?value.map(day=>shortDays[day]||day).join(', '):'Keine Reste';
-    case 'quantity': return `${value} ${Number(value)===1?'Portion':'Portionen'}`;
+    case 'quantity': return shoppingAmountLabel(value?.amount??Number(value),value?.unit||'Stück');
     case 'shopping-check': return value?'Als eingekauft markiert':'Noch offen';
     case 'hidden-item': return value?'Ausgeblendet':'Sichtbar';
     case 'manual-item': return value||'Nicht auf dem Einkaufszettel';
@@ -1614,7 +1616,52 @@ function bindIngredientSuggestions(input,render){
   },true);
 }
 
-function addManualShoppingItem(value){const name=normalizeManualItem(value);if(!name)return;$('#shopping-item-input').value=name;$('#shopping-add-form').requestSubmit()}
+function addManualShoppingItem(value){
+  const {quantity}=window.WochentischRecipes.parseShoppingItem($('#shopping-item-input').value);
+  submitManualShoppingItem({name:normalizeManualItem(value),quantity});
+}
+function submitManualShoppingItem({name,quantity}){
+  if(!name)return;
+  const weekKey=keyFor(mondayFor(rangeStart())),dates=rangeDates();
+  const visibleWeekKeys=[...new Set(dates.map(date=>keyFor(mondayFor(date))))],itemKey=manualItemKey(name);
+  const status=$('#shopping-add-status'),suggestions=$('#shopping-item-suggestions');
+  state.manualShoppingItems??={};
+  state.hiddenShoppingItems??={};
+  const duplicate=visibleWeekKeys.some(week=>(state.manualShoppingItems[week]||[]).some(item=>manualItemKey(item)===itemKey));
+  suggestions.hidden=true;
+  shoppingInput.setAttribute('aria-expanded','false');
+  if(duplicate){
+    const relevantWeeks=visibleWeekKeys.filter(week=>(state.manualShoppingItems[week]||[]).some(item=>manualItemKey(item)===itemKey)||
+      dates.some(date=>keyFor(mondayFor(date))===week&&planForDate(date).some(id=>
+        (state.dishes.find(dish=>dish.id===id)?.ingredients||[]).some(item=>manualItemKey(item)===itemKey))));
+    const checked=relevantWeeks.every(week=>shoppingItemChecked(week,itemKey));
+    status.textContent=checked?'Dieser Artikel ist bereits abgehakt. Tippe ihn erneut an, um ihn wieder zu öffnen.':'Dieser Artikel steht bereits auf dem Einkaufszettel.';
+    status.hidden=false;
+    requestAnimationFrame(()=>{
+      if(document.activeElement===shoppingInput)revealShoppingAddForm();
+      else $('#shopping-add-form').scrollIntoView({block:'nearest',inline:'nearest'});
+    });
+    return;
+  }
+  status.hidden=true;
+  state.manualShoppingItems[weekKey]??=[];
+  state.manualShoppingItems[weekKey].push(name);
+  if(quantity){
+    state.shoppingQuantities??=Object.create(null);
+    state.shoppingQuantities[itemKey]=quantity;
+  }
+  const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>key!==itemKey);
+  if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];
+  delete state.shoppingChecks[weekKey]?.[itemKey];
+  delete state.shoppingChecks[weekKey]?.[`manual:${itemKey}`];
+  save();
+  shoppingInput.value='';
+  suggestions.replaceChildren();
+  $('#shopping-meal-filter').value='';
+  renderShoppingList();
+  shoppingInput.focus({preventScroll:true});
+  requestAnimationFrame(revealShoppingAddForm);
+}
 function positionShoppingSuggestions(){
   const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions');
   if(list.hidden)return;
@@ -1637,7 +1684,7 @@ $('#shopping-add-form button[type="submit"]').addEventListener('pointerdown',eve
 window.visualViewport?.addEventListener('resize',()=>requestAnimationFrame(revealShoppingAddForm));
 window.visualViewport?.addEventListener('scroll',()=>requestAnimationFrame(revealShoppingAddForm));
 window.addEventListener('scroll',positionShoppingSuggestions,true);
-function renderShoppingItemSuggestions(){$('#shopping-add-status').hidden=true;const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions'),query=manualItemKey(input.value),catalog=[...(window.COMMON_MAIN_INGREDIENTS||[]),...state.dishes.flatMap(dish=>dish.ingredients||[])],values=new Map();catalog.forEach(raw=>{const name=normalizeManualItem(raw),key=manualItemKey(name);if(name&&key&&!values.has(key))values.set(key,name)});const matches=query?[...values.values()].filter(name=>manualItemKey(name).includes(query)).sort((a,b)=>a.localeCompare(b,'de-DE')).slice(0,8):[];renderIngredientOptions(list,matches,addManualShoppingItem);list.scrollTop=0;positionShoppingSuggestions();input.setAttribute('aria-expanded',String(matches.length>0))}
+function renderShoppingItemSuggestions(){$('#shopping-add-status').hidden=true;const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions'),query=manualItemKey(window.WochentischRecipes.parseShoppingItem(input.value).name),catalog=[...(window.COMMON_MAIN_INGREDIENTS||[]),...state.dishes.flatMap(dish=>dish.ingredients||[])],values=new Map();catalog.forEach(raw=>{const name=normalizeManualItem(raw),key=manualItemKey(name);if(name&&key&&!values.has(key))values.set(key,name)});const matches=query?[...values.values()].filter(name=>manualItemKey(name).includes(query)).sort((a,b)=>a.localeCompare(b,'de-DE')).slice(0,8):[];renderIngredientOptions(list,matches,addManualShoppingItem);list.scrollTop=0;positionShoppingSuggestions();input.setAttribute('aria-expanded',String(matches.length>0))}
 function addPantryIngredient(value){const name=normalizeIngredient(value);if(!name)return;const key=ingredientKey(name);if(!pantryDraft.some(item=>ingredientKey(item)===key))pantryDraft.push(name);$('#pantry-input').value='';renderPantryEditor();$('#pantry-input').focus()}
 function openPantryPlanner(){const key=keyFor(mondayFor(rangeStart())),dialog=$('#pantry-dialog'),input=$('#pantry-input');pantryDraft=(state.pantryIngredients?.[key]||[]).slice();input.value='';try{if(!dialog.open)dialog.showModal();renderPantryEditor();requestAnimationFrame(()=>$('#pantry-close').focus({preventScroll:true}))}catch(error){console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.')}}
 function renderPantryEditor(){const selected=$('#pantry-selected'),input=$('#pantry-input'),list=$('#pantry-suggestions'),query=ingredientKey(input.value);selected.replaceChildren();$('#pantry-selected-count').textContent=pantryDraft.length;$('#pantry-empty-selection').hidden=pantryDraft.length>0;pantryDraft.forEach(name=>{const chip=document.createElement('span');chip.className='pantry-chip';const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;const remove=document.createElement('button');remove.type='button';remove.className='pantry-chip-remove';remove.setAttribute('aria-label',`${name} entfernen`);remove.textContent='×';remove.addEventListener('click',()=>{pantryDraft=pantryDraft.filter(item=>ingredientKey(item)!==ingredientKey(name));renderPantryEditor()});chip.append(icon,label,remove);selected.append(chip)});const matches=query?availablePantryIngredients().filter(name=>ingredientKey(name).includes(query)&&!pantryDraft.some(item=>ingredientKey(item)===ingredientKey(name))).slice(0,8):[];renderIngredientOptions(list,matches,addPantryIngredient);input.setAttribute('aria-expanded',String(matches.length>0));input.removeAttribute('aria-activedescendant')}
@@ -2403,14 +2450,13 @@ function ingredientIcon(name){
   ];
   return icons.find(([pattern])=>pattern.test(value))?.[1]||'🛒';
 }
-function ingredientCategory(name){const value=name.toLocaleLowerCase('de-DE');if(/orangensaft|apfelsaft|saft|limonade|cola|wasser|sprudel|bier|wein|getränk/.test(value))return 'Getränke';if(/spülmittel|waschmittel|reiniger|shampoo|seife|putzmittel|toilettenpapier|küchenrolle|taschentuch|müllbeutel|müllsack|schwamm|zahnpasta|windel/.test(value))return 'Drogerie & Haushalt';if(/hundefutter|katzenfutter|tierfutter|katzenstreu/.test(value))return 'Tierbedarf';if(/tomatensoße|tomatensauce|passierte tomaten/.test(value))return 'Vorrat';if(/apfel|birne|banane|orange|zitrone|limette|beere|erdbeer|himbeer|blaubeer|traube|mango|obst/.test(value))return 'Obst';if(/tomat|paprika|karotte|möhre|brokkoli|zucchini|gurke|salat|gemüse|zwiebel|sellerie|lauch|kohl|spinat|pilz|champignon|kartoffel|knoblauch|avocado/.test(value))return 'Gemüse';if(/brot|brötchen|baguette|toast|wrap|pizzateig|teig/.test(value))return 'Brot & Backwaren';if(/hühnchen|hähnchen|chicken|fleisch|hackfleisch|rind|schwein|würstchen|wurst|prosciutto|speck|fisch|lachs|filet/.test(value))return 'Fleisch & Fisch';if(/milch|käse|mozzarella|joghurt|schmand|quark|sahne|butter|ei$|eier/.test(value))return 'Kühlregal';if(/pommes|tiefkühl|tk-|gefroren/.test(value))return 'Tiefkühl';if(/wasser|sprudel|saft|limonade|cola|getränk|bier|wein/.test(value))return 'Getränke';if(/spülmittel|waschmittel|reiniger|shampoo|seife|putzmittel|toilettenpapier|küchenrolle|taschentuch|müllbeutel|müllsack|schwamm|zahnpasta/.test(value))return 'Drogerie & Haushalt';if(/reis|nudel|spaghetti|pasta|mehl|öl|essig|dose|konserve|passierte tomaten|tomatensoße|tomatensauce|gewürz|salz|zucker|brühe|kaffee|tee|müsli|haferflocken|honig|schokolade/.test(value))return 'Vorrat';return 'Sonstiges'}
 function updateShoppingNavCount(){
   const days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish)),items=new Map();
   state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
   selected.forEach(({dish,weekKey})=>(dish.ingredients||[]).forEach(raw=>{const name=normalizeIngredient(raw);if(!name)return;const key=manualItemKey(name);if(!items.has(key))items.set(key,{name,dishes:new Set(),weekKeys:new Set()});const item=items.get(key);item.dishes.add(dish.name);item.weekKeys.add(weekKey)}));
   [...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))].forEach(rawName=>{const name=normalizeManualItem(rawName),key=manualItemKey(name);if(!items.has(key))items.set(key,{name,dishes:new Set(),weekKeys:new Set()});const item=items.get(key);selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>manualItemKey(raw)===key)).forEach(({dish})=>item.dishes.add(dish.name));weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>manualItemKey(itemName)===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
   for(const [key,item] of items){const relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))items.delete(key)}
-  const openCount=[...items.values()].filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return !relevantWeeks.every(weekKey=>shoppingItemChecked(weekKey,key))}).length;
+  const openCount=[...items.values()].filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.some(week=>!state.hiddenShoppingItems[week]?.includes(key)&&!shoppingItemChecked(week,key))}).length;
   $('#shopping-nav-count').textContent=openCount;
   $('#shopping-nav-count').parentElement.setAttribute('aria-label',`Einkaufszettel, ${openCount} offene Artikel`);
 }
@@ -2433,8 +2479,7 @@ function openShoppingIngredientCountForDish(dishName,selected,weekKeys){
   let openCount=0;
   for(const [key,itemWeekKeys] of ingredients){
     const relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys;
-    if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))continue;
-    if(!relevantWeeks.every(weekKey=>shoppingItemChecked(weekKey,key)))openCount++;
+    if(relevantWeeks.some(week=>!state.hiddenShoppingItems[week]?.includes(key)&&!shoppingItemChecked(week,key)))openCount++;
   }
   return openCount;
 }
@@ -2448,8 +2493,7 @@ function openManualShoppingItemCount(manualItems,weekKeys){
   let openCount=0;
   for(const [key,itemWeekKeys] of items){
     const relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys;
-    if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))continue;
-    if(!relevantWeeks.every(weekKey=>shoppingItemChecked(weekKey,key)))openCount++;
+    if(relevantWeeks.some(week=>!state.hiddenShoppingItems[week]?.includes(key)&&!shoppingItemChecked(week,key)))openCount++;
   }
   return openCount;
 }
@@ -2471,56 +2515,330 @@ function plannedShoppingItems(meals,hiddenByWeek){
   }
   return items;
 }
+function revealShoppingEditorField(input){
+  if(document.activeElement===input)input.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+function focusShoppingEditButton(key){
+  const button=[...document.querySelectorAll('.shopping-edit-button')].find(candidate=>candidate.dataset.ingredient===key);
+  button?.focus({preventScroll:true});
+  button?.scrollIntoView({block:'nearest',inline:'nearest'});
+}
+function shoppingManualFields(name,quantity,canEditName,additional){
+  const fields=document.createElement('div');
+  fields.className='shopping-manual-fields';
+  const addField=(title,value,type)=>{
+    const label=document.createElement('label'),input=document.createElement('input');
+    label.textContent=title;
+    input.type=type;
+    input.defaultValue=value;
+    input.required=true;
+    label.append(input);
+    fields.append(label);
+    return input;
+  };
+  let nameInput=null,quantityInput=null;
+  if(canEditName){
+    nameInput=addField('Artikel',name,'text');
+    nameInput.maxLength=80;
+    nameInput.autocomplete='off';
+    nameInput.addEventListener('input',()=>nameInput.setCustomValidity(''));
+  }
+  if(quantity){
+    const number=quantity.amount.toLocaleString('de-DE',{maximumFractionDigits:20,useGrouping:false});
+    const unit=shoppingAmountUnit(quantity.amount,quantity.unit);
+    const title=additional?'Zusätzliche Menge':'Menge';
+    quantityInput=addField(title,additional&&!quantity.explicit?'':`${number} ${unit}`,'text');
+    quantityInput.required=!additional;
+    quantityInput.placeholder=additional?'z. B. 500 g':'';
+    quantityInput.autocomplete='off';
+    quantityInput.addEventListener('input',()=>quantityInput.setCustomValidity(''));
+  }
+  return {fields,nameInput,quantityInput};
+}
+function renameShoppingItem(key,name,manualWeeks,plannedWeeks){
+  const nextKey=manualItemKey(name);
+  for(const week of manualWeeks){
+    state.manualShoppingItems[week]=state.manualShoppingItems[week].map(item=>manualItemKey(item)===key?name:item);
+    if(nextKey===key)continue;
+    if(shoppingItemChecked(week,key)){
+      state.shoppingChecks[week][nextKey]=true;
+      if(!plannedWeeks.has(week))delete state.shoppingChecks[week][key];
+    }else if(state.shoppingChecks[week]){
+      delete state.shoppingChecks[week][nextKey];
+    }
+    const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[week]).filter(item=>item!==nextKey);
+    if(hidden.length)state.hiddenShoppingItems[week]=hidden;else delete state.hiddenShoppingItems[week];
+  }
+  if(nextKey===key)return;
+  if(Object.hasOwn(state.shoppingQuantities||{},key)){
+    state.shoppingQuantities[nextKey]=state.shoppingQuantities[key];
+    const stillUsed=plannedWeeks.size||Object.values(state.manualShoppingItems).some(items=>items.some(item=>manualItemKey(item)===key));
+    if(!stillUsed)delete state.shoppingQuantities[key];
+  }else delete state.shoppingQuantities?.[nextKey];
+}
+function attachShoppingEditor(shell,item,recipe,quantity,context){
+  const {name,manualName}=item,key=manualItemKey(name);
+  if(!recipe&&!manualName&&quantity===null)return;
+  const editable=Boolean(manualName||quantity||recipe?.editable);
+  const edit=document.createElement('button'),form=document.createElement('form');
+  edit.className='shopping-edit-button';
+  edit.type='button';
+  edit.dataset.ingredient=key;
+  const title=editable?`${name} bearbeiten`:`Mengenangaben für ${name}`;
+  edit.setAttribute('aria-label',title);
+  edit.setAttribute('aria-expanded','false');
+  edit.setAttribute('aria-controls',`shopping-row-editor-${context.index}`);
+  edit.innerHTML=`<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${editable?'<path d="m15 5 4 4M4 20l4-.8L20 7.2 16.8 4 4.8 16z"/>':'<circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/>'}</svg>`;
+  form.id=`shopping-row-editor-${context.index}`;
+  form.className='shopping-row-editor';
+  form.setAttribute('aria-label',title);
+  form.hidden=true;
+  const {fields,nameInput,quantityInput}=shoppingManualFields(manualName||name,quantity,Boolean(manualName),Boolean(recipe?.label));
+  if(fields.childElementCount)form.append(fields);
+  if(recipe)form.append(recipe.fields);
+  const actions=document.createElement('div'),cancel=document.createElement('button');
+  actions.className='shopping-editor-actions';
+  const remove=document.createElement('button');
+  remove.type='button';
+  remove.className='text-button shopping-editor-remove';
+  remove.textContent='Entfernen';
+  remove.addEventListener('click',context.remove);
+  cancel.type='button';
+  cancel.className='secondary-button';
+  cancel.textContent=editable?'Abbrechen':'Schließen';
+  actions.append(remove,cancel);
+  if(editable){
+    const submit=document.createElement('button');
+    submit.type='submit';
+    submit.className='primary-button';
+    submit.textContent='Speichern';
+    actions.append(submit);
+  }
+  form.append(actions);
+  const close=({restoreFocus=true}={})=>{
+    if(form.hidden)return;
+    form.hidden=true;
+    form.reset();
+    form.querySelectorAll('input').forEach(input=>input.setCustomValidity(''));
+    edit.setAttribute('aria-expanded','false');
+    if(restoreFocus)edit.focus({preventScroll:true});
+  };
+  edit.addEventListener('click',()=>{
+    if(!form.hidden){close();return}
+    document.querySelector('.shopping-edit-button[aria-expanded="true"]')?.click();
+    form.hidden=false;
+    edit.setAttribute('aria-expanded','true');
+    if(nameInput||quantityInput)(nameInput||quantityInput).focus({preventScroll:true});
+    form.scrollIntoView({block:'nearest',inline:'nearest'});
+  });
+  cancel.addEventListener('click',()=>close());
+  form.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){event.preventDefault();close()}
+  });
+  form.addEventListener('focusin',event=>{
+    if(event.target.matches('input'))revealShoppingEditorField(event.target);
+  });
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    const draft=nameInput?window.WochentischRecipes.parseShoppingItem(nameInput.value):{name};
+    const nextName=draft.name,nextKey=manualItemKey(nextName);
+    const quantityChanged=quantityInput&&quantityInput.value.trim()!==quantityInput.defaultValue;
+    const nextQuantity=draft.quantity||(quantityChanged&&window.WochentischRecipes.parseShoppingAmount(quantityInput.value,quantity.unit));
+    const manualWeeks=context.weekKeys.filter(week=>(state.manualShoppingItems[week]||[]).some(item=>manualItemKey(item)===key));
+    if(nameInput&&!manualWeeks.length){renderShoppingList();return}
+    if(nameInput&&(!nextKey||nextKey!==key&&context.itemKeys.has(nextKey))){
+      nameInput.setCustomValidity(nextKey?'Dieser Artikel steht bereits auf dem Einkaufszettel.':'Gib einen Artikelnamen ein.');
+      nameInput.reportValidity();
+      return;
+    }
+    if(quantityChanged&&!nextQuantity&&(quantityInput.required||quantityInput.value.trim())){
+      quantityInput.setCustomValidity('Gib eine Menge ein, zum Beispiel 500 g, 250 ml oder 2 Stk.');
+      quantityInput.reportValidity();
+      return;
+    }
+    if(nameInput&&nextName!==manualName)renameShoppingItem(key,nextName,manualWeeks,context.plannedWeeks);
+    if(nextQuantity){
+      state.shoppingQuantities??=Object.create(null);
+      state.shoppingQuantities[nextKey]=nextQuantity;
+    }else if(quantityChanged)delete state.shoppingQuantities?.[nextKey];
+    recipe?.apply();
+    save();
+    renderShoppingList();
+    focusShoppingEditButton(nextKey);
+  });
+  shell.querySelector('.shopping-swipe-content').append(edit);
+  shell.append(form);
+  return close;
+}
+function shoppingFilterLabel(name,selected,weekKeys,manualItems){
+  if(name==='__manual__')return `Keinem Gericht zugeordnet (${openManualShoppingItemCount(manualItems,weekKeys)})`;
+  const dish=selected.find(item=>item.dish.name===name)?.dish;
+  const icon=dish?.emoji||emojiMap[dish?.ingredient]||'🍽️';
+  return `${icon} ${name} (${openShoppingIngredientCountForDish(name,selected,weekKeys)})`;
+}
+function updateShoppingSummaryCount(){
+  const open=$('#shopping-open'),checked=open.querySelectorAll('.shopping-tile.is-checked').length;
+  $('#shopping-open-count').textContent=`${open.querySelectorAll('.shopping-tile').length-checked} offen · ${checked} erledigt`;
+}
 function renderShoppingListContent(){
   const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish));
   document.querySelectorAll('.shopping-tile').forEach(tile=>tile._disposeAssociation?.());
   state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
   const filterSelect=$('#shopping-meal-filter'),previousFilter=filterSelect.value,mealNames=[...new Set(selected.map(item=>item.dish.name))].sort((a,b)=>a.localeCompare(b,'de')),manualItems=[...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))];
   $('#shopping-period').textContent=formatRange(start);filterSelect.replaceChildren(new Option('Alle Mahlzeiten',''));
-  if(mealNames.length){const dishesGroup=document.createElement('optgroup');dishesGroup.label='Gerichte';mealNames.forEach(name=>{const dish=selected.find(item=>item.dish.name===name)?.dish,icon=dish?.emoji||emojiMap[dish?.ingredient]||'🍽️',openCount=openShoppingIngredientCountForDish(name,selected,weekKeys);dishesGroup.append(new Option(`${icon} ${name} (${openCount})`,name))});filterSelect.append(dishesGroup)}
-  if(manualItems.length){const manualGroup=document.createElement('optgroup');manualGroup.label='Manuelle Eingaben';manualGroup.append(new Option(`Keinem Gericht zugeordnet (${openManualShoppingItemCount(manualItems,weekKeys)})`,'__manual__'));filterSelect.append(manualGroup)}
+  if(mealNames.length){
+    const dishesGroup=document.createElement('optgroup');
+    dishesGroup.label='Gerichte';
+    mealNames.forEach(name=>dishesGroup.append(new Option(shoppingFilterLabel(name,selected,weekKeys,manualItems),name)));
+    filterSelect.append(dishesGroup);
+  }
+  if(manualItems.length){
+    const manualGroup=document.createElement('optgroup');
+    manualGroup.label='Manuelle Eingaben';
+    manualGroup.append(new Option(shoppingFilterLabel('__manual__',selected,weekKeys,manualItems),'__manual__'));
+    filterSelect.append(manualGroup);
+  }
   filterSelect.value=mealNames.includes(previousFilter)||previousFilter==='__manual__'&&manualItems.length?previousFilter:'';
   const activeFilter=filterSelect.value,visible=activeFilter==='__manual__'?[]:activeFilter?selected.filter(({dish})=>dish.name===activeFilter):selected,counts=plannedShoppingItems(visible,state.hiddenShoppingItems);
   $('#shopping-overview').classList.toggle('hidden',!activeFilter);
-  if(!activeFilter||activeFilter==='__manual__')manualItems.forEach(rawName=>{const name=normalizeManualItem(rawName),key=manualItemKey(name),relatedDishes=new Set(selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>manualItemKey(raw)===key)).map(({dish})=>dish.name));if(!counts.has(key))counts.set(key,{name,dishes:relatedDishes,manual:true,weekKeys:new Set()});const item=counts.get(key);item.manual=true;weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>manualItemKey(itemName)===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
+  if(!activeFilter||activeFilter==='__manual__')manualItems.forEach(rawName=>{const name=normalizeManualItem(rawName),key=manualItemKey(name),relatedDishes=new Set(selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>manualItemKey(raw)===key)).map(({dish})=>dish.name));if(!counts.has(key))counts.set(key,{name,dishes:relatedDishes,manual:true,weekKeys:new Set()});const item=counts.get(key);item.manual=true;item.manualName??=name;weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>manualItemKey(itemName)===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
   for(const [key,item] of counts){const relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))counts.delete(key)}
+  const plannedWeeksByItem=new Map();
+  for(const {dish,weekKey} of selected)for(const ingredient of dish.ingredients||[]){
+    const key=manualItemKey(ingredient);
+    if(!plannedWeeksByItem.has(key))plannedWeeksByItem.set(key,new Set());
+    plannedWeeksByItem.get(key).add(weekKey);
+  }
+  const editableItemKeys=new Set([...plannedWeeksByItem.keys(),...manualItems.map(manualItemKey)]);
+  let editorIndex=0;
   const hasHiddenShoppingItems=selected.some(({dish,weekKey})=>(dish.ingredients||[]).some(name=>state.hiddenShoppingItems[weekKey]?.includes(manualItemKey(name))))||weekKeys.some(weekKey=>cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).length>0);
   const open=$('#shopping-open'),done=$('#shopping-done'),empty=$('#shopping-empty');open.replaceChildren();done.replaceChildren();empty.classList.toggle('hidden',counts.size>0);empty.textContent=activeFilter==='__manual__'?'Noch keine manuellen Artikel hinzugefügt.':activeFilter?'Für dieses Gericht sind keine Zutaten eingetragen.':hasHiddenShoppingItems?'Die Einkaufsliste ist leer. Du kannst oben neue Artikel hinzufügen.':selected.length?'Für die geplanten Gerichte sind keine Zutaten eingetragen.':'Für diese 7 Tage sind keine Gerichte geplant. Du kannst oben eigene Artikel hinzufügen.';
-  const categoryOrder=['Gemüse','Obst','Brot & Backwaren','Fleisch & Fisch','Kühlregal','Tiefkühl','Getränke','Vorrat','Drogerie & Haushalt','Tierbedarf','Sonstiges'],grouped=new Map();
-  for(const item of counts.values()){const category=ingredientCategory(item.name);if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
-  for(const category of categoryOrder){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.every(weekKey=>shoppingItemChecked(weekKey,key))===(container===done)});if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
-    for(const item of categoryItems.sort((a,b)=>a.name.localeCompare(b.name,'de'))){const {name,dishes,manual,weekKeys:itemWeekKeys}=item,key=manualItemKey(name),checkKey=key,checked=container===done,relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys,shell=document.createElement('div'),tile=document.createElement('button');shell.className='shopping-tile-shell';tile.type='button';tile.className=`shopping-tile${checked?' is-checked':''}`;tile.setAttribute('aria-pressed',String(checked));tile.dataset.ingredient=key;tile.innerHTML=`<span class="shopping-tile-icon" aria-hidden="true">${ingredientIcon(name)}</span><span class="shopping-tile-copy"><strong></strong><small></small></span>${checked?'<span class="shopping-tile-status" aria-label="Eingekauft">✓</span>':''}`;tile.querySelector('strong').textContent=name;tile.querySelector('small').textContent=dishes.size?[...dishes].join(', ')+(manual?' · Manuelle Eingabe':''):'Keinem Gericht zugeordnet';
-      const mealHint=document.createElement('div');mealHint.className='shopping-tile-meal-hint';mealHint.setAttribute('role','status');const mealLabels=[...dishes].map(dishName=>{const meal=selected.find(({dish})=>dish.name===dishName)?.dish;return `${meal?.emoji||emojiMap[meal?.ingredient]||'🍽️'} ${dishName}`});const hintLabels=mealLabels.length?mealLabels:manual?['Keinem Gericht zugeordnet']:[];mealHint.textContent=hintLabels.join(', ');shell.append(tile,mealHint);
-      let pointerStart=null,wasScroll=false,touchScrolled=false,longPressTriggered=false,longPressResetTimer=0;
+  const {shoppingCategory,shoppingCategories}=window.WochentischIngredients,grouped=new Map();
+  for(const item of counts.values()){const category=shoppingCategory(item.name);if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
+  for(const category of shoppingCategories){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.filter(week=>!state.hiddenShoppingItems[week]?.includes(key)).every(week=>shoppingItemChecked(week,key))===(container===done)});if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
+    for(const item of categoryItems.sort((a,b)=>a.name.localeCompare(b.name,'de'))){const {name,dishes,manual,weekKeys:itemWeekKeys}=item,key=manualItemKey(name),checkKey=key,checked=container===done,relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys,shell=document.createElement('div'),tile=document.createElement('button');shell.className='shopping-tile-shell';tile.type='button';tile.className=`shopping-tile${checked?' is-checked':''}`;tile.setAttribute('aria-pressed',String(checked));tile.dataset.ingredient=key;tile.dataset.name=name;tile.innerHTML=`<span class="shopping-tile-icon" aria-hidden="true">${ingredientIcon(name)}</span><span class="shopping-tile-copy"><strong><span class="shopping-strike"></span></strong><small></small></span>${checked?'<span class="shopping-tile-status" aria-label="Eingekauft">✓</span>':''}`;tile.querySelector('.shopping-strike').textContent=name;tile.querySelector('small').textContent=dishes.size?[...dishes].join(', ')+(manual?' · Manuelle Eingabe':''):'Keinem Gericht zugeordnet';
+      const mealHint=document.createElement('div');mealHint.className='shopping-tile-meal-hint';mealHint.setAttribute('role','status');const mealLabels=[...dishes].map(dishName=>{const meal=selected.find(({dish})=>dish.name===dishName)?.dish;return `${meal?.emoji||emojiMap[meal?.ingredient]||'🍽️'} ${dishName}`});const hintLabels=mealLabels.length?mealLabels:manual?['Keinem Gericht zugeordnet']:[];mealHint.textContent=hintLabels.join(', ');
+      const plannedWeeks=plannedWeeksByItem.get(key)||new Set();
+      const remove=event=>removeShoppingItem(name,key,weekKeys,plannedWeeks,event.detail===0);
+      shell.append(shoppingSwipeRow(tile,name,remove),mealHint);
+      let pointerStart=null,wasScroll=false;
       tile.addEventListener('pointerdown',event=>{pointerStart={x:event.clientX,y:event.clientY};wasScroll=false});
       tile.addEventListener('pointermove',event=>{if(pointerStart&&Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>8)wasScroll=true});
       tile.addEventListener('pointercancel',()=>{pointerStart=null;wasScroll=true});
       if(typeof wireShoppingAssociation==='function')wireShoppingAssociation(tile,hintLabels);
-      tile.addEventListener('click',event=>{if(longPressTriggered){event.preventDefault();event.stopPropagation();longPressTriggered=false;clearTimeout(longPressResetTimer);pointerStart=null;return}if(wasScroll||touchScrolled){event.preventDefault();event.stopPropagation();wasScroll=false;pointerStart=null;setTimeout(()=>{touchScrolled=false},600);return}pointerStart=null;const checking=!checked,scope=authScope,householdId=currentHouseholdId;tile.classList.add(checking?'is-completing':'is-unchecking');setTimeout(()=>{
-        if(scope!==authScope||householdId!==currentHouseholdId)return;
-        const changedWeeks=checking?relevantWeeks.filter(weekKey=>!shoppingItemChecked(weekKey,checkKey)):[];
-        if(checking&&!changedWeeks.length){tile.classList.remove('is-completing');return}
-        const quantity=state.shoppingQuantities?.[checkKey];
-        relevantWeeks.forEach(weekKey=>{
-          state.shoppingChecks[weekKey]??=Object.create(null);
-          if(checking)state.shoppingChecks[weekKey][checkKey]=true;else delete state.shoppingChecks[weekKey][checkKey];
-          if(!Object.keys(state.shoppingChecks[weekKey]).length)delete state.shoppingChecks[weekKey];
-        });
-        // Keep the displayed quantity when an item is checked in place.
+      tile.addEventListener('click',event=>{
+        if(wasScroll&&event.detail){event.preventDefault();wasScroll=false;return}
+        pointerStart=null;
+        const availableWeeks=relevantWeeks.filter(week=>!state.hiddenShoppingItems[week]?.includes(checkKey));
+        if(!availableWeeks.length)return;
+        const changedWeeks=availableWeeks.filter(week=>!shoppingItemChecked(week,checkKey));
+        const checking=changedWeeks.length>0,quantity=state.shoppingQuantities?.[checkKey];
+        for(const week of availableWeeks){
+          state.shoppingChecks[week]??=Object.create(null);
+          if(checking)state.shoppingChecks[week][checkKey]=true;
+          else delete state.shoppingChecks[week][checkKey];
+          if(!Object.keys(state.shoppingChecks[week]).length)delete state.shoppingChecks[week];
+        }
         if(!checking&&pendingShoppingCheckUndo?.key===checkKey)pendingShoppingCheckUndo=null;
-        save();renderShoppingList();
-        const target=[...document.querySelectorAll(`#shopping-${checking?'done':'open'} .shopping-tile`)].find(candidate=>candidate.dataset.ingredient===key);
-        target?.classList.add(checking?'just-checked':'just-unchecked');
-        if(changedWeeks.length)offerShoppingCheckUndo({key:checkKey,name,changedWeeks,quantity,scope,householdId});
-      },180)});
-      if(item.amounts?.size||item.unknown?.size){shell.append(shoppingRecipeQuantity(item,Boolean(activeFilter)));container.append(shell);continue}
-      const quantity=document.createElement('div');quantity.className='shopping-quantity';quantity.setAttribute('aria-label',`Menge für ${name}`);const currentQuantity=Math.max(1,Number(state.shoppingQuantities?.[key])||item.plannedQuantity||1);const minus=document.createElement('button');minus.type='button';minus.textContent='−';minus.setAttribute('aria-label',`${name}: Menge verringern`);minus.disabled=currentQuantity<=1;const amount=document.createElement('output');amount.textContent=currentQuantity;amount.setAttribute('aria-live','polite');const plus=document.createElement('button');plus.type='button';plus.textContent='+';plus.setAttribute('aria-label',`${name}: Menge erhöhen`);[minus,plus].forEach(button=>button.addEventListener('click',()=>{const next=Math.max(1,currentQuantity+(button===plus?1:-1));state.shoppingQuantities??=Object.create(null);state.shoppingQuantities[key]=next;save();renderShoppingList()}));quantity.append(minus,amount,plus);shell.append(quantity);container.append(shell)
+        if(checking)closeEditor?.({restoreFocus:false});
+        tile.classList.toggle('is-checked',checking);
+        tile.setAttribute('aria-pressed',String(checking));
+        for(const option of filterSelect.options){
+          if(option.value)option.textContent=shoppingFilterLabel(option.value,selected,weekKeys,manualItems);
+        }
+        updateShoppingSummaryCount();
+        updateShoppingNavCount();
+        save();
+        renderedShoppingSnapshot=shoppingStateForView(state);
+        if(checking)offerShoppingCheckUndo({key:checkKey,name,changedWeeks,quantity,scope:authScope,householdId:currentHouseholdId});
+      });
+      const recipe=item.amounts?.size||item.unknown?.size?shoppingRecipeQuantity(item,Boolean(activeFilter)):null;
+      const storedQuantity=state.shoppingQuantities?.[key],explicit=Boolean(storedQuantity?.unit);
+      const quantity=manual||!recipe?{
+        amount:explicit?storedQuantity.amount:Math.max(0.001,Number(storedQuantity)||item.plannedQuantity||1),
+        unit:explicit?storedQuantity.unit:'Stück',explicit
+      }:null;
+      const manualLabel=quantity&&(!recipe?.label||explicit)?shoppingAmountLabel(quantity.amount,quantity.unit):'';
+      const amountLabel=[recipe?.label,manualLabel].filter(Boolean).join(' + ');
+      if(amountLabel){
+        const heading=tile.querySelector('.shopping-strike'),amount=document.createElement('span');
+        amount.className='shopping-inline-amount';
+        amount.textContent=amountLabel;
+        heading.append(' ',amount);
+      }
+      const closeEditor=attachShoppingEditor(shell,item,recipe,quantity,{
+        weekKeys,itemKeys:editableItemKeys,plannedWeeks,index:editorIndex++,remove
+      });
+      container.append(shell);
     }
   }}
-  $('#shopping-open-count').textContent=`(${open.querySelectorAll('.shopping-tile').length})`;$('#shopping-done-count').textContent=`(${done.querySelectorAll('.shopping-tile').length})`;syncShoppingDoneDisclosure();if(typeof enhanceShoppingList==='function')enhanceShoppingList();updateShoppingNavCount();save({sync:false})
+  $('#shopping-done-count').textContent=`(${done.querySelectorAll('.shopping-tile').length})`;syncShoppingDoneDisclosure();if(typeof enhanceShoppingList==='function')enhanceShoppingList();updateShoppingSummaryCount();updateShoppingNavCount();save({sync:false})
 }
 function renderShoppingList(){renderShoppingListContent();renderedShoppingSnapshot=shoppingStateForView(state)}
 function openShoppingList(){$('#shopping-add-status').hidden=true;setView('shopping');renderShoppingList()}
+function removeShoppingItem(name,key,weekKeys,plannedWeeks,restoreFocus){
+  const removed=[];
+  for(const week of weekKeys){
+    const hidden=state.hiddenShoppingItems[week]||[];
+    if(hidden.includes(key))continue;
+    const manualItems=state.manualShoppingItems[week]||[];
+    const manual=manualItems.find(item=>manualItemKey(item)===key);
+    if(!manual&&!plannedWeeks.has(week))continue;
+    removed.push({week,manual,checked:shoppingItemChecked(week,key)});
+    state.hiddenShoppingItems[week]=cleanHiddenShoppingItems([...hidden,key]);
+    if(manual){
+      const remaining=manualItems.filter(item=>manualItemKey(item)!==key);
+      if(remaining.length)state.manualShoppingItems[week]=remaining;
+      else delete state.manualShoppingItems[week];
+    }
+    const checks=state.shoppingChecks[week];
+    if(checks){
+      delete checks[key];
+      delete checks[`manual:${key}`];
+      if(!Object.keys(checks).length)delete state.shoppingChecks[week];
+    }
+  }
+  if(!removed.length)return;
+  if(pendingShoppingCheckUndo?.key===key)pendingShoppingCheckUndo=null;
+  const tiles=[...document.querySelectorAll('#shopping-open .shopping-tile')];
+  const index=tiles.findIndex(tile=>tile.dataset.ingredient===key);
+  save();
+  renderShoppingList();
+  if(restoreFocus){
+    const remaining=[...document.querySelectorAll('#shopping-open .shopping-tile')];
+    (remaining[Math.min(index,remaining.length-1)]||$('#shopping-add-form button[type="submit"]')).focus();
+  }
+  const scope=authScope,householdId=currentHouseholdId;
+  showToast(`${name} entfernt.`,{
+    actionLabel:'Rückgängig',
+    duration:10000,
+    onAction:()=>{
+      if(scope!==authScope||householdId!==currentHouseholdId)return;
+      let restored=false;
+      for(const {week,manual,checked} of removed){
+        const hidden=state.hiddenShoppingItems[week];
+        if(!hidden?.includes(key))continue;
+        const remaining=hidden.filter(item=>item!==key);
+        if(remaining.length)state.hiddenShoppingItems[week]=remaining;
+        else delete state.hiddenShoppingItems[week];
+        if(manual){
+          state.manualShoppingItems[week]??=[];
+          if(!state.manualShoppingItems[week].some(item=>manualItemKey(item)===key))state.manualShoppingItems[week].push(manual);
+        }
+        if(checked){
+          state.shoppingChecks[week]??=Object.create(null);
+          state.shoppingChecks[week][key]=true;
+        }
+        restored=true;
+      }
+      if(!restored)return;
+      save();
+      if(savedView()==='shopping')renderShoppingList();
+      else updateShoppingNavCount();
+      showToast(`${name} ist wieder auf der Liste.`);
+    }
+  });
+}
 const shoppingCheckUndoDuration=10000;
 let pendingShoppingCheckUndo=null;
 
@@ -3113,7 +3431,11 @@ $('#profile-menu-toggle').addEventListener('click',()=>{$('#profile-actions-menu
 $('#profile-menu-toggle').addEventListener('keydown',event=>{if(event.key==='ArrowDown'){event.preventDefault();openProfileActionsMenu({focusFirst:true})}});
 document.addEventListener('click',event=>{if(!document.getElementById('account-dialog')?.open&&!event.target.closest('.profile-menu-anchor'))closeProfileActionsMenu()});
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!document.getElementById('account-dialog')?.open&&!$('#profile-actions-menu').hidden){event.preventDefault();closeProfileActionsMenu({restoreFocus:true})}});
-$('#theme-toggle').addEventListener('click',()=>{toggleTheme();closeProfileActionsMenu({restoreFocus:true})});systemTheme.addEventListener('change',updateThemeButton);applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#sidebar-toggle').addEventListener('click',()=>setSidebarCollapsed(!$('.app-shell').classList.contains('sidebar-collapsed')));compactNavigationQuery.addEventListener('change',applyResponsiveNavigation);applyResponsiveNavigation();$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.view==='catalog-admin')void openCatalogAdmin();else setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.homeView)}));$('#catalog-admin-add').addEventListener('click',()=>void openNewCatalogDish());$('#catalog-admin-search').addEventListener('input',renderCatalogAdmin);$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-clear').addEventListener('click',clearShoppingList);$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-item-input').addEventListener('input',renderShoppingItemSuggestions);$('#shopping-item-input').addEventListener('keydown',event=>{if(event.key==='Escape'){$('#shopping-item-suggestions').hidden=true;event.currentTarget.setAttribute('aria-expanded','false')}});$('#shopping-add-form').addEventListener('submit',e=>{e.preventDefault();const name=normalizeManualItem($('#shopping-item-input').value);if(!name)return;const weekKey=keyFor(mondayFor(rangeStart())),visibleWeekKeys=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))],itemKey=manualItemKey(name);state.manualShoppingItems??={};state.hiddenShoppingItems??={};state.manualShoppingItems[weekKey]??=[];const duplicate=visibleWeekKeys.some(key=>(state.manualShoppingItems[key]||[]).some(item=>manualItemKey(item)===itemKey));if(duplicate){const relevantWeeks=visibleWeekKeys.filter(key=>(state.manualShoppingItems[key]||[]).some(item=>manualItemKey(item)===itemKey)||rangeDates().some(date=>keyFor(mondayFor(date))===key&&planForDate(date).some(id=>(state.dishes.find(dish=>dish.id===id)?.ingredients||[]).some(item=>manualItemKey(item)===itemKey))));const checked=relevantWeeks.every(key=>shoppingItemChecked(key,itemKey));const status=$('#shopping-add-status');status.textContent=checked?'Dieser Artikel ist bereits abgehakt. Tippe ihn erneut an, um ihn wieder zu öffnen.':'Dieser Artikel steht bereits auf dem Einkaufszettel.';status.hidden=false;$('#shopping-item-suggestions').hidden=true;$('#shopping-item-input').setAttribute('aria-expanded','false');requestAnimationFrame(()=>{if(document.activeElement===$('#shopping-item-input'))revealShoppingAddForm();else $('#shopping-add-form').scrollIntoView({block:'nearest',inline:'nearest'})});return}$('#shopping-add-status').hidden=true;state.manualShoppingItems[weekKey].push(name);const hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>key!==itemKey);if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];delete state.shoppingChecks[weekKey]?.[itemKey];delete state.shoppingChecks[weekKey]?.[`manual:${itemKey}`];save();$('#shopping-item-input').value='';$('#shopping-item-suggestions').replaceChildren();$('#shopping-item-suggestions').hidden=true;$('#shopping-item-input').setAttribute('aria-expanded','false');$('#shopping-meal-filter').value='';renderShoppingList();$('#shopping-item-input').focus({preventScroll:true});requestAnimationFrame(()=>revealShoppingAddForm())});$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
+$('#theme-toggle').addEventListener('click',()=>{toggleTheme();closeProfileActionsMenu({restoreFocus:true})});systemTheme.addEventListener('change',updateThemeButton);applyTheme();$('#menu-toggle').addEventListener('click',toggleMobileMenu);$('#sidebar-toggle').addEventListener('click',()=>setSidebarCollapsed(!$('.app-shell').classList.contains('sidebar-collapsed')));compactNavigationQuery.addEventListener('change',applyResponsiveNavigation);applyResponsiveNavigation();$('#menu-backdrop').addEventListener('click',closeMobileMenu);document.querySelectorAll('.nav-item').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.view==='catalog-admin')void openCatalogAdmin();else setView(b.dataset.view);closeMobileMenu()}));document.querySelectorAll('[data-home-view]').forEach(b=>b.addEventListener('click',()=>{setView(b.dataset.homeView)}));$('#catalog-admin-add').addEventListener('click',()=>void openNewCatalogDish());$('#catalog-admin-search').addEventListener('input',renderCatalogAdmin);$('#home-breadcrumb').addEventListener('click',()=>setView(window.matchMedia('(max-width: 700px)').matches?'home':'week'));window.matchMedia('(max-width: 700px)').addEventListener('change',event=>{if(!event.matches&&$('#home-view').classList.contains('hidden')===false)setView('week')});$('#shopping-btn').addEventListener('click',openShoppingList);$('#shopping-back').addEventListener('click',()=>setView('week'));$('#shopping-clear').addEventListener('click',clearShoppingList);$('#shopping-meal-filter').addEventListener('change',renderShoppingList);$('#shopping-item-input').addEventListener('input',renderShoppingItemSuggestions);$('#shopping-item-input').addEventListener('keydown',event=>{if(event.key==='Escape'){$('#shopping-item-suggestions').hidden=true;event.currentTarget.setAttribute('aria-expanded','false')}});$('#shopping-add-form').addEventListener('submit',event=>{
+  event.preventDefault();
+  submitManualShoppingItem(window.WochentischRecipes.parseShoppingItem(shoppingInput.value));
+});
+$('#shopping-overview').addEventListener('click',()=>{$('#shopping-meal-filter').value='';renderShoppingList()});
 $('#prev-week').addEventListener('click',()=>{weekOffset--;renderCalendar()});$('#next-week').addEventListener('click',()=>{weekOffset++;renderCalendar()});$('#today-btn').addEventListener('click',()=>{weekOffset=0;renderCalendar()});
 $('#dish-ingredient-input').addEventListener('input',renderDishIngredientSuggestions);$('#dish-ingredient-input').addEventListener('keydown',event=>{if(event.key!=='Enter')return;event.preventDefault();const value=normalizeIngredient(event.currentTarget.value);if(value)addDishIngredient(value)});
 $('#dish-ingredient').addEventListener('input',renderMainIngredientSuggestions);$('#dish-ingredient').addEventListener('keydown',event=>{if(event.key==='Enter'&& !$('#dish-main-ingredient-suggestions').hidden){event.preventDefault();$('#dish-main-ingredient-suggestions').querySelector('.pantry-suggestion')?.click()}});

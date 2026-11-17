@@ -28,12 +28,12 @@
   </style>
   <link rel="preload" href="./fonts/comic-relief/ComicRelief-Regular.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="preload" href="./fonts/comic-relief/ComicRelief-Bold.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="styles.css?v=20261116-1" />
-  <link rel="stylesheet" href="interaction.css?v=20261116-2" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261114-3" />
+  <link rel="stylesheet" href="styles.css?v=20261117-3" />
+  <link rel="stylesheet" href="interaction.css?v=20261117-1" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261117-4" />
   <link rel="stylesheet" href="auth.css?v=20261114-3" />
-  <link rel="stylesheet" href="mobile.css?v=20261116-1" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261114-3" media="(prefers-color-scheme: dark)" />
+  <link rel="stylesheet" href="mobile.css?v=20261117-1" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261117-1" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -127,7 +127,7 @@
         <div class="shopping-screen-tools"><label class="shopping-filter-label" for="shopping-meal-filter">Nach Mahlzeit filtern</label><select id="shopping-meal-filter" class="shopping-meal-filter"><option value="">Alle Mahlzeiten</option></select><button type="button" id="shopping-overview" class="shopping-overview hidden">← Zur Gesamtübersicht</button></div>
         <p id="shopping-empty" class="empty-state hidden">Für diese Woche sind keine Gerichte geplant.</p>
         <div class="shopping-sections"><section class="shopping-section"><h2>Noch einzukaufen <span id="shopping-open-count"></span></h2><div id="shopping-open" class="shopping-tiles"></div></section><section id="shopping-done-section" class="shopping-section shopping-done-section"><h2 class="shopping-done-heading"><button type="button" id="shopping-done-toggle" class="shopping-disclosure-toggle" aria-label="Schon eingekaufte Artikel ein- oder ausklappen" aria-expanded="false" aria-controls="shopping-done"><span class="shopping-disclosure-title">Schon eingekauft</span><span id="shopping-done-count" class="shopping-disclosure-count"></span><span class="shopping-disclosure-icon" aria-hidden="true">⌄</span></button></h2><div id="shopping-done" class="shopping-tiles"></div></section></div>
-        <form id="shopping-add-form" class="shopping-add-form"><div id="shopping-add-status" class="shopping-add-status" role="status" aria-live="polite" hidden></div><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="Artikel eingeben …" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
+        <form id="shopping-add-form" class="shopping-add-form"><div id="shopping-add-status" class="shopping-add-status" role="status" aria-live="polite" hidden></div><label class="visually-hidden" for="shopping-item-input">Artikel zum Einkaufszettel hinzufügen</label><div class="shopping-item-suggest"><input id="shopping-item-input" maxlength="80" autocomplete="off" placeholder="z. B. Mehl 500 g" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="shopping-item-suggestions"><div id="shopping-item-suggestions" class="pantry-suggestions shopping-item-suggestions" role="listbox" hidden></div></div><button type="submit" class="primary-button">＋ Hinzufügen</button></form>
       </section>
       <section id="cooking-view" class="view cooking-screen hidden" aria-labelledby="cooking-title">
         <div class="page-heading"><div><div class="eyebrow">SCHRITT FÜR SCHRITT</div><h1 id="cooking-title">Zubereiten</h1><p class="subheading">Wähle ein geplantes oder eigenes Gericht.</p></div></div>
@@ -183,20 +183,20 @@
   <div id="toast" role="status" aria-live="polite"></div>
   <script src="supabase-config.js?v=20261024-1"></script>
   <script src="local-store.js?v=20261106-1"></script>
-  <script src="ingredient-catalog.js?v=20261112-2"></script>
+  <script src="ingredient-catalog.js?v=20261117-3"></script>
   <script src="ocr-assets.js?v=20261108-9"></script>
   <script src="ocr-import.js?v=20261108-9"></script>
   <script src="ocr-import-ui.js?v=20261116-2"></script>
   <script src="recipe-import.js?v=20261108-3"></script>
-  <script src="recipe-model.js?v=20261115-1"></script>
+  <script src="recipe-model.js?v=20261117-4"></script>
   <script src="cooking-plan.js?v=20261115-1"></script>
-  <script src="planning-ui.js?v=20261116-2"></script>
+  <script src="planning-ui.js?v=20261117-3"></script>
   <script src="sync-transport.js?v=1"></script>
   <script src="sync-api.js?v=3"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=3"></script>
-  <script src="ui.js?v=20261116-2"></script>
-  <script src="app.js?v=20261116-4"></script>
+  <script src="ui.js?v=20261117-3"></script>
+  <script src="app.js?v=20261117-4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

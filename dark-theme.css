@@ -1261,7 +1261,6 @@ dialog { background: rgb(27 36 47 / 96%); }
 .password-sign-in input { border-radius: 12px; }
 .shopping-tile.is-checked { border-color: #465c77; background: #202c3a; }
 
-.shopping-quantity{border-color:#344352;background:#18232f;color:#e0e8f1}.shopping-quantity button{background:#293848;color:#e0e8f1}.shopping-quantity button:hover:not(:disabled){background:#364a5e}
 
 /* The same playful accents, tuned for dark surfaces. */
 :root { --canvas: #1d2028; --green: #8bd7b7; --green-dark: #71c6a4; --mint: #29483c; }

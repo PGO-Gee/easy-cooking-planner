@@ -30,6 +30,10 @@ test('retains a local deletion when the cloud item is unchanged', () => {
   assert.deepEqual(merge(['Milch'], [], ['Milch']).items, []);
 });
 
+test('keeps an edited display name with the same shopping key', () => {
+  assert.deepEqual(merge(['HAFERDRINK'], ['Haferdrink'], ['HAFERDRINK']).items, ['Haferdrink']);
+});
+
 test('collects planned ingredients and manual items before starting sync', () => {
   const itemsStart = source.indexOf('function localShoppingItems(');
   const itemsEnd = source.indexOf('async function reconcileCatalogImports(', itemsStart);

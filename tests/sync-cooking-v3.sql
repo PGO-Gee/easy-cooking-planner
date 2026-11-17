@@ -28,6 +28,14 @@ begin
  if public.resolve_household_conflict_v3(household,request,conflict,'local')<>response then raise exception 'resolve retry mismatch';end if;
  cloud:=response->'state';local_state:=jsonb_set(cloud,'{quantityOverrides}','{"[\"2026-11-09\",\"hähnchenbrust\",\"g\"]":600}');response:=public.sync_household_v3(household,gen_random_uuid(),cloud,local_state);
  if response->'state'->'quantityOverrides'<>local_state->'quantityOverrides' then raise exception 'quantity override lost';end if;
+ -- Manual shopping amounts preserve their units through sync and reload.
+ cloud:=response->'state';
+ local_state:=cloud||'{"manualShoppingItems":{"2026-11-09":["Mehl","Eier"]},"shoppingQuantities":{"mehl":{"amount":500,"unit":"g"},"eier":2}}'::jsonb;
+ response:=public.sync_household_v3(household,gen_random_uuid(),cloud,local_state);
+ if response->'state'->'shoppingQuantities' is distinct from local_state->'shoppingQuantities' or
+    public.read_household_v3(household)->'state'->'shoppingQuantities' is distinct from local_state->'shoppingQuantities' then
+   raise exception 'manual shopping amount or unit lost';
+ end if;
  -- A v1/v2 writer cannot silently change a migrated plan.
  bad:=jsonb_set(response->'state','{plans,2026-11-09,6}','[]');
  begin perform wochentisch_sync.write_state(household,bad);raise exception 'legacy writer accepted plan change';exception when invalid_parameter_value then null;end;
