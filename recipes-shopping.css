@@ -167,7 +167,49 @@ select,
 textarea { color: var(--text-primary); }
 input::placeholder,
 textarea::placeholder { color: var(--text-muted); opacity: 1; }
-.shopping-inline-amount { color:var(--muted); }
+.shopping-inline-amount { color:var(--muted); font-size:.8em; }
+.shopping-swipe-row {
+  --shopping-swipe-width:96px;
+  position:relative;
+  flex:0 0 100%;
+  min-width:0;
+  overflow:hidden;
+  overflow:clip;
+}
+.shopping-swipe-content {
+  position:relative;
+  display:flex;
+  align-items:center;
+  min-width:0;
+  background:var(--paper);
+  clip-path:inset(0 calc(-1 * var(--shopping-swipe-offset,0px)) 0 0);
+  transition:clip-path 160ms ease-out;
+}
+.shopping-swipe-row.is-swipe-open .shopping-swipe-content {
+  clip-path:inset(0 calc(-1 * var(--shopping-swipe-offset,calc(-1 * var(--shopping-swipe-width)))) 0 0);
+}
+.shopping-swipe-row.is-swiping .shopping-swipe-content { transition:none; }
+html.design .shopping-swipe-content > .shopping-tile { touch-action:pan-y pinch-zoom; }
+.shopping-swipe-content > .shopping-tile:focus-visible { outline-offset:-2px; }
+.shopping-swipe-remove {
+  position:absolute;
+  inset:0 0 0 auto;
+  visibility:hidden;
+  transition:visibility 160ms;
+  width:var(--shopping-swipe-width);
+  padding:0 4px;
+  border:0;
+  border-radius:0;
+  background:#a32931;
+  color:white;
+  font:600 13px var(--sans);
+}
+.shopping-swipe-remove:focus-visible { outline:2px solid white; outline-offset:-4px; }
+.shopping-swipe-row:is(.is-swipe-open,.is-swiping) .shopping-swipe-remove { visibility:visible; }
+.shopping-swipe-row:not(.is-swipe-open) .shopping-swipe-remove { pointer-events:none; }
+@media (prefers-reduced-motion:reduce) {
+  .shopping-swipe-content, .shopping-swipe-remove { transition:none; }
+}
 .shopping-edit-button {
   display:grid;
   place-items:center;
@@ -241,6 +283,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .shopping-recipe-quantity :is(legend,p) { color:var(--muted); font-size:13px; line-height:1.5; }
 .shopping-recipe-quantity p { margin:0; }
 .shopping-editor-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.shopping-editor-actions .shopping-editor-remove { margin-right:auto; color:var(--error); }
 .shopping-row-editor button { min-height:44px; max-width:100%; white-space:normal; }
 @media (min-width:701px) {
   .shopping-row-editor { justify-items:start; padding-left:32px; }

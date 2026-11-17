@@ -2552,10 +2552,15 @@ function attachShoppingEditor(shell,item,recipe,quantity,context){
   if(recipe)form.append(recipe.fields);
   const actions=document.createElement('div'),cancel=document.createElement('button');
   actions.className='shopping-editor-actions';
+  const remove=document.createElement('button');
+  remove.type='button';
+  remove.className='text-button shopping-editor-remove';
+  remove.textContent='Entfernen';
+  remove.addEventListener('click',context.remove);
   cancel.type='button';
   cancel.className='secondary-button';
   cancel.textContent=editable?'Abbrechen':'Schließen';
-  actions.append(cancel);
+  actions.append(remove,cancel);
   if(editable){
     const submit=document.createElement('button');
     submit.type='submit';
@@ -2606,7 +2611,8 @@ function attachShoppingEditor(shell,item,recipe,quantity,context){
     renderShoppingList();
     focusShoppingEditButton(nextKey);
   });
-  shell.append(edit,form);
+  shell.querySelector('.shopping-swipe-content').append(edit);
+  shell.append(form);
 }
 function renderShoppingListContent(){
   const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish));
@@ -2635,18 +2641,22 @@ function renderShoppingListContent(){
   for(const item of counts.values()){const category=ingredientCategory(item.name);if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
   for(const category of categoryOrder){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.every(weekKey=>shoppingItemChecked(weekKey,key))===(container===done)});if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
     for(const item of categoryItems.sort((a,b)=>a.name.localeCompare(b.name,'de'))){const {name,dishes,manual,weekKeys:itemWeekKeys}=item,key=manualItemKey(name),checkKey=key,checked=container===done,relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys,shell=document.createElement('div'),tile=document.createElement('button');shell.className='shopping-tile-shell';tile.type='button';tile.className=`shopping-tile${checked?' is-checked':''}`;tile.setAttribute('aria-pressed',String(checked));tile.dataset.ingredient=key;tile.dataset.name=name;tile.innerHTML=`<span class="shopping-tile-icon" aria-hidden="true">${ingredientIcon(name)}</span><span class="shopping-tile-copy"><strong></strong><small></small></span>${checked?'<span class="shopping-tile-status" aria-label="Eingekauft">✓</span>':''}`;tile.querySelector('strong').textContent=name;tile.querySelector('small').textContent=dishes.size?[...dishes].join(', ')+(manual?' · Manuelle Eingabe':''):'Keinem Gericht zugeordnet';
-      const mealHint=document.createElement('div');mealHint.className='shopping-tile-meal-hint';mealHint.setAttribute('role','status');const mealLabels=[...dishes].map(dishName=>{const meal=selected.find(({dish})=>dish.name===dishName)?.dish;return `${meal?.emoji||emojiMap[meal?.ingredient]||'🍽️'} ${dishName}`});const hintLabels=mealLabels.length?mealLabels:manual?['Keinem Gericht zugeordnet']:[];mealHint.textContent=hintLabels.join(', ');shell.append(tile,mealHint);
-      let pointerStart=null,wasScroll=false,touchScrolled=false,longPressTriggered=false,longPressResetTimer=0;
+      const mealHint=document.createElement('div');mealHint.className='shopping-tile-meal-hint';mealHint.setAttribute('role','status');const mealLabels=[...dishes].map(dishName=>{const meal=selected.find(({dish})=>dish.name===dishName)?.dish;return `${meal?.emoji||emojiMap[meal?.ingredient]||'🍽️'} ${dishName}`});const hintLabels=mealLabels.length?mealLabels:manual?['Keinem Gericht zugeordnet']:[];mealHint.textContent=hintLabels.join(', ');
+      const plannedWeeks=plannedWeeksByItem.get(key)||new Set();
+      const remove=event=>removeShoppingItem(name,key,weekKeys,plannedWeeks,event.detail===0);
+      shell.append(shoppingSwipeRow(tile,name,remove),mealHint);
+      let pointerStart=null,wasScroll=false;
       tile.addEventListener('pointerdown',event=>{pointerStart={x:event.clientX,y:event.clientY};wasScroll=false});
       tile.addEventListener('pointermove',event=>{if(pointerStart&&Math.hypot(event.clientX-pointerStart.x,event.clientY-pointerStart.y)>8)wasScroll=true});
       tile.addEventListener('pointercancel',()=>{pointerStart=null;wasScroll=true});
       if(typeof wireShoppingAssociation==='function')wireShoppingAssociation(tile,hintLabels);
-      tile.addEventListener('click',event=>{if(longPressTriggered){event.preventDefault();event.stopPropagation();longPressTriggered=false;clearTimeout(longPressResetTimer);pointerStart=null;return}if(wasScroll||touchScrolled){event.preventDefault();event.stopPropagation();wasScroll=false;pointerStart=null;setTimeout(()=>{touchScrolled=false},600);return}pointerStart=null;const checking=!checked,scope=authScope,householdId=currentHouseholdId;tile.classList.add(checking?'is-completing':'is-unchecking');setTimeout(()=>{
+      tile.addEventListener('click',event=>{if(wasScroll&&event.detail){event.preventDefault();wasScroll=false;return}pointerStart=null;const checking=!checked,scope=authScope,householdId=currentHouseholdId;tile.classList.add(checking?'is-completing':'is-unchecking');setTimeout(()=>{
         if(scope!==authScope||householdId!==currentHouseholdId)return;
-        const changedWeeks=checking?relevantWeeks.filter(weekKey=>!shoppingItemChecked(weekKey,checkKey)):[];
+        const availableWeeks=relevantWeeks.filter(weekKey=>!state.hiddenShoppingItems[weekKey]?.includes(checkKey));
+        const changedWeeks=checking?availableWeeks.filter(weekKey=>!shoppingItemChecked(weekKey,checkKey)):[];
         if(checking&&!changedWeeks.length){tile.classList.remove('is-completing');return}
         const quantity=state.shoppingQuantities?.[checkKey];
-        relevantWeeks.forEach(weekKey=>{
+        availableWeeks.forEach(weekKey=>{
           state.shoppingChecks[weekKey]??=Object.create(null);
           if(checking)state.shoppingChecks[weekKey][checkKey]=true;else delete state.shoppingChecks[weekKey][checkKey];
           if(!Object.keys(state.shoppingChecks[weekKey]).length)delete state.shoppingChecks[weekKey];
@@ -2669,7 +2679,7 @@ function renderShoppingListContent(){
         heading.append(' ',amount);
       }
       attachShoppingEditor(shell,item,recipe,quantity,{
-        weekKeys,itemKeys:editableItemKeys,plannedWeeks:plannedWeeksByItem.get(key)||new Set(),index:editorIndex++
+        weekKeys,itemKeys:editableItemKeys,plannedWeeks,index:editorIndex++,remove
       });
       container.append(shell);
     }
@@ -2678,6 +2688,69 @@ function renderShoppingListContent(){
 }
 function renderShoppingList(){renderShoppingListContent();renderedShoppingSnapshot=shoppingStateForView(state)}
 function openShoppingList(){$('#shopping-add-status').hidden=true;setView('shopping');renderShoppingList()}
+function removeShoppingItem(name,key,weekKeys,plannedWeeks,restoreFocus){
+  const removed=[];
+  for(const week of weekKeys){
+    const hidden=state.hiddenShoppingItems[week]||[];
+    if(hidden.includes(key))continue;
+    const manualItems=state.manualShoppingItems[week]||[];
+    const manual=manualItems.find(item=>manualItemKey(item)===key);
+    if(!manual&&!plannedWeeks.has(week))continue;
+    removed.push({week,manual,checked:shoppingItemChecked(week,key)});
+    state.hiddenShoppingItems[week]=cleanHiddenShoppingItems([...hidden,key]);
+    if(manual){
+      const remaining=manualItems.filter(item=>manualItemKey(item)!==key);
+      if(remaining.length)state.manualShoppingItems[week]=remaining;
+      else delete state.manualShoppingItems[week];
+    }
+    const checks=state.shoppingChecks[week];
+    if(checks){
+      delete checks[key];
+      delete checks[`manual:${key}`];
+      if(!Object.keys(checks).length)delete state.shoppingChecks[week];
+    }
+  }
+  if(!removed.length)return;
+  if(pendingShoppingCheckUndo?.key===key)pendingShoppingCheckUndo=null;
+  const tiles=[...document.querySelectorAll('#shopping-open .shopping-tile')];
+  const index=tiles.findIndex(tile=>tile.dataset.ingredient===key);
+  save();
+  renderShoppingList();
+  if(restoreFocus){
+    const remaining=[...document.querySelectorAll('#shopping-open .shopping-tile')];
+    (remaining[Math.min(index,remaining.length-1)]||$('#shopping-add-form button[type="submit"]')).focus();
+  }
+  const scope=authScope,householdId=currentHouseholdId;
+  showToast(`${name} entfernt.`,{
+    actionLabel:'Rückgängig',
+    duration:10000,
+    onAction:()=>{
+      if(scope!==authScope||householdId!==currentHouseholdId)return;
+      let restored=false;
+      for(const {week,manual,checked} of removed){
+        const hidden=state.hiddenShoppingItems[week];
+        if(!hidden?.includes(key))continue;
+        const remaining=hidden.filter(item=>item!==key);
+        if(remaining.length)state.hiddenShoppingItems[week]=remaining;
+        else delete state.hiddenShoppingItems[week];
+        if(manual){
+          state.manualShoppingItems[week]??=[];
+          if(!state.manualShoppingItems[week].some(item=>manualItemKey(item)===key))state.manualShoppingItems[week].push(manual);
+        }
+        if(checked){
+          state.shoppingChecks[week]??=Object.create(null);
+          state.shoppingChecks[week][key]=true;
+        }
+        restored=true;
+      }
+      if(!restored)return;
+      save();
+      if(savedView()==='shopping')renderShoppingList();
+      else updateShoppingNavCount();
+      showToast(`${name} ist wieder auf der Liste.`);
+    }
+  });
+}
 const shoppingCheckUndoDuration=10000;
 let pendingShoppingCheckUndo=null;
 
