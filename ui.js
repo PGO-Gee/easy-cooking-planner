@@ -245,7 +245,14 @@ function enhanceShoppingList(){
   const groups=new Map();[open,done].forEach(container=>{let category='Sonstiges';[...container.children].forEach(child=>{if(child.tagName==='H3')category=child.textContent;else{if(!groups.has(category))groups.set(category,[]);groups.get(category).push(child)}})});
   open.replaceChildren();done.replaceChildren();
   const order=['Gemüse','Obst','Brot & Backwaren','Fleisch & Fisch','Kühlregal','Tiefkühl','Getränke','Vorrat','Drogerie & Haushalt','Tierbedarf','Sonstiges'];
-  order.forEach(category=>{const items=groups.get(category);if(!items?.length)return;const h=document.createElement('h3');h.className='shopping-category-title';h.textContent=category;open.append(h);items.sort((a,b)=>a.querySelector('strong').textContent.localeCompare(b.querySelector('strong').textContent,'de')).forEach(shell=>{open.append(shell);const quantity=shell.querySelector('.shopping-quantity');if(quantity){const details=document.createElement('details');details.className='quantity-disclosure';const summary=document.createElement('summary');summary.textContent=`${quantity.querySelector('output').textContent} ×`;summary.setAttribute('aria-label',quantity.getAttribute('aria-label')+' bearbeiten');quantity.before(details);details.append(summary,quantity)}})});
+  order.forEach(category=>{
+    const items=groups.get(category);
+    if(!items?.length)return;
+    const heading=document.createElement('h3');
+    heading.className='shopping-category-title';
+    heading.textContent=category;
+    open.append(heading,...items.sort((a,b)=>a.querySelector('.shopping-tile').dataset.name.localeCompare(b.querySelector('.shopping-tile').dataset.name,'de')));
+  });
   $('#shopping-done-section').hidden=true;const checked=open.querySelectorAll('.is-checked').length;$('#shopping-open-count').textContent=`${open.querySelectorAll('.shopping-tile').length-checked} offen · ${checked} erledigt`;
   $('#shopping-overview').textContent=$('#shopping-meal-filter').value?'Filter zurücksetzen':'';
 }

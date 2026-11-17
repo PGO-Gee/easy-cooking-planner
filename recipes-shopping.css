@@ -167,11 +167,88 @@ select,
 textarea { color: var(--text-primary); }
 input::placeholder,
 textarea::placeholder { color: var(--text-muted); opacity: 1; }
-.shopping-quantity{position:absolute;z-index:2;right:9px;bottom:9px;display:flex;align-items:center;gap:5px;height:28px;padding:2px;border:1px solid #e4e9e2;border-radius:9px;background:#fff;color:#425247}.shopping-quantity button{display:grid;place-items:center;width:24px;height:22px;padding:0;border:0;border-radius:6px;background:#f0f4ef;color:inherit;font:600 16px/1 var(--sans);cursor:pointer;touch-action:manipulation}.shopping-quantity button:disabled{opacity:.4;cursor:default}.shopping-quantity output{min-width:18px;text-align:center;font:600 12px var(--sans)}
-.shopping-quantity{height:40px;gap:4px}.shopping-quantity button{width:36px;height:36px}
-.shopping-quantity,.shopping-quantity *{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
-.shopping-tile-shell .shopping-tile-copy{align-self:flex-start;padding-bottom:40px}
-
+.shopping-inline-amount { color:var(--muted); }
+.shopping-edit-button {
+  display:grid;
+  place-items:center;
+  flex:0 0 44px;
+  min-height:44px;
+  margin-left:4px;
+  padding:0;
+  border:0;
+  border-radius:8px;
+  background:transparent;
+  color:var(--muted);
+  cursor:pointer;
+  touch-action:manipulation;
+}
+.shopping-edit-button[aria-expanded="true"] { background:var(--selection); color:var(--action); }
+.shopping-edit-button:focus-visible { outline:2px solid var(--action); outline-offset:-2px; }
+.shopping-row-editor {
+  flex:0 0 100%;
+  min-width:0;
+  display:grid;
+  gap:12px;
+  padding:4px 0 12px;
+  color:var(--ink);
+  overflow-wrap:anywhere;
+}
+.shopping-row-editor[hidden] { display:none; }
+.shopping-manual-fields {
+  display:grid;
+  gap:8px;
+}
+.shopping-manual-fields:has(label + label) { grid-template-columns:minmax(0,1fr) minmax(84px,.55fr); }
+.shopping-row-editor label {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:0;
+  font-size:13px;
+  color:var(--muted);
+}
+.shopping-row-editor input {
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  padding:8px 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--paper);
+  color:var(--ink);
+  font:16px var(--sans);
+}
+.shopping-edit-button, .shopping-row-editor, .shopping-row-editor input {
+  scroll-margin-top:calc(var(--shopping-editor-top, 80px) + env(safe-area-inset-top, 0px));
+  scroll-margin-bottom:calc(var(--shopping-editor-bottom, 84px) + env(safe-area-inset-bottom, 0px));
+}
+html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) {
+  --shopping-editor-top:12px;
+  --shopping-editor-bottom:12px;
+}
+html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) .shopping-add-form { position:relative; top:auto; }
+.shopping-editor-actions button { scroll-margin-bottom:calc(var(--shopping-editor-bottom, 84px) + env(safe-area-inset-bottom, 0px)); }
+.shopping-recipe-quantity { display:grid; gap:8px; }
+.shopping-recipe-quantity fieldset {
+  display:grid;
+  min-width:0;
+  gap:8px;
+  margin:0;
+  padding:8px;
+  border:1px solid var(--line);
+  border-radius:8px;
+}
+.shopping-recipe-quantity :is(legend,p) { color:var(--muted); font-size:13px; line-height:1.5; }
+.shopping-recipe-quantity p { margin:0; }
+.shopping-editor-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; }
+.shopping-row-editor button { min-height:44px; max-width:100%; white-space:normal; }
+@media (min-width:701px) {
+  .shopping-row-editor { justify-items:start; padding-left:32px; }
+  .shopping-row-editor > * { width:min(100%, 440px); }
+}
+@media (min-width:1024px) and (min-height:501px), (min-width:1024px) and (pointer:fine) {
+  #shopping-view { --shopping-editor-bottom:16px; }
+}
 /* Give shopping cards enough room for names and recipe details on phones. */
 @media (max-width: 480px) {
   .shopping-tiles {
@@ -204,10 +281,7 @@ textarea::placeholder { color: var(--text-muted); opacity: 1; }
     padding-bottom:0;
   }
 
-  .shopping-quantity {
-    right:10px;
-    bottom:8px;
-  }
+
 }
 .shopping-add-form { align-items: flex-start; flex-wrap: wrap; }
 .shopping-add-status { flex: 0 0 100%; padding: 10px 12px; border: 1px solid #cbdcc9; border-radius: 10px; background: #eff6ed; color: #304e36; font-size: 14px; line-height: 1.4; }

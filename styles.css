@@ -701,20 +701,14 @@ html.design .shopping-sections,html.design .shopping-tiles { display:block; }
 html.design .shopping-section > h2 { display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:16px;color:var(--ink);margin:0 0 16px; }
 html.design #shopping-open-count { color:var(--muted);font-size:12px;font-weight:400; }
 html.design #shopping-view .shopping-category-title { display:block;font-size:12px;font-weight:400;color:var(--muted);margin:20px 0 8px;padding:0;border:0;text-transform:none;letter-spacing:normal; }
-html.design .shopping-tile-shell { display:flex;align-items:center;min-height:54px;background:var(--paper);border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0 10px;box-shadow:none; }
+html.design .shopping-tile-shell { display:flex;flex-wrap:wrap;align-items:center;min-height:54px;background:var(--paper);border:0;border-bottom:1px solid var(--line);border-radius:0;padding:0 10px;box-shadow:none; }
 html.design .shopping-tile { display:flex;flex:1;flex-direction:row;align-items:center;justify-content:flex-start;gap:10px;width:auto;min-width:0;min-height:54px;padding:8px 0;margin:0;background:transparent;border:0;border-radius:0;color:var(--ink);box-shadow:none;backdrop-filter:none;transform:none; }
 html.design .shopping-tile::before { content:'';display:block;flex:0 0 22px;width:22px;height:22px;border:1px solid var(--muted);border-radius:4px; }
 html.design .shopping-tile.is-checked::before { content:'✓';background:var(--action);color:var(--on-action);border-color:var(--action);font-size:17px;text-align:center;line-height:20px; }
 html.design .shopping-tile-copy { align-self:center;text-align:left;min-width:0;padding:0; }
 html.design .shopping-tile-copy strong { color:var(--ink);font:400 15px/1.5 var(--sans);overflow-wrap:anywhere; }
-html.design .shopping-tile.is-checked strong,html.design .shopping-tile-shell:has(.is-checked) .quantity-disclosure > summary { text-decoration:line-through;color:var(--muted); }
+html.design .shopping-tile.is-checked strong { text-decoration:line-through;color:var(--muted); }
 html.design .shopping-tile-icon,html.design .shopping-tile-copy small,html.design .shopping-tile-status,html.design .shopping-tile-meal-hint { display:none; }
-html.design .quantity-disclosure { position:relative;margin-left:8px; }
-html.design .quantity-disclosure > summary { min-width:44px;min-height:44px;display:grid;place-items:center;font-size:13px;color:var(--muted);list-style:none; }
-html.design .quantity-disclosure .shopping-quantity { position:absolute;z-index:20;right:0;top:100%;bottom:auto;height:auto;display:flex;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:4px;box-shadow:0 4px 15px #101f3520; }
-html.design .quantity-disclosure:not([open]) > .shopping-quantity { display:none; }
-html.design .shopping-quantity button { min-width:44px;min-height:44px;border:0;background:var(--selection);color:var(--action);border-radius:8px; }
-html.design .shopping-quantity output { padding:8px;min-width:35px;text-align:center;color:var(--ink); }
 html.design .shopping-overview { background:var(--selection);color:var(--action);border:0;border-radius:12px;padding:10px 14px;margin:0 0 20px; }
 html.design .form-error,html.design .danger-action { color:var(--error); }
 .sync-status {

@@ -102,18 +102,77 @@ function replaceCookingRange(pantry){
   }
   state=draft;save();cookingRangeUndo={before,after:cookingPlanSnapshot(state),oldSettings,options};return empty;
 }
+function shoppingAmountLabel(amount,unit){
+  const number=window.WochentischRecipes.formatAmount(amount);
+  const suffix=unit==='Stück'?'Stk.':unit;
+  return suffix?`${number} ${suffix}`:number;
+}
 function shoppingRecipeQuantity(item,filtered){
-  const model=window.WochentischCookingPlan,format=window.WochentischRecipes.formatAmount,container=document.createElement('div');container.className='shopping-recipe-quantity';container.setAttribute('aria-label',`Rezeptmengen für ${item.name}`);
-  for(const [unit,calculated] of item.amounts||[]){let displayed=0,changed=false;
-    for(const [week,amounts] of item.byWeek){const key=model.overrideKey(week,item.name,unit),amount=amounts.get(unit)||0,override=state.quantityOverrides?.[key];displayed+=!filtered&&override!==undefined?(changed=true,override):amount}
-    const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=`${format(displayed)} ${unit}`.trim();summary.setAttribute('aria-label',`${summary.textContent} ${item.name}, Menge bearbeiten`);details.append(summary);
-    const note=document.createElement('p');note.textContent=`Berechneter Bedarf${filtered?' für dieses Gericht':''}: ${format(calculated)} ${unit}`;details.append(note);
-    if(!filtered)for(const [week,amounts] of item.byWeek){if(!amounts.has(unit))continue;const key=model.overrideKey(week,item.name,unit),label=document.createElement('label');label.textContent=`Einkaufswoche ab ${week} (${unit||'ohne Einheit'})`;const input=document.createElement('input');input.type='number';input.min='0.001';input.step='any';input.inputMode='decimal';input.value=state.quantityOverrides?.[key]??amounts.get(unit);label.append(input);const apply=document.createElement('button');apply.type='button';apply.className='secondary-button';apply.textContent='Menge übernehmen';apply.onclick=()=>{if(!input.checkValidity()||Number(input.value)<=0){input.reportValidity();return}state.quantityOverrides??={};state.quantityOverrides[key]=Number(input.value);save();renderShoppingList()};details.append(label,apply);if(state.quantityOverrides?.[key]!==undefined){const reset=document.createElement('button');reset.type='button';reset.className='text-button';reset.textContent='Auf berechnete Menge zurücksetzen';reset.onclick=()=>{delete state.quantityOverrides[key];save();renderShoppingList()};details.append(reset)}}
-    else {const hint=document.createElement('p');hint.textContent='Mengen in der Gesamtübersicht bearbeiten.';details.append(hint)}
-    if(changed){const badge=document.createElement('span');badge.className='quantity-adjusted';badge.textContent='angepasst';summary.append(document.createTextNode(' · '),badge)}container.append(details);
+  const model=window.WochentischCookingPlan,fields=document.createElement('div');
+  fields.className='shopping-recipe-quantity';
+  const labels=[],controls=[];
+  for(const [unit,calculated] of item.amounts||[]){
+    const group=document.createElement('fieldset'),legend=document.createElement('legend');
+    legend.textContent=`Berechneter Bedarf: ${shoppingAmountLabel(calculated,unit)}`;
+    group.append(legend);
+    let displayed=0;
+    const weeksWithAmount=[...item.byWeek].filter(([,amounts])=>amounts.has(unit));
+    for(const [week,amounts] of weeksWithAmount){
+      const key=model.overrideKey(week,item.name,unit),amount=amounts.get(unit);
+      const override=filtered?undefined:state.quantityOverrides?.[key];
+      displayed+=override??amount;
+      if(filtered)continue;
+      const label=document.createElement('label'),input=document.createElement('input');
+      label.textContent=weeksWithAmount.length>1?`Menge für die Woche ab ${week.split('-').reverse().join('.')}`:'Menge';
+      input.type='number';
+      input.required=true;
+      input.min='0';
+      input.step='any';
+      input.inputMode='decimal';
+      input.defaultValue=override??amount;
+      input.addEventListener('input',()=>input.setCustomValidity(Number(input.value)<=0?'Gib eine Menge größer als 0 ein.':''));
+      label.append(input);
+      group.append(label);
+      controls.push({input,key,amount});
+      if(override!==undefined){
+        const reset=document.createElement('button');
+        reset.type='button';
+        reset.className='text-button';
+        reset.textContent='Berechnete Menge verwenden';
+        reset.addEventListener('click',()=>{
+          input.value=amount;
+          input.setCustomValidity('');
+          input.focus({preventScroll:true});
+        });
+        group.append(reset);
+      }
+    }
+    labels.push(shoppingAmountLabel(displayed,unit));
+    fields.append(group);
   }
-  if(item.unknown?.size){const unknown=document.createElement('p');unknown.className='shopping-unknown-amount';unknown.textContent=`Zusätzlicher Bedarf ohne berechenbare Menge: ${[...item.unknown].join('; ')}`;container.append(unknown)}
-  return container;
+  if(filtered&&labels.length){
+    const hint=document.createElement('p');
+    hint.textContent='Mengen lassen sich in der Gesamtübersicht bearbeiten.';
+    fields.append(hint);
+  }
+  if(item.unknown?.size){
+    const unknown=document.createElement('p');
+    unknown.className='shopping-unknown-amount';
+    unknown.textContent=`Bedarf ohne berechenbare Menge: ${[...item.unknown].join('; ')}`;
+    fields.append(unknown);
+  }
+  return {
+    label:labels.join(' + '),fields,editable:controls.length>0,
+    apply(){
+      for(const {input,key,amount} of controls){
+        const value=Number(input.value);
+        if(value===Number(input.defaultValue))continue;
+        state.quantityOverrides??={};
+        if(value===amount)delete state.quantityOverrides[key];
+        else state.quantityOverrides[key]=value;
+      }
+    }
+  };
 }
 function initializePlanningUI(){
   const form=$('#household-portions-form'),model=window.WochentischCookingPlan;
