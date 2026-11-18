@@ -7,7 +7,8 @@ const vm = require('node:vm');
 const source = fs.readFileSync(require.resolve('../app.js'), 'utf8');
 const catalog = fs.readFileSync(require.resolve('../ingredient-catalog.js'), 'utf8');
 const matching = source.slice(source.indexOf('function ingredientKey('), source.indexOf('function availablePantryIngredients('));
-const planner = source.slice(source.indexOf('function makePlan('), source.indexOf('function formatRange('));
+const planner = source.slice(source.indexOf('function planningIngredientOverlap('), source.indexOf('function formatRange('));
+const cookingPlan = require('../cooking-plan.js');
 const calendar = source.slice(source.indexOf('function mondayFor('), source.indexOf('function ensurePlanForDate('));
 const trialFields = source.slice(source.indexOf('function trialDishFields('), source.indexOf('function emptyState('));
 const dayCandidates = source.slice(source.indexOf('function randomDayDishes('), source.indexOf('function planDayDish('));
@@ -27,10 +28,31 @@ const pasta = { id: 'pasta', ingredient: 'Pasta', ingredients: ['Nudeln'] };
 
 test('day draw skips existing entries, baking and trials; remix also skips trials', () => {
   const trial = { ...soup, id: 'trial', isTrial: true };
-  const c = setup([cake, soup, pasta, trial]);
-  assert.deepEqual(Array.from(c.randomDayDishes(c.state.dishes, ['pasta']), dish => dish.id), ['soup']);
-  assert.equal(c.randomDayDishes(c.state.dishes, ['soup', 'pasta']).length, 0);
+  const c = setup([cake, soup, pasta, trial], [['pasta'], ['soup', 'pasta']]);
+  assert.deepEqual(Array.from(c.randomDayDishes(start), dish => dish.id), ['soup']);
+  assert.equal(c.randomDayDishes(new Date(2026, 10, 10)).length, 0);
   assert.ok(c.makePlan(start, ['Karotte']).every(day => !day.includes('trial')));
+});
+
+test('day draw prefers variety across weeks and on both sides, grouping different rice varieties', () => {
+  const rice = { id: 'rice', ingredients: ['Jasminreis'] };
+  const previous = { id: 'previous', isTrial: true, ingredients: ['Basmatireis', 'Salz'] };
+  const next = { id: 'next', isTrial: true, ingredients: ['Penne'] };
+  const potatoes = { id: 'potatoes', ingredients: ['Kartoffeln', 'Salz'] };
+  const c = setup([rice, previous, next, pasta, soup, potatoes], [[], ['next']]);
+  c.state.plans['2026-11-02'] = [[], [], [], [], [], [], ['previous']];
+  c.window.WochentischCookingPlan = cookingPlan;
+  assert.deepEqual(Array.from(c.randomDayDishes(start), dish => dish.id), ['soup', 'potatoes']);
+});
+
+test('day draw uses the least overlapping fallback and weights linked leftovers on closer days more', () => {
+  const rice = { id: 'rice', ingredients: ['Reis'] };
+  const riceTrial = { id: 'rice-trial', isTrial: true, ingredients: ['Basmatireis'] };
+  const soupTrial = { ...soup, id: 'soup-trial', isTrial: true };
+  const c = setup([rice, riceTrial, soup, soupTrial], [[], [], [], [], ['soup-trial']]);
+  c.window.WochentischCookingPlan = cookingPlan;
+  c.state.cookingEntries = { batch: { dishId: 'rice-trial', restDates: ['2026-11-10'] } };
+  assert.deepEqual(Array.from(c.randomDayDishes(new Date(2026, 10, 11)), dish => dish.id), ['soup']);
 });
 
 test('baking is excluded from random and pantry-prioritized results', () => {

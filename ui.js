@@ -41,6 +41,11 @@ const uiIcons={
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
 function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
+function weekDialogOffscreenTransform(dialog){return `translateY(-${dialog.getBoundingClientRect().bottom+16}px)`}
+function animateWeekDialogIn(dialog){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return null;
+  return dialog.animate([{transform:weekDialogOffscreenTransform(dialog)},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+}
 function cookingEntryOverlay(dialog){
   // Keep this menu out of the native dialog top layer: iOS can reposition it
   // after showModal() has focused its contents on a scrolled page.
@@ -49,7 +54,6 @@ function cookingEntryOverlay(dialog){
   let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   const stopMotion=()=>{if(motion){motion.onfinish=null;motion.cancel();motion=null}};
-  const offscreenTransform=()=>`translateY(-${dialog.getBoundingClientRect().bottom+16}px)`;
   const close=dialog.close.bind(dialog);
   const release=()=>{
     inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
@@ -65,12 +69,12 @@ function cookingEntryOverlay(dialog){
       inertSiblings.forEach(element=>{element.inert=true});
       layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
       dialog.querySelector('.close-button').focus({preventScroll:true});
-      if(!reducedMotion.matches)motion=dialog.animate([{transform:offscreenTransform()},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
+      if(!reducedMotion.matches)motion=layer.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
     }catch(error){dialog.removeAttribute('open');layer.hidden=true;release();throw error}
   };
   dialog.close=(...args)=>{
     if(!dialog.open)return;
-    const transform=getComputedStyle(dialog).transform;
+    const opacity=getComputedStyle(layer).opacity;
     stopMotion();
     // Close logically now so actions can open the recipe or chooser immediately.
     // The inert menu remains visible only for its exit animation.
@@ -79,7 +83,7 @@ function cookingEntryOverlay(dialog){
     if(opener?.isConnected)opener.focus({preventScroll:true});
     const finish=()=>{layer.hidden=true;layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
     if(reducedMotion.matches){finish();return}
-    motion=dialog.animate([{transform},{transform:offscreenTransform()}],{duration:200,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    motion=layer.animate([{opacity},{opacity:0}],{duration:120,easing:'ease-in',fill:'forwards'});
     motion.onfinish=finish;
   };
   dialog.addEventListener('keydown',event=>{

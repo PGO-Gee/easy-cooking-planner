@@ -389,7 +389,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .nav-item[hidden]{display:none!important}
 #dish-dialog:focus{outline:none}
 #dish-dialog{box-sizing:border-box;max-height:calc(var(--visual-viewport-height,100dvh) - 24px);overflow:auto;overscroll-behavior:contain}
-.dish-keyboard-open #dish-dialog[open] {
+.dish-keyboard-open :is(#dish-dialog[open], #recipe-import-dialog[data-trial][open]) {
   position: fixed;
   inset-block-start: calc(var(--visual-viewport-top, 0px) + 8px + env(safe-area-inset-top));
   inset-block-end: auto;

@@ -52,16 +52,20 @@ async function editorLayout(page, width, height, theme) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ colorScheme: theme, reducedMotion: 'reduce' });
   await page.evaluate(() => { themeOverride = null; applyTheme(); chooseDish(0); });
+  assert.equal(await page.locator('#choose-dialog').evaluate(dialog => dialog.getAnimations().length), 0);
   for (const id of ['#choose-random-dish', '#choose-trial-dish']) {
     const rect = await page.locator(id).boundingBox();
     assert(rect && rect.height >= 44 && rect.x >= 0 && rect.x + rect.width <= width + 1);
   }
   await page.locator('#choose-trial-dish').click();
-  await page.locator('#dish-recipe-title').fill('Layoutprobe');
-  await page.locator('.trial-source-editor summary').click();
-  await page.locator('#trial-recipe-source').focus();
+  const input = page.locator('#recipe-import-text');
+  const takeRecipe = page.getByRole('button', { name: 'Rezept übernehmen', exact: true });
+  assert.equal(await page.locator('#recipe-import-dialog :is(textarea,input):visible').count(), 1);
+  assert.deepEqual(await page.locator('#recipe-import-dialog button:visible').allTextContents(), ['×', 'Rezept übernehmen']);
+  assert(await takeRecipe.isDisabled());
+  await input.fill('Layoutprobe');
   const metrics = await page.evaluate(async () => {
-    const field = $('#trial-recipe-source'), dialog = $('#dish-dialog');
+    const field = $('#recipe-import-text'), dialog = $('#recipe-import-dialog');
     const keyboardHeight = innerHeight === 390 ? 210 : 300;
     Object.defineProperty(visualViewport, 'height', { configurable: true, value: keyboardHeight });
     syncVisualViewport();
@@ -80,6 +84,8 @@ async function editorLayout(page, width, height, theme) {
   assert(metrics.width <= width + 1 && metrics.fontSize >= 16, JSON.stringify(metrics));
   assert(metrics.keyboard && metrics.scrollable && metrics.dialogBottom <= metrics.keyboardHeight + 1, JSON.stringify(metrics));
   assert(metrics.fieldTop < metrics.dialogBottom && metrics.fieldBottom > metrics.dialogTop, JSON.stringify(metrics));
+  await takeRecipe.click();
+  assert.equal(await page.locator('#dish-recipe-title').inputValue(), 'Layoutprobe');
   await page.locator('#dish-form [type="submit"]').click();
   await page.locator('#dish-dialog').waitFor({ state: 'hidden' });
   await page.locator('#toast .toast-action').click();
@@ -97,6 +103,24 @@ async function editorLayout(page, width, height, theme) {
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
     await openFixture(page);
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    for (const [width, height] of [[390, 844], [1440, 900]]) {
+      await page.setViewportSize({ width, height });
+      const motion = await page.evaluate(() => {
+        chooseDish(0);
+        const dialog = $('#choose-dialog'), animation = dialog.getAnimations()[0];
+        animation.pause();
+        animation.currentTime = 0;
+        const start = dialog.getBoundingClientRect().bottom;
+        animation.finish();
+        const end = dialog.getBoundingClientRect().top;
+        const duration = animation.effect.getTiming().duration;
+        dialog.close();
+        return { start, end, duration };
+      });
+      assert(motion.start < 0 && motion.end >= 0 && motion.duration === 280, JSON.stringify(motion));
+    }
 
     for (const [width, height] of [[320, 568], [390, 844], [844, 390], [1440, 900]]) {
       for (const theme of ['light', 'dark']) await editorLayout(page, width, height, theme);
@@ -124,9 +148,8 @@ async function editorLayout(page, width, height, theme) {
     assert.match(await page.locator('#choose-random-hint').textContent(), /bereits eingeplant/);
 
     await page.locator('#choose-trial-dish').click();
-    await page.locator('.trial-source-editor summary').click();
-    await page.locator('#trial-recipe-source').fill(source);
-    await page.locator('.trial-source-editor button').click();
+    await page.locator('#recipe-import-text').fill(source);
+    await page.getByRole('button', { name: 'Rezept übernehmen', exact: true }).click();
     assert.equal(await page.locator('#dish-recipe-title').inputValue(), 'Testcurry');
     await page.locator('#recipe-ingredient-rows [data-recipe-field="amount"]').first().fill('250');
     await page.locator('#dish-form [type="submit"]').click();
@@ -183,13 +206,19 @@ async function editorLayout(page, width, height, theme) {
 
     await page.evaluate(() => { weekOffset = 0; chooseDish(1); });
     await page.locator('#choose-trial-dish').click();
-    await page.locator('#dish-recipe-title').fill('Versuch ohne Anleitung');
-    await page.locator('.trial-source-editor summary').click();
-    await page.locator('#trial-recipe-source').fill('Erster Versuch.');
-    await page.locator('.trial-source-editor button').click();
-    assert.match(await page.locator('.trial-source-editor [role="status"]').textContent(), /erkannt/);
+    await page.locator('#recipe-import-text').fill('Erster Versuch.');
+    await page.getByRole('button', { name: 'Rezept übernehmen', exact: true }).click();
+    assert.equal(await page.locator('#dish-recipe-title').inputValue(), 'Erster Versuch.');
+    assert.match(await page.locator('.recipe-import-defaults').textContent(), /Originaltext bleibt/);
     await page.locator('#dish-form [type="submit"]').click();
     assert.equal(await page.evaluate(() => state.dishes.find(dish => dish.isTrial)?.trialSource), 'Erster Versuch.');
+
+    await page.evaluate(() => openRecipeCreation());
+    assert(await page.getByRole('button', { name: 'Screenshots importieren' }).isVisible());
+    await page.getByRole('button', { name: 'Text importieren', exact: true }).click();
+    assert(await page.getByRole('button', { name: 'Rezept erkennen', exact: true }).isVisible());
+    assert(await page.locator('#recipe-import-back').isVisible());
+    await page.locator('#recipe-import-close').click();
 
     await page.evaluate(() => {
       const model = window.WochentischCookingPlan;
@@ -199,7 +228,8 @@ async function editorLayout(page, width, height, theme) {
     await page.locator('#choose-random-dish').click();
     assert.match(await page.locator('#choose-random-hint').textContent(), /Restetag/);
     await page.locator('#choose-trial-dish').click();
-    await page.locator('#dish-recipe-title').fill('Entwurf bleibt');
+    await page.locator('#recipe-import-text').fill('Entwurf bleibt');
+    await page.getByRole('button', { name: 'Rezept übernehmen', exact: true }).click();
     await page.locator('#dish-form [type="submit"]').click();
     assert.match(await page.locator('#dish-form-error').textContent(), /Restetag/);
     assert.equal(await page.locator('#dish-recipe-title').inputValue(), 'Entwurf bleibt');
