@@ -17,6 +17,32 @@ test('a pinned day outside the visible range also truncates a new block',()=>{
 test('incoming leftovers protect the first visible day and baking survives planning',()=>{
  const c=fixture();c.state=model.add(c.state,'a','2026-11-08',2.5,2,'incoming');c.state=model.add(c.state,'cake','2026-11-10',8,1,'cake');c.replaceCookingRange([]);assert.equal(model.entryAt(c.state,'2026-11-09',0),undefined);assert.deepEqual(c.state.cookingEntries.incoming.restDates,['2026-11-09']);assert.equal(c.state.cookingEntries.cake.portions,8);assert.equal(Object.values(c.state.cookingEntries).filter(e=>e.date==='2026-11-10').length,2);
 });
+test('remix preserves an unpinned trial and its rest day',()=>{
+ const c=fixture();
+ c.state.dishes.push({id:'trial',name:'Trial',isTrial:true,ingredients:[]});
+ c.state=model.add(c.state,'trial','2026-11-10',3,2,'trial-batch');
+ c.replaceCookingRange([]);
+ assert.equal(model.entryAt(c.state,'2026-11-10',0).id,'trial-batch');
+ assert.equal(model.entryAt(c.state,'2026-11-10',1),undefined);
+ assert.equal(model.entryAt(c.state,'2026-11-11',0),undefined);
+ assert.deepEqual(c.state.cookingEntries['trial-batch'].restDates,['2026-11-11']);
+});
+test('removal deletes the trial only after its last occurrence and undo restores it',()=>{
+ const c=fixture();
+ c.state.dishes.push({id:'trial',name:'Trial',isTrial:true,trialSource:'Original'});
+ c.state=model.add(c.state,'trial','2026-11-10',2,1,'first');
+ c.state=model.add(c.state,'trial','2026-11-11',2,1,'second');
+ c.state=model.remove(c.state,'first');
+ assert.equal(c.state.dishes.find(dish=>dish.id==='trial').trialSource,'Original');
+ c.renderCalendar=()=>{};
+ c.sameValue=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ c.showToast=(message,options)=>{c.undo=options.onAction};
+ assert(c.commitCookingChange(()=>model.remove(c.state,'second'),'Entfernt',{trialDishId:'trial'}));
+ assert(!c.state.dishes.some(dish=>dish.id==='trial'));
+ c.undo();
+ assert.equal(c.state.dishes.find(dish=>dish.id==='trial').trialSource,'Original');
+ assert.equal(c.state.cookingEntries.second.dishId,'trial');
+});
 test('one day per recipe plans seven cooking days without automatic leftovers',()=>{
  const c=fixture();c.state.planningSettings.days=1;c.replaceCookingRange([]);
  const entries=Object.values(c.state.cookingEntries);assert.equal(entries.length,7);assert(entries.every(e=>e.restDates.length===0));assert.deepEqual(c.state.restDays,{});

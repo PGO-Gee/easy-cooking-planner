@@ -1236,6 +1236,7 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
     max-height: none;
   }
   #choose-dialog.is-searching #choose-dish-type { display: none; }
+  #choose-dialog.is-searching .choose-day-actions { display: none; }
   #choose-dialog.is-searching .dialog-head .eyebrow { display: none; }
   #choose-dialog.is-searching .dialog-head { margin-bottom: 6px; }
   #choose-dialog.is-searching .dialog-head h2 { font-size: 18px; margin: 0; }

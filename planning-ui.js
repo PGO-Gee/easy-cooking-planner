@@ -42,9 +42,30 @@ function cookingPlanSnapshot(value){
   const restDays=Object.fromEntries(Object.entries(value.restDays||{}).map(([week,days])=>[week,[...new Set(days)].sort((a,b)=>a-b)]).filter(([,days])=>days.length));
   return structuredClone({plans,pinnedMeals,restDays,cookingEntries:value.cookingEntries||{}});
 }
-function commitCookingChange(create,message){
+function commitCookingChange(create,message,{trialDishId,shopping,onError=showToast}={}){
   const before=cookingPlanSnapshot(state);
-  try{state=create();state.cookingEntries=window.WochentischCookingPlan.normalizeEntries(state);save();renderCalendar();const after=cookingPlanSnapshot(state);showToast(message,{actionLabel:'Rückgängig',duration:10000,onAction:()=>{if(!sameValue(after,cookingPlanSnapshot(state))){showToast('Der Plan wurde inzwischen geändert. Rückgängig ist nicht mehr möglich.');return}Object.assign(state,before);save();renderCalendar()}});return true}catch(error){showToast(error.message);return false}
+  const beforeDish=structuredClone(state.dishes.find(dish=>dish.id===trialDishId));
+  try{
+    state=create();
+    state.cookingEntries=window.WochentischCookingPlan.normalizeEntries(state);
+    if(shopping)reopenShoppingIngredients(shopping.date,shopping.dish);
+    save();renderCalendar();
+  }catch(error){onError(error.message);return false}
+  const after=cookingPlanSnapshot(state),afterDish=structuredClone(state.dishes.find(dish=>dish.id===trialDishId));
+  const dishChanged=!sameValue(beforeDish,afterDish);
+  showToast(message,{actionLabel:'Rückgängig',duration:10000,onAction:()=>{
+    const currentDish=state.dishes.find(dish=>dish.id===trialDishId);
+    if(!sameValue(after,cookingPlanSnapshot(state))||(dishChanged&&!sameValue(afterDish,currentDish))){
+      showToast('Der Plan wurde inzwischen geändert. Rückgängig ist nicht mehr möglich.');return
+    }
+    Object.assign(state,before);
+    if(dishChanged){
+      state.dishes=state.dishes.filter(dish=>dish.id!==trialDishId);
+      if(beforeDish)state.dishes.push(beforeDish);
+    }
+    save();renderCalendar();
+  }});
+  return true
 }
 function plannedServingsForMeal(meal){const date=rangeDates()[Number(meal.closest('.day-content')?.dataset.day)],entry=date&&window.WochentischCookingPlan.entryAt(state,keyFor(date),Number(meal.dataset.mealIndex));return entry?window.WochentischCookingPlan.total(entry):null}
 function plannedEntryLabel(date,position){const model=window.WochentischCookingPlan,entry=model.entryAt(state,keyFor(date),position);return entry?`${window.WochentischRecipes.formatAmount(model.total(entry))} Portionen${entry.restDates.length?` · für ${1+entry.restDates.length} Tage`:''}`:'Portionen unbekannt'}
@@ -53,6 +74,10 @@ function openCookingEntryOptions(date,position,{editQuantity=false}={}){
   const dish=state.dishes.find(d=>d.id===entry.dishId);if(!dish)return;
   const dialog=uiDialog('cooking-entry-dialog',dish.name);dialog.querySelector('h2').textContent=dish.name;dialog.querySelectorAll(':scope > :not(.dialog-head)').forEach(el=>el.remove());dialog.querySelector('.quantity-back')?.remove();
   const dateLabel=document.createElement('p');dateLabel.textContent=formatChooserDate(date);dialog.append(dateLabel,uiButton('Rezept ansehen',()=>{dialog.close();void openRecipe(dish.id,{from:'week',servings:model.total(entry)})},{icon:'dishes',className:'primary-button'}));
+  if(dish.isTrial){
+    dialog.append(uiButton('Probegericht bearbeiten',()=>{dialog.close();openDish(dish.id)},{icon:'edit'}));
+    dialog.append(uiButton('In meine Gerichte übernehmen',()=>{dialog.close();openDish(dish.id,{promoteTrial:true})}));
+  }
   const form=document.createElement('form'),options=document.createElement('div');form.id='cooking-entry-quantity';form.hidden=!editQuantity;const quantityButton=uiButton('Kochmenge ändern',()=>setQuantityEditing(true));quantityButton.prepend(uiIcon('cooking'));quantityButton.setAttribute('aria-expanded',String(editQuantity));quantityButton.setAttribute('aria-controls',form.id);dialog.append(quantityButton);options.className='planning-options';renderPlanningFields(options,{...state.planningSettings,mode:'custom',portions:entry.portions,days:1+entry.restDates.length});
   const fields=options.querySelector('.planning-fields'),portionField=options.querySelector('[data-planning="portions"]').parentElement;
   const advanced=document.createElement('details');advanced.className='quantity-more-options';const summary=document.createElement('summary');summary.textContent='Weitere Einstellungen';advanced.append(summary);
@@ -79,7 +104,7 @@ function replaceCookingRange(pantry){
   const model=window.WochentischCookingPlan,options=householdPlanningDefaults(),dates=rangeDates(),keys=dates.map(keyFor),before=cookingPlanSnapshot(state),oldSettings=structuredClone(state.planningSettings);
   let draft=structuredClone(state);draft.cookingEntries=model.normalizeEntries(draft);
   const entries=structuredClone(draft.cookingEntries),protectedDays=new Set(),pinnedIds=new Set();
-  for(const e of Object.values(entries)){const dish=draft.dishes.find(d=>d.id===e.dishId);if(e.pinned||e.date<keys[0]||dish?.type==='baking'){
+  for(const e of Object.values(entries)){const dish=draft.dishes.find(d=>d.id===e.dishId);if(e.pinned||e.date<keys[0]||dish?.type==='baking'||dish?.isTrial){
     if(e.pinned&&dish?.type!=='baking')pinnedIds.add(e.dishId);
     if(dish?.type!=='baking')for(const date of [e.date,...e.restDates])if(keys.includes(date))protectedDays.add(keys.indexOf(date));
   }else if(keys.includes(e.date))delete entries[e.id]}

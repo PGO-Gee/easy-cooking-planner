@@ -51,9 +51,15 @@ test('does not silently lose oversized ingredient lines or infer backing forms a
   const ingredient='1 '+ 'x'.repeat(110), result=parse(`Zutaten für eine Backform (30 × 40 cm)\n${ingredient}\nZubereitung\n1. Mischen.`);
   assert.equal(result.servings,null);assert(result.unassigned.includes(ingredient));assert(result.unassigned.some(line=>line.includes('Backform')));
 });
-test('does not round explicit unsupported times into a matching slider value',()=>{
+test('preserves exact durations and leaves ranges or out-of-bounds values for review',()=>{
   assert.equal(parse('Gesamtzeit: 30 Minuten\nZutaten\n1 Ei').time,30);
-  const result=parse('Gesamtzeit: 35 Minuten\nZutaten\n1 Ei');assert.equal(result.time,null);assert(result.unassigned.some(line=>line.includes('35')));
+  assert.equal(parse('Gesamtzeit: 35 Minuten\nZutaten\n1 Ei').time,35);
+  assert.equal(parse('Dauer: 1 Std. 5 Min.\nZutaten\n1 Ei').time,65);
+  for(const line of ['Gesamtzeit: 25–35 Minuten','Gesamtzeit: 25 Stunden','Arbeitszeit: 15 Minuten']){
+    const result=parse(line+'\nZutaten\n1 Ei');
+    assert.equal(result.time,null,line);
+    assert.deepEqual(result.unassigned,[line]);
+  }
 });
 
 test('synthetic: section headings with inline ingredients and preparation',()=>{
@@ -65,7 +71,8 @@ test('synthetic: section headings with inline ingredients and preparation',()=>{
 test('synthetic: portion and duration metadata within a recipe are not ingredients',()=>{
   const r=parse('Rezept: Suppe\nZutaten\nPortionen: 4\nZubereitungszeit: 35 Minuten\n2 Karotten\n500 ml Wasser\nZubereitung\n1. Alles kochen.');
   assert.equal(r.servings,4);assert.deepEqual(r.ingredients.map(x=>x.name),['Karotten','Wasser']);
-  assert(r.unassigned.some(line=>line.includes('35 Minuten')));
+  assert.equal(r.time,35);
+  assert.deepEqual(r.unassigned,[]);
 });
 
 test('synthetic: recipe without section headings and numbered directions',()=>{
@@ -100,9 +107,160 @@ test('synthetic: numbered instructions without punctuation are not ingredients',
   assert.deepEqual(r.ingredients.map(x=>x.name),['Tomaten','Gurke']);assert.deepEqual(r.steps,['Tomaten und Gurke schneiden','Alles vermengen']);
 });
 
-test('synthetic: ambiguous inline ingredient lists stay visible for correction',()=>{
-  const line='Zutaten: 2 Eier, 200 g Mehl';const r=parse(`Rezept: Teig\n${line}\nZubereitung\n1. Alles verrühren.`);
+test('unsupported amounts in inline ingredient lists keep the source line visible for correction',()=>{
+  const line='Zutaten: 2 Eier, 2 x 200 g Mehl';const r=parse(`Rezept: Teig\n${line}\nZubereitung\n1. Alles verrühren.`);
   assert.equal(r.ingredients.length,0);assert(r.unassigned.includes(line));
+});
+
+test('imports the pasted Blini recipe with spelled-out amounts and spoken step numbers',()=>{
+  const source=String.raw`"Blini.\
+Zutaten: vier Stück Eier, 200 g Mehl, 500 g Milch, 50 g Zucker, 75 g Öl, eine Prise Salz.\
+Zubereitung: alle Zutaten für mischen und mit dem Mixer kurz verrühren.\
+Zweitens Öl in die Pfanne Pfanne geben"`;
+  const plain=source.slice(1,-1).replace(/\\\n/g,'\n');
+  for(const text of [source,plain]){
+    const result=parse(text);
+    assert.equal(result.name,'Blini');
+    assert.equal(result.servings,null);
+    assert.deepEqual(result.ingredients.map(({name,amount,unit})=>[name,amount,unit]),[
+      ['Eier',4,'Stück'],['Mehl',200,'g'],['Milch',500,'g'],['Zucker',50,'g'],['Öl',75,'g'],['Salz',1,'Prise']
+    ]);
+    assert.deepEqual(result.steps,[
+      'alle Zutaten für mischen und mit dem Mixer kurz verrühren.',
+      'Öl in die Pfanne Pfanne geben'
+    ]);
+    assert.deepEqual(result.unassigned,[]);
+    assert.deepEqual(result.errors,[]);
+  }
+});
+
+test('ingredient section lists keep decimal commas, preparation notes and parenthetical commas',()=>{
+  const {parseSection}=require('../recipe-import.js');
+  const result=parseSection('1 Zwiebel, fein gehackt, 1,5 EL Öl (nativ, mild); zwei Karotten und eine Handvoll Petersilie.','ingredients');
+  assert.deepEqual(result.ingredients,[
+    {name:'Zwiebel',amount:1,unit:'',note:'fein gehackt'},
+    {name:'Öl',amount:1.5,unit:'EL',note:'nativ, mild'},
+    {name:'Karotten',amount:2,unit:'',note:''},
+    {name:'Petersilie',amount:'eine Handvoll',unit:'',note:''}
+  ]);
+  assert.deepEqual(result.unassigned,[]);
+});
+
+test('recognizes Markdown headings, reversed quantities, bullets and German fractions',()=>{
+  const result=parse([
+    '### Kräuter-Dip',
+    '**Zutaten für vier Personen:**',
+    '– Quark: 250 g',
+    '• Kräuter (2 EL)',
+    '- Salz – ein halber TL',
+    '✔ drei Viertel Becher Joghurt',
+    'Salz, Pfeffer, Paprika',
+    '**So geht’s:**',
+    '• Alles mischen',
+    '• Mit Salz abschmecken'
+  ].join('\n'));
+  assert.equal(result.name,'Kräuter-Dip');
+  assert.equal(result.servings,4);
+  assert.deepEqual(result.ingredients.map(({name,amount,unit})=>[name,amount,unit]),[
+    ['Quark',250,'g'],['Kräuter',2,'EL'],['Salz',0.5,'TL'],['Joghurt',0.75,'Becher'],
+    ['Salz',null,''],['Pfeffer',null,''],['Paprika',null,'']
+  ]);
+  assert.deepEqual(result.steps,['Alles mischen','Mit Salz abschmecken']);
+  assert.deepEqual(result.unassigned,[]);
+});
+
+test('recovers a compact recipe without line breaks and keeps measured and bare ingredients',()=>{
+  const result=parse('Blini Zutaten: 4 Eier, Milch: 500 g, Mehl 200 g, Salz und Pfeffer Zubereitung: 1) Teig mischen 2) In der Pfanne ausbacken.');
+  assert.equal(result.name,'Blini');
+  assert.deepEqual(result.ingredients.map(item=>[item.name,item.amount]),[
+    ['Eier',4],['Milch',500],['Mehl',200],['Salz',null],['Pfeffer',null]
+  ]);
+  assert.deepEqual(result.steps,['Teig mischen','In der Pfanne ausbacken.']);
+  assert.deepEqual(result.unassigned,[]);
+});
+
+test('finds marked sections on one line and keeps unclassified inline details in the source',()=>{
+  const source='Blini. **Zutaten für 4 Personen:** 4 Eier, 2 × 200 g Mehl. **Zubereitung:** Erstens verrühren Zweitens backen.';
+  const result=parse(source);
+  assert.equal(result.name,'Blini');
+  assert.equal(result.servings,4);
+  assert.deepEqual(result.steps,['verrühren','backen.']);
+  assert.deepEqual(result.unassigned,[source]);
+});
+
+test('recognizes parenthesized portions and a trailing tip in a single physical line',()=>{
+  const source='Bratkartoffeln. Zutaten (2 Personen): 400 g Kartoffeln; Salz, Pfeffer und Muskat. Anleitung: Kartoffeln braten. Tipp: Mit Petersilie servieren.';
+  const result=parse(source);
+  assert.equal(result.name,'Bratkartoffeln');
+  assert.equal(result.servings,2);
+  assert.deepEqual(result.ingredients.map(item=>item.name),['Kartoffeln','Salz','Pfeffer','Muskat']);
+  assert.deepEqual(result.steps,['Kartoffeln braten.']);
+  assert.deepEqual(result.unassigned,[source]);
+});
+
+test('infers a title and instructions in a recipe with no section headings',()=>{
+  const result=parse('Karottenpüree\n(für zwei Personen)\n250 g Karotten\n1 EL Butter\nKarotten weich kochen.\nDanach mit Butter pürieren.');
+  assert.equal(result.name,'Karottenpüree');
+  assert.equal(result.servings,2);
+  assert.deepEqual(result.ingredients.map(item=>item.name),['Karotten','Butter']);
+  assert.deepEqual(result.steps,['Karotten weich kochen.','Danach mit Butter pürieren.']);
+  assert.deepEqual(result.unassigned,[]);
+});
+
+test('reads labelled ingredient tables in Markdown and tab-separated text',()=>{
+  for(const table of [
+    '| Menge | Einheit | Zutat | Hinweis |\n| ----- | ------- | ----- | ------- |\n| ½ | l | Milch | kalt |\n| 30 | g | Stärke | |',
+    'Zutat\tMenge\tHinweis\nMilch\t½ l\tkalt\nStärke\t30 g\t'
+  ]){
+    const result=parse('Schoko-Pudding\nZutaten\n'+table+'\nZubereitung\nZunächst Milch erhitzen. Danach Stärke einrühren.');
+    assert.equal(result.name,'Schoko-Pudding');
+    assert.deepEqual(result.ingredients,[
+      {name:'Milch',amount:0.5,unit:'l',note:'kalt'},
+      {name:'Stärke',amount:30,unit:'g',note:''}
+    ]);
+    assert.deepEqual(result.steps,['Zunächst Milch erhitzen.','Danach Stärke einrühren.']);
+    assert.deepEqual(result.unassigned,[]);
+  }
+});
+
+test('preserves free-text ingredient notes and does not read a cooking instruction as a serving count',()=>{
+  const result=parse([
+    'Zutaten:',
+    'Sauce: 1 Dose Tomaten (400 g, 240 g Abtropfgewicht), 2 EL Öl, zum Braten.',
+    'So wird’s gemacht:',
+    'Tomaten erhitzen.',
+    'Auf zwei Portionen verteilen.',
+    'Guten Appetit!'
+  ].join('\n'));
+  assert.equal(result.servings,null);
+  assert.deepEqual(result.ingredients,[
+    {name:'Tomaten',amount:1,unit:'Dose',note:'Sauce · 400 g, 240 g Abtropfgewicht'},
+    {name:'Öl',amount:2,unit:'EL',note:'Sauce · zum Braten'}
+  ]);
+  assert.deepEqual(result.steps,['Tomaten erhitzen.','Auf zwei Portionen verteilen.']);
+  assert.deepEqual(result.unassigned,['Guten Appetit!']);
+});
+
+test('keeps conflicting metadata and ambiguous quantities for review',()=>{
+  const source=[
+    'Für 2 Personen',
+    'Portionen: vier',
+    'Gesamtzeit: 35 Minuten',
+    'Dauer: 45 Minuten',
+    'Zutaten',
+    '1.000 g Mehl',
+    '0 g Öl',
+    '• −100 g Zucker',
+    '⅜ l Milch'
+  ];
+  const result=parse(source.join('\n'));
+  assert.equal(result.servings,null);
+  assert.equal(result.time,null);
+  assert.deepEqual(result.ingredients,[{name:'Milch',amount:0.375,unit:'l',note:''}]);
+  assert.deepEqual(result.unassigned,[...source.slice(0,4),...source.slice(5,8)]);
+  const timed=parse('Gesamtzeit: 45 min\nZubereitungszeit: 20 min\nBackzeit: 25 min\nZutaten: 2 Eier');
+  assert.equal(timed.time,45);
+  assert.deepEqual(timed.unassigned,['Zubereitungszeit: 20 min','Backzeit: 25 min']);
 });
 
 test('synthetic: trailing taste instructions do not become part of the shopping ingredient',()=>{

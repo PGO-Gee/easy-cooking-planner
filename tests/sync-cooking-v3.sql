@@ -53,4 +53,58 @@ begin
  if has_function_privilege('anon','public.read_household_v3(uuid)','execute') or has_table_privilege('authenticated','wochentisch_private.cooking_state','select') then raise exception 'private state exposed';end if;
 end;
 $test$;
+
+do $test$
+declare
+ household uuid:=gen_random_uuid(); member_one uuid:=gen_random_uuid(); member_two uuid:=gen_random_uuid();
+ recipe_id uuid:=gen_random_uuid(); trial_id uuid:=gen_random_uuid();
+ base jsonb; draft jsonb; cloud jsonb; remote jsonb; old_dish jsonb; conflict jsonb; dish jsonb; written jsonb;
+ source_text text:=E'Testcurry\n200 g Kichererbsen\nAlles garen.';
+begin
+ insert into public.households(id,name,created_by) values(household,'Synthetic trial test',member_one);
+ insert into public.household_members(household_id,user_id) values(household,member_one),(household,member_two);
+ insert into public.dishes(id,household_id,name) values(recipe_id,household,'Vorhandenes Gericht');
+ perform set_config('request.jwt.claim.sub',member_one::text,true);
+ base:=public.read_household_v3(household)->'state';
+ if (base->'dishes'->0) ? 'isTrial' then raise exception 'existing recipe received trial status'; end if;
+
+ dish:=jsonb_build_object('id',trial_id,'name','Testcurry','type','meal','time',30,'isTrial',true,'trialSource',source_text,
+  'ingredients',jsonb_build_array('Kichererbsen'),'recipe','{"servings":2,"ingredients":[{"name":"Kichererbsen","amount":200,"unit":"g"}],"steps":["Alles garen."]}'::jsonb);
+ draft:=base||jsonb_build_object('dishes',base->'dishes'||jsonb_build_array(dish),
+  'plans',jsonb_build_object('2026-11-09',jsonb_build_array(jsonb_build_array(trial_id),'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb,'[]'::jsonb)),
+  'pinnedMeals','{"2026-11-09":[[false],[],[],[],[],[],[]]}'::jsonb,
+  'cookingEntries',jsonb_build_object('trial-batch',jsonb_build_object('id','trial-batch','dishId',trial_id,'date','2026-11-09','position',0,'portions',2,'restDates','[]'::jsonb,'pinned',false)));
+ written:=public.sync_household_v3(household,gen_random_uuid(),base,draft)->'state';
+ perform set_config('request.jwt.claim.sub',member_two::text,true);
+ cloud:=public.read_household_v3(household)->'state';
+ if written is distinct from cloud then raise exception 'second member read differs';end if;
+ select value into dish from jsonb_array_elements(cloud->'dishes') where value->>'id'=trial_id::text;
+ if dish->'isTrial' is distinct from 'true' or dish->>'trialSource' is distinct from source_text or
+    dish#>>'{recipe,steps,0}' is distinct from 'Alles garen.' or cloud#>>'{cookingEntries,trial-batch,dishId}' is distinct from trial_id::text then
+  raise exception 'trial recipe or cooking occurrence lost';
+ end if;
+
+ -- An older client can send a dish without either field. Neither value may be cleared.
+ old_dish:=(dish-'isTrial'-'trialSource')||'{"name":"Umbenannt"}'::jsonb;
+ draft:=jsonb_set(cloud,'{dishes}',jsonb_build_array(cloud->'dishes'->0,old_dish));
+ remote:=public.sync_household_v3(household,gen_random_uuid(),cloud,draft)->'state';
+ select value into dish from jsonb_array_elements(remote->'dishes') where value->>'id'=trial_id::text;
+ if dish->'isTrial' is distinct from 'true' or dish->>'trialSource' is distinct from source_text or dish->>'name' is distinct from 'Umbenannt' then
+  raise exception 'omitted trial fields were lost';
+ end if;
+
+ draft:=jsonb_set(remote,'{dishes}',jsonb_build_array(remote->'dishes'->0,dish||'{"isTrial":false}'::jsonb));
+ cloud:=public.sync_household_v3(household,gen_random_uuid(),remote,draft)->'state';
+ select value into dish from jsonb_array_elements(cloud->'dishes') where value->>'id'=trial_id::text;
+ if dish->'isTrial' is distinct from 'false' or dish->>'trialSource' is distinct from source_text or
+    cloud->'cookingEntries' is distinct from remote->'cookingEntries' then raise exception 'promotion changed plan or source';end if;
+
+ draft:=jsonb_set(cloud,'{dishes}',jsonb_build_array(cloud->'dishes'->0,dish||'{"isTrial":"true"}'::jsonb));
+ begin
+  perform public.sync_household_v3(household,gen_random_uuid(),cloud,draft);
+  raise exception 'non-boolean trial status accepted';
+ exception when invalid_parameter_value then null;
+ end;
+end;
+$test$;
 rollback;
