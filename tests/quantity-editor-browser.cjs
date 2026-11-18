@@ -12,6 +12,36 @@ async function fixture(page){await page.evaluate(async()=>{
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,...(process.env.WOCHENTISCH_BROWSER_EXECUTABLE?{executablePath:process.env.WOCHENTISCH_BROWSER_EXECUTABLE}:{channel:'chrome'})});
 try{const context=await browser.newContext({hasTouch:true,serviceWorkers:'block'});await context.route('https://**/*',r=>r.abort());const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>typeof initializePlanningUI==='function'&&document.documentElement.classList.contains('design'));await fixture(page);
 await page.evaluate(async()=>{state=WochentischCookingPlan.add(state,state.dishes[0].id,keyFor(rangeDates()[0]),2,1,'quantity-test');await renderCalendar()});
+ await page.setViewportSize({width:390,height:844});
+ // A viewport update after the scroll lock must precede any visible fade.
+ for(const reducedMotion of ['no-preference','reduce']){
+  await page.emulateMedia({reducedMotion});
+  const frames=await page.evaluate(async()=>{
+   const viewport=window.visualViewport;
+   const offset=value=>{
+    Object.defineProperty(viewport,'offsetTop',{configurable:true,value});
+    viewport.dispatchEvent(new Event('scroll'));
+   };
+   const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+   offset(80);
+   const meal=$('#calendar .meal-card');meal.scrollIntoView({block:'center'});openPlannedMeal(meal);
+   const dialog=$('#cooking-entry-dialog'),layer=dialog.parentElement;
+   const sample=()=>({y:dialog.getBoundingClientRect().top,opacity:Number(getComputedStyle(layer).opacity),animating:layer.getAnimations().length>0});
+   const opening=[sample()];
+   await nextFrame();offset(40);
+   await nextFrame();opening.push(sample());delete viewport.offsetTop;viewport.dispatchEvent(new Event('scroll'));
+   await nextFrame();opening.push(sample());
+   await nextFrame();const settled=sample();
+   dialog.close();
+   return {opening,settled};
+  });
+  assert.deepEqual(frames.opening.map(frame=>Math.round(frame.y)),[92,52,12]);
+  assert(frames.opening.every(frame=>frame.opacity===0&&!frame.animating),'the menu stays transparent until the viewport settles');
+  assert(Math.abs(frames.settled.y-12)<=1);
+  assert.equal(frames.settled.animating,reducedMotion==='no-preference');
+  if(reducedMotion==='reduce')assert.equal(frames.settled.opacity,1);
+  await page.locator('.cooking-entry-overlay').waitFor({state:'hidden'});
+ }
 for(const [width,height] of [[320,568],[390,844],[844,390],[1440,900],[390,360],[320,280]])for(const theme of ['light','dark']){
  await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});
  await page.evaluate(()=>{themeOverride=null;applyTheme();document.querySelectorAll('dialog[open]').forEach(d=>d.close());openCookingEntryOptions(rangeDates()[0],0)});

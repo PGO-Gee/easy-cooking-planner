@@ -51,9 +51,12 @@ function cookingEntryOverlay(dialog){
   // after showModal() has focused its contents on a scrolled page.
   const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
   dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
-  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null;
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null,openingFrame=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
-  const stopMotion=()=>{if(motion){motion.onfinish=null;motion.cancel();motion=null}};
+  const stopMotion=()=>{
+    if(openingFrame!==null){cancelAnimationFrame(openingFrame);openingFrame=null}
+    if(motion){motion.onfinish=null;motion.cancel();motion=null}
+  };
   const close=dialog.close.bind(dialog);
   const release=()=>{
     inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
@@ -61,6 +64,7 @@ function cookingEntryOverlay(dialog){
   };
   dialog.showModal=()=>{
     if(dialog.open)return;
+    layer.style.opacity='0';
     stopMotion();layer.classList.remove('is-closing');dialog.inert=false;
     opener=document.activeElement;lockPageScroll();locked=true;
     try{
@@ -69,20 +73,33 @@ function cookingEntryOverlay(dialog){
       inertSiblings.forEach(element=>{element.inert=true});
       layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
       dialog.querySelector('.close-button').focus({preventScroll:true});
-      if(!reducedMotion.matches)motion=layer.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
-    }catch(error){dialog.removeAttribute('open');layer.hidden=true;release();throw error}
+      // On iOS the scroll lock and focus can move the visual viewport after
+      // the dialog is laid out. Keep it transparent until its bounds settle.
+      let previousBounds;
+      const reveal=()=>{
+        syncVisualViewport();
+        const {top,width,height}=layer.getBoundingClientRect();
+        if(!previousBounds||top!==previousBounds.top||width!==previousBounds.width||height!==previousBounds.height){
+          previousBounds={top,width,height};openingFrame=requestAnimationFrame(reveal);return;
+        }
+        openingFrame=null;
+        if(!reducedMotion.matches)motion=layer.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
+        layer.style.removeProperty('opacity');
+      };
+      openingFrame=requestAnimationFrame(reveal);
+    }catch(error){dialog.removeAttribute('open');layer.hidden=true;layer.style.removeProperty('opacity');release();throw error}
   };
   dialog.close=(...args)=>{
     if(!dialog.open)return;
-    const opacity=getComputedStyle(layer).opacity;
+    const opacity=openingFrame===null&&!reducedMotion.matches?Number(getComputedStyle(layer).opacity):0;
     stopMotion();
     // Close logically now so actions can open the recipe or chooser immediately.
     // The inert menu remains visible only for its exit animation.
     layer.classList.add('is-closing');dialog.inert=true;
     close(...args);release();
     if(opener?.isConnected)opener.focus({preventScroll:true});
-    const finish=()=>{layer.hidden=true;layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
-    if(reducedMotion.matches){finish();return}
+    const finish=()=>{layer.hidden=true;layer.style.removeProperty('opacity');layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
+    if(opacity===0){finish();return}
     motion=layer.animate([{opacity},{opacity:0}],{duration:120,easing:'ease-in',fill:'forwards'});
     motion.onfinish=finish;
   };
