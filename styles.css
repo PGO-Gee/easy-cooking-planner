@@ -614,6 +614,8 @@ html.design input:not([type=checkbox]):not([type=range]):not([type=hidden]),html
 html.design textarea { width:100%;min-height:100px;resize:vertical; }
 html.design #dish-dialog { width:min(960px,calc(100vw - 24px));background:var(--canvas);color:var(--ink); }
 html.design #dish-form { padding:20px; }
+html.design #dish-form .dialog-head > div { min-width:0;overflow-wrap:anywhere; }
+html.design #close-dish-dialog { margin-inline-end:-8px; }
 html.design #dish-form label { color:var(--ink);font-size:13px;line-height:1.5; }
 html.design #dish-form > label,html.design .recipe-servings-control { display:flex;flex-direction:column;align-items:stretch;gap:8px; }
 html.design #dish-form .form-row { display:grid;grid-template-columns:1fr;gap:16px;margin:18px 0; }
@@ -633,9 +635,22 @@ html.design .editor-disclosure > summary::after,html.design .recipe-preparation 
 html.design .editor-disclosure[open] > summary::after { content:'⌃'; }
 html.design .recipe-ingredient-row,html.design .recipe-step-row { display:flex;flex-wrap:wrap;gap:8px;background:transparent;border:0;padding:10px 0;margin:0;border-bottom:1px solid var(--line); }
 html.design .recipe-ingredient-row > *,html.design .recipe-step-row > * { min-width:0; }
-html.design .recipe-ingredient-name { width:100%;flex:1 1 100%; }
-html.design .recipe-ingredient-row input[data-recipe-field=amount] { width:85px; }
-html.design .recipe-ingredient-row select { flex:1;width:95px; }
+html.design #dish-form .recipe-ingredient-row {
+  display:grid;
+  grid-template-columns:85px minmax(0,1fr) 44px;
+  grid-template-areas:'name name name' 'amount unit .' 'note note remove';
+}
+html.design #dish-form .recipe-ingredient-name { grid-area:name; }
+html.design #dish-form .recipe-ingredient-row [data-recipe-field=amount] { grid-area:amount; }
+html.design #dish-form .recipe-ingredient-row select { grid-area:unit;width:min(100%,112px); }
+html.design #dish-form .recipe-ingredient-row [data-recipe-field=note] { grid-area:note; }
+html.design #dish-form .recipe-ingredient-row .recipe-row-remove { grid-area:remove;width:44px; }
+@media (min-width: 901px) {
+  html.design #dish-form .recipe-ingredient-row {
+    grid-template-columns:minmax(130px,1.25fr) 85px 112px minmax(130px,1fr) 44px;
+    grid-template-areas:'name amount unit note remove';
+  }
+}
 html.design .recipe-step-row textarea { flex:1;min-width:150px; }
 html.design #dish-form .dialog-actions { position:static;display:flex;flex-wrap:wrap;background:var(--canvas);border-top:1px solid var(--line);padding:16px 0 0;margin:18px 0 0; }
 html.design #dish-form .dialog-actions button[type=submit] { flex:1; }

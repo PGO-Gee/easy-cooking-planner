@@ -21,9 +21,50 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+async function checkEditorStyle(editor, layout, findings) {
+  const style = await editor.evaluate(dialog => {
+    const element = selector => dialog.querySelector(selector);
+    const rect = selector => element(selector).getBoundingClientRect();
+    const fieldStyle = selector => {
+      const css = getComputedStyle(element(selector));
+      return [css.backgroundColor, css.borderTopWidth, css.borderTopColor, css.borderTopLeftRadius].join(' / ');
+    };
+    const title = rect('#dialog-title'), close = rect('#close-dish-dialog');
+    const amount = rect('[data-recipe-field="amount"]'), unit = rect('[data-recipe-field="unit"]');
+    const note = rect('[data-recipe-field="note"]'), remove = rect('.recipe-ingredient-row .recipe-row-remove');
+    const category = element('#dish-ingredient'), help = element('.main-ingredient-hint');
+    return {
+      unitWidth: unit.width,
+      unitSameRow: Math.abs(unit.top + unit.height / 2 - amount.top - amount.height / 2) <= 2,
+      unitFits: unit.left >= amount.right + 6 && unit.right <= rect('.recipe-ingredient-row').right,
+      categoryStyle: fieldStyle('#dish-ingredient'), amountStyle: fieldStyle('[data-recipe-field="amount"]'),
+      categoryHasOuterField: Boolean(category.closest('.pantry-search')),
+      categoryHelpBelow: help.getBoundingClientRect().top >= category.getBoundingClientRect().bottom,
+      removeWidth: remove.width, removeHeight: remove.height,
+      removeSameRow: Math.abs(remove.top - note.top) <= 2 && remove.left >= note.right + 6,
+      closeWidth: close.width, closeHeight: close.height,
+      closeInset: dialog.getBoundingClientRect().right - close.right,
+      closeTitleGap: close.left - title.right,
+      closeVerticalOffset: Math.abs(close.top + close.height / 2 - title.top - title.height / 2),
+      duplicatePreparationHeading: Boolean(element('#editor-preparation h4'))
+    };
+  });
+  const check = (condition, description) => { if (!condition) findings.push(`${layout}, ${description}`); };
+  check(style.unitWidth >= 88 && style.unitWidth <= 112 && style.unitSameRow && style.unitFits,
+    `Einheit soll kompakt neben der Menge stehen (Breite ${style.unitWidth}px, erwartet 88–112px)`);
+  check(!style.categoryHasOuterField && style.categoryStyle === style.amountStyle && style.categoryHelpBelow,
+    'Kategorie soll wie ein normales Eingabefeld aussehen, mit dem Hinweis darunter');
+  check(style.removeWidth >= 44 && style.removeHeight >= 44 && style.removeSameRow,
+    `Zutat entfernen soll neben dem Hinweis stehen und mindestens 44×44px groß sein (aktuell ${style.removeWidth}×${style.removeHeight}px)`);
+  check(style.closeWidth >= 44 && style.closeHeight >= 44 && style.closeInset >= 8 && style.closeInset <= 16 &&
+    style.closeTitleGap >= 8 && style.closeVerticalOffset <= 4,
+    `Schließen-X soll rechts oben mit dem Titel ausgerichtet sein (Randabstand ${style.closeInset}px, vertikaler Versatz ${style.closeVerticalOffset}px)`);
+  check(!style.duplicatePreparationHeading, 'Zubereitung soll im geöffneten Abschnitt keine zweite gleichbedeutende Überschrift haben');
+}
+
 async function checkImportedEditor(page) {
   const findings = [];
-  const recipe = 'Reispfanne\n2 Portionen\nZutaten\n250 g Reis\n1 Paprika\nZubereitung\nReis kochen.\nPaprika schneiden und unterheben.';
+  const recipe = 'Reispfanne\n2 Portionen\nZutaten\n250 g Reis\n100 ml Brühe\n1 Paprika\nZubereitung\nReis kochen.\nPaprika schneiden und unterheben.';
   for (const [width, height, keyboardHeight] of [[320, 568, 250], [393, 852, 420], [844, 390, 260], [1440, 900, 900]]) {
     await page.setViewportSize({ width, height });
     for (const colorScheme of ['light', 'dark']) {
@@ -40,6 +81,7 @@ async function checkImportedEditor(page) {
         assert(await details.evaluate(el => el.open), `Editor section ${section} must open`);
       }
       assert.match(await editor.getByRole('combobox', { name: 'Zutat', exact: true }).first().inputValue(), /^reis$/i);
+      assert.deepEqual(await editor.getByRole('combobox', { name: 'Einheit', exact: true }).evaluateAll(fields => fields.slice(0, 2).map(field => field.value)), ['g', 'ml']);
       assert.equal(await editor.getByRole('textbox', { name: 'Zubereitungsschritt 2' }).inputValue(), 'Paprika schneiden und unterheben.');
 
       const fields = [
@@ -54,6 +96,8 @@ async function checkImportedEditor(page) {
         ['Nährwert', '.dish-nutrition-fieldset input', '520', 48]
       ];
       const layout = `${width}×${height} ${colorScheme}`;
+      await editor.evaluate(dialog => dialog.ownerDocument.activeElement.blur());
+      await checkEditorStyle(editor, layout, findings);
       for (const [name, selector, value, minTextWidth] of fields) {
         const field = editor.locator(selector).first();
         // Tap while the screen is full, then let the editor react to the keyboard resizing it.

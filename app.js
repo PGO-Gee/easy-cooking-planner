@@ -2340,7 +2340,7 @@ const sectionImportPanels={};
   const textId=`dish-section-${key}-text`,hint=key==='nutrition'?'Bitte nur Nährwerte pro Portion einfügen.':'Deutschen Text einfügen und die erkannten Angaben prüfen.';
   panel.innerHTML=`<summary>${label} aus Text hinzufügen</summary><p>${hint} Die Auswertung bleibt auf diesem Gerät.</p><label for="${textId}">Text für ${label}</label><textarea id="${textId}" rows="5"></textarea><button type="button" class="secondary-button dish-section-import-action">Text übernehmen</button><p class="dish-section-import-status" role="status" aria-live="polite"></p><pre class="dish-section-import-unassigned"></pre>`;
   sectionImportPanels[key]={panel,text:panel.querySelector('textarea'),status:panel.querySelector('.dish-section-import-status'),unassigned:panel.querySelector('pre'),pending:[],lastSource:''};
-  const anchor=key==='ingredients'?$('.recipe-servings-control'):key==='preparation'?$('#recipe-editor-heading').parentElement.querySelector('h4'):$('.dish-nutrition-fieldset');anchor.before(panel);
+  const anchor=key==='ingredients'?$('.recipe-servings-control'):key==='preparation'?$('#recipe-step-rows'):$('.dish-nutrition-fieldset');anchor.before(panel);
   panel.querySelector('button').addEventListener('click',()=>importDishSection(key));
   sectionImportPanels[key].ocr=window.WochentischOCRUI.attach({before:panel.querySelector('label'),text:sectionImportPanels[key].text,parseButton:panel.querySelector('.dish-section-import-action')});
 });
@@ -2379,7 +2379,7 @@ const recipeEditorGroups={
   name:[$('#dish-recipe-title').closest('label'),$('#dish-type').closest('.dish-type-label')],
   main:[$('.dish-main-ingredient-field')],time:[$('.time-slider-label')],
   ingredients:[$('.recipe-servings-control'),$('.recipe-editor-hint'),portionHint,$('#recipe-ingredient-rows'),$('#recipe-add-ingredient')],
-  preparation:[$('#recipe-editor-heading').parentElement.querySelector('h4'),$('#recipe-step-rows'),$('#recipe-add-step')],
+  preparation:[$('#recipe-step-rows'),$('#recipe-add-step')],
   nutrition:[$('.dish-nutrition-fieldset')]
 };
 function recipeEditorSnapshot(){
