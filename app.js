@@ -2274,7 +2274,7 @@ let dishImport=null,importDefaultType='meal',dishSectionIngredients=false;
 function renderRecipeIngredientRows(items=[]){
   const container=$('#recipe-ingredient-rows');container.replaceChildren();
   (items.length?items:[{name:'',amount:null,unit:'',note:''}]).forEach(item=>{
-    const row=document.createElement('div');row.className='recipe-ingredient-row';const showNote=true;row.classList.toggle('has-ingredient-note',showNote);
+    const row=document.createElement('div');row.className='recipe-ingredient-row has-ingredient-note';
     const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
     const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
     const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:normalizeIngredient(item.name),role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
@@ -2290,9 +2290,25 @@ function renderRecipeIngredientRows(items=[]){
     const units=['','g','kg','ml','l','EL','TL','Prise','Stück','Dose','Bund'];
     if(item.unit&&!units.includes(item.unit))units.push(item.unit);
     units.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=value||'Einheit';unit.append(option)});unit.value=item.unit||'';
-    const note=recipeRowControl('input',{type:showNote?'text':'hidden',maxlength:'100',placeholder:'Hinweis (optional)',value:item.note||''});note.dataset.recipeField='note';if(showNote)note.setAttribute('aria-label','Hinweis');
+    const unitWrap=recipeRowControl('div',{className:'recipe-ingredient-unit'});
+    const unitLabel=recipeRowControl('span',{className:'recipe-ingredient-unit-label','aria-hidden':'true'});
+    const showUnit=()=>{unitLabel.textContent=unit.selectedOptions[0]?.textContent||'Einheit'};
+    unit.addEventListener('change',showUnit);
+    showUnit();
+    unitWrap.append(unitLabel,unit);
+
+    const noteId=`recipe-ingredient-note-${recipeIngredientSuggestionId}`;
+    const note=recipeRowControl('input',{id:noteId,type:'text',maxlength:'100',placeholder:'z. B. fein gehackt',value:item.note||'','aria-label':'Hinweis'});
+    note.dataset.recipeField='note';
+    note.hidden=!item.note;
+    const noteToggle=recipeRowControl('button',{type:'button',className:'recipe-ingredient-note-toggle',text:'Hinweis','aria-controls':noteId,'aria-expanded':String(!note.hidden)});
+    noteToggle.addEventListener('click',()=>{
+      note.hidden=!note.hidden;
+      noteToggle.setAttribute('aria-expanded',String(!note.hidden));
+      if(!note.hidden)note.focus({preventScroll:true});
+    });
     const remove=recipeRowControl('button',{type:'button',className:'recipe-row-remove',text:'×','aria-label':'Zutat entfernen'});remove.addEventListener('click',()=>{row.remove();if(!container.children.length)renderRecipeIngredientRows([]);updateRecipePagers()});
-    row.append(nameWrap,amount,unit,note,remove);container.append(row);
+    row.append(nameWrap,remove,amount,unitWrap,noteToggle,note);container.append(row);
   });
   updateRecipePagers();
 }

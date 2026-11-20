@@ -30,18 +30,26 @@ async function checkEditorStyle(editor, layout, findings) {
       return [css.backgroundColor, css.borderTopWidth, css.borderTopColor, css.borderTopLeftRadius].join(' / ');
     };
     const title = rect('#dialog-title'), close = rect('#close-dish-dialog');
-    const amount = rect('[data-recipe-field="amount"]'), unit = rect('[data-recipe-field="unit"]');
-    const note = rect('[data-recipe-field="note"]'), remove = rect('.recipe-ingredient-row .recipe-row-remove');
+    const name = rect('[data-recipe-field="name"]'), amount = rect('[data-recipe-field="amount"]');
+    const unit = rect('.recipe-ingredient-unit'), unitText = element('.recipe-ingredient-unit-label');
+    const toggle = rect('.recipe-ingredient-note-toggle'), remove = rect('.recipe-ingredient-row .recipe-row-remove');
+    const row = rect('.recipe-ingredient-row');
     const category = element('#dish-ingredient'), help = element('.main-ingredient-hint');
     return {
       unitWidth: unit.width,
       unitSameRow: Math.abs(unit.top + unit.height / 2 - amount.top - amount.height / 2) <= 2,
-      unitFits: unit.left >= amount.right + 6 && unit.right <= rect('.recipe-ingredient-row').right,
-      categoryStyle: fieldStyle('#dish-ingredient'), amountStyle: fieldStyle('[data-recipe-field="amount"]'),
+      unitFits: unit.left >= amount.right + 6 && unit.right <= toggle.left && unitText.scrollWidth <= unitText.clientWidth,
+      nameAboveDetails: name.bottom <= amount.top,
+      nameWeight: Number(getComputedStyle(element('[data-recipe-field="name"]')).fontWeight),
+      amountWeight: Number(getComputedStyle(element('[data-recipe-field="amount"]')).fontWeight),
+      cardSpacing: rect('.recipe-ingredient-row + .recipe-ingredient-row').top - row.bottom,
+      cardBorder: parseFloat(getComputedStyle(element('.recipe-ingredient-row')).borderTopWidth),
+      toggleWidth: toggle.width, toggleHeight: toggle.height, toggleFits: toggle.right <= row.right,
+      categoryStyle: fieldStyle('#dish-ingredient'), timeStyle: fieldStyle('#dish-minutes'),
       categoryHasOuterField: Boolean(category.closest('.pantry-search')),
       categoryHelpBelow: help.getBoundingClientRect().top >= category.getBoundingClientRect().bottom,
       removeWidth: remove.width, removeHeight: remove.height,
-      removeSameRow: Math.abs(remove.top - note.top) <= 2 && remove.left >= note.right + 6,
+      removeSameRow: Math.abs(remove.top - name.top) <= 2 && remove.left >= name.right + 6,
       closeWidth: close.width, closeHeight: close.height,
       closeInset: dialog.getBoundingClientRect().right - close.right,
       closeTitleGap: close.left - title.right,
@@ -52,10 +60,14 @@ async function checkEditorStyle(editor, layout, findings) {
   const check = (condition, description) => { if (!condition) findings.push(`${layout}, ${description}`); };
   check(style.unitWidth >= 88 && style.unitWidth <= 112 && style.unitSameRow && style.unitFits,
     `Einheit soll kompakt neben der Menge stehen (Breite ${style.unitWidth}px, erwartet 88–112px)`);
-  check(!style.categoryHasOuterField && style.categoryStyle === style.amountStyle && style.categoryHelpBelow,
+  check(style.nameAboveDetails && style.nameWeight > style.amountWeight && style.cardSpacing >= 8 && style.cardBorder >= 1,
+    'Zutatenname soll hervorgehoben über den Details stehen und jede Zutatenkarte soll klar getrennt sein');
+  check(style.toggleWidth >= 44 && style.toggleHeight >= 44 && style.toggleFits,
+    'Hinweis soll auch bei schmaler Breite neben den Details erreichbar bleiben');
+  check(!style.categoryHasOuterField && style.categoryStyle === style.timeStyle && style.categoryHelpBelow,
     'Kategorie soll wie ein normales Eingabefeld aussehen, mit dem Hinweis darunter');
   check(style.removeWidth >= 44 && style.removeHeight >= 44 && style.removeSameRow,
-    `Zutat entfernen soll neben dem Hinweis stehen und mindestens 44×44px groß sein (aktuell ${style.removeWidth}×${style.removeHeight}px)`);
+    `Zutat entfernen soll neben dem Namen stehen und mindestens 44×44px groß sein (aktuell ${style.removeWidth}×${style.removeHeight}px)`);
   check(style.closeWidth >= 44 && style.closeHeight >= 44 && style.closeInset >= 8 && style.closeInset <= 16 &&
     style.closeTitleGap >= 8 && style.closeVerticalOffset <= 4,
     `Schließen-X soll rechts oben mit dem Titel ausgerichtet sein (Randabstand ${style.closeInset}px, vertikaler Versatz ${style.closeVerticalOffset}px)`);
@@ -64,7 +76,7 @@ async function checkEditorStyle(editor, layout, findings) {
 
 async function checkImportedEditor(page) {
   const findings = [];
-  const recipe = 'Reispfanne\n2 Portionen\nZutaten\n250 g Reis\n100 ml Brühe\n1 Paprika\nZubereitung\nReis kochen.\nPaprika schneiden und unterheben.';
+  const recipe = 'Reispfanne\n2 Portionen\nZutaten\n250 g Reis\n100 ml Brühe\n1 Paprika\n1 Zwiebel, fein gehackt\nZubereitung\nReis kochen.\nPaprika schneiden und unterheben.';
   for (const [width, height, keyboardHeight] of [[320, 568, 250], [393, 852, 420], [844, 390, 260], [1440, 900, 900]]) {
     await page.setViewportSize({ width, height });
     for (const colorScheme of ['light', 'dark']) {
@@ -81,7 +93,18 @@ async function checkImportedEditor(page) {
         assert(await details.evaluate(el => el.open), `Editor section ${section} must open`);
       }
       assert.match(await editor.getByRole('combobox', { name: 'Zutat', exact: true }).first().inputValue(), /^reis$/i);
-      assert.deepEqual(await editor.getByRole('combobox', { name: 'Einheit', exact: true }).evaluateAll(fields => fields.slice(0, 2).map(field => field.value)), ['g', 'ml']);
+      const units = editor.getByRole('combobox', { name: 'Einheit', exact: true });
+      const unitLabels = editor.locator('.recipe-ingredient-unit-label');
+      assert.deepEqual(await units.evaluateAll(fields => fields.slice(0, 2).map(field => field.value)), ['g', 'ml']);
+      assert.deepEqual((await unitLabels.allTextContents()).slice(0, 2), ['g', 'ml']);
+      await units.first().selectOption('kg');
+      assert.equal(await unitLabels.first().innerText(), 'kg');
+      await units.first().selectOption('g');
+      const notes = editor.locator('[data-recipe-field="note"]');
+      const addNote = editor.locator('.recipe-ingredient-note-toggle').first();
+      assert(await notes.first().isHidden(), 'Ein leerer Hinweis soll eingeklappt sein');
+      assert(await notes.last().isVisible(), 'Ein übernommener Hinweis soll sichtbar sein');
+      assert.equal(await notes.last().inputValue(), 'fein gehackt');
       assert.equal(await editor.getByRole('textbox', { name: 'Zubereitungsschritt 2' }).inputValue(), 'Paprika schneiden und unterheben.');
 
       const fields = [
@@ -100,6 +123,7 @@ async function checkImportedEditor(page) {
       await checkEditorStyle(editor, layout, findings);
       for (const [name, selector, value, minTextWidth] of fields) {
         const field = editor.locator(selector).first();
+        if (name === 'Zutatenhinweis' && await field.isHidden()) await addNote.click();
         // Tap while the screen is full, then let the editor react to the keyboard resizing it.
         if (keyboardHeight < height) await field.tap();
         else await field.click();
@@ -138,6 +162,8 @@ async function checkImportedEditor(page) {
         if (name === 'Menge' && keyboardHeight < height) {
           await page.keyboard.press('Tab');
           await page.keyboard.press('Tab');
+          assert(await addNote.evaluate(el => el === document.activeElement));
+          await page.keyboard.press('Enter');
           // iOS can move the visual viewport without changing its height.
           await page.evaluate(() => {
             Object.defineProperty(visualViewport, 'offsetTop', { configurable: true, value: 24 });
@@ -158,6 +184,10 @@ async function checkImportedEditor(page) {
       for (const [, selector, value] of fields) {
         assert.equal(await editor.locator(selector).first().inputValue(), value, `${layout}, retained draft value for ${selector}`);
       }
+      await addNote.click();
+      assert(await notes.first().isHidden());
+      await addNote.click();
+      assert.equal(await notes.first().inputValue(), 'vorher abspülen');
       await editor.evaluate(el => el.close());
     }
   }
