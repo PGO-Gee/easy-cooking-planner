@@ -140,14 +140,15 @@ let dialogScrollY=0;
 let lastVisualViewportHeight=0;
 let lastVisualViewportTop=0;
 let lastDishEditorField=null;
-function revealDishEditorField(dialog,field){
+function revealDishEditorField(dialog,field,{alignTop=false}={}){
   const viewport=window.visualViewport;
-  if(!dialog.open||document.activeElement!==field||!viewport)return;
+  if(!dialog.open)return;
   const bounds=dialog.getBoundingClientRect(),rect=field.getBoundingClientRect();
-  const top=Math.max(bounds.top+dialog.clientTop,viewport.offsetTop)+8;
-  const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewport.offsetTop+viewport.height)-8;
+  const viewportTop=viewport?.offsetTop??0;
+  const top=Math.max(bounds.top+dialog.clientTop,viewportTop)+8;
+  const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewportTop+(viewport?.height??window.innerHeight))-8;
   // Scroll only the editor so revealing a lower field does not pan the iOS page.
-  if(rect.top<top||rect.height>bottom-top)dialog.scrollTop+=rect.top-top;
+  if(alignTop||rect.top<top||rect.height>bottom-top)dialog.scrollTop+=rect.top-top;
   else if(rect.bottom>bottom)dialog.scrollTop+=rect.bottom-bottom;
 }
 function syncVisualViewport(){
@@ -167,7 +168,9 @@ function syncVisualViewport(){
   const topChanged=lastVisualViewportTop!==viewport.offsetTop;lastVisualViewportTop=viewport.offsetTop;
   const dishFieldChanged=lastDishEditorField!==(dishEditor?focused:null);
   lastDishEditorField=dishEditor?focused:null;
-  if(dishEditor&&(dishFieldChanged||keyboardOpen&&(heightChanged||topChanged)))requestAnimationFrame(()=>revealDishEditorField(dishEditor,focused));
+  if(dishEditor&&(dishFieldChanged||keyboardOpen&&(heightChanged||topChanged)))requestAnimationFrame(()=>{
+    if(document.activeElement===focused)revealDishEditorField(dishEditor,focused);
+  });
   if(heightChanged&&trialEditorFocus&&keyboardOpen)requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
   if(heightChanged&&focused?.matches('.shopping-row-editor input'))requestAnimationFrame(()=>revealShoppingEditorField(focused));
   if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
@@ -2272,45 +2275,50 @@ function recipeRowControl(tag,attrs={}){const element=document.createElement(tag
 let recipeIngredientSuggestionId=0,recipeIngredientPage=0,recipeStepPage=0;
 let dishImport=null,importDefaultType='meal',dishSectionIngredients=false;
 function renderRecipeIngredientRows(items=[]){
-  const container=$('#recipe-ingredient-rows');container.replaceChildren();
-  (items.length?items:[{name:'',amount:null,unit:'',note:''}]).forEach(item=>{
-    const row=document.createElement('div');row.className='recipe-ingredient-row has-ingredient-note';
-    const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
-    const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
-    const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:normalizeIngredient(item.name),role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
-    const list=recipeRowControl('div',{id:listId,className:'pantry-suggestions recipe-ingredient-suggestions',role:'listbox'});list.hidden=true;
-    let blurTimer;
-    const closeSuggestions=()=>{clearTimeout(blurTimer);list.hidden=true;name.setAttribute('aria-expanded','false');name.removeAttribute('aria-activedescendant')};
-    const showSuggestions=()=>{const query=ingredientKey(name.value),matches=query?availablePantryIngredients().filter(value=>ingredientKey(value).includes(query)).slice(0,8):[];renderIngredientOptions(list,matches,value=>{name.value=value;clearTimeout(blurTimer);name.focus({preventScroll:true});closeSuggestions()});[...list.children].forEach((option,index)=>option.id=`${listId}-${index}`);name.setAttribute('aria-expanded',String(matches.length>0));name.removeAttribute('aria-activedescendant')};
-    name.addEventListener('input',showSuggestions);name.addEventListener('focus',()=>{clearTimeout(blurTimer);showSuggestions()});name.addEventListener('blur',()=>{blurTimer=setTimeout(closeSuggestions,200)});
-    name.addEventListener('keydown',event=>{const options=[...list.children];if(event.key==='Escape'&&!list.hidden){event.preventDefault();event.stopPropagation();closeSuggestions()}else if(!list.hidden&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const current=options.findIndex(option=>option.id===name.getAttribute('aria-activedescendant'));const index=event.key==='ArrowDown'?Math.min(current+1,options.length-1):(current<0?options.length-1:Math.max(current-1,0));options.forEach((option,i)=>option.setAttribute('aria-selected',String(i===index)));name.setAttribute('aria-activedescendant',options[index].id);options[index].scrollIntoView({block:'nearest'})}else if(event.key==='Enter'){event.preventDefault();const active=options.find(option=>option.id===name.getAttribute('aria-activedescendant'));if(!list.hidden&&active)active.click();else closeSuggestions()}});
-    nameWrap.append(name,list);
-    const amount=recipeRowControl('input',{type:'text',inputmode:'decimal',maxlength:'40',placeholder:'Menge',value:item.amount??''});amount.dataset.recipeField='amount';amount.setAttribute('aria-label','Menge');
-    const unit=recipeRowControl('select',{'aria-label':'Einheit'});unit.dataset.recipeField='unit';
-    const units=['','g','kg','ml','l','EL','TL','Prise','Stück','Dose','Bund'];
-    if(item.unit&&!units.includes(item.unit))units.push(item.unit);
-    units.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=value||'Einheit';unit.append(option)});unit.value=item.unit||'';
-    const unitWrap=recipeRowControl('div',{className:'recipe-ingredient-unit'});
-    const unitLabel=recipeRowControl('span',{className:'recipe-ingredient-unit-label','aria-hidden':'true'});
-    const showUnit=()=>{unitLabel.textContent=unit.selectedOptions[0]?.textContent||'Einheit'};
-    unit.addEventListener('change',showUnit);
-    showUnit();
-    unitWrap.append(unitLabel,unit);
-
-    const noteId=`recipe-ingredient-note-${recipeIngredientSuggestionId}`;
-    const note=recipeRowControl('input',{id:noteId,type:'text',maxlength:'100',placeholder:'z. B. fein gehackt',value:item.note||'','aria-label':'Hinweis'});
-    note.dataset.recipeField='note';
-    note.hidden=!item.note;
-    const noteToggle=recipeRowControl('button',{type:'button',className:'recipe-ingredient-note-toggle',text:'Hinweis','aria-controls':noteId,'aria-expanded':String(!note.hidden)});
-    noteToggle.addEventListener('click',()=>{
-      note.hidden=!note.hidden;
-      noteToggle.setAttribute('aria-expanded',String(!note.hidden));
-      if(!note.hidden)note.focus({preventScroll:true});
-    });
-    const remove=recipeRowControl('button',{type:'button',className:'recipe-row-remove',text:'×','aria-label':'Zutat entfernen'});remove.addEventListener('click',()=>{row.remove();if(!container.children.length)renderRecipeIngredientRows([]);updateRecipePagers()});
-    row.append(nameWrap,remove,amount,unitWrap,noteToggle,note);container.append(row);
-  });
+  const container=$('#recipe-ingredient-rows');
+  container.replaceChildren();
+  if(items.length)items.forEach(item=>appendRecipeIngredientRow(container,item));
+  else appendRecipeIngredientRow(container);
   updateRecipePagers();
+}
+function appendRecipeIngredientRow(container,item={name:'',amount:null,unit:'',note:''}){
+  const row=document.createElement('div');row.className='recipe-ingredient-row has-ingredient-note';
+  const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
+  const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
+  const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:normalizeIngredient(item.name),role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
+  const list=recipeRowControl('div',{id:listId,className:'pantry-suggestions recipe-ingredient-suggestions',role:'listbox'});list.hidden=true;
+  let blurTimer;
+  const closeSuggestions=()=>{clearTimeout(blurTimer);list.hidden=true;name.setAttribute('aria-expanded','false');name.removeAttribute('aria-activedescendant')};
+  const showSuggestions=()=>{const query=ingredientKey(name.value),matches=query?availablePantryIngredients().filter(value=>ingredientKey(value).includes(query)).slice(0,8):[];renderIngredientOptions(list,matches,value=>{name.value=value;clearTimeout(blurTimer);name.focus({preventScroll:true});closeSuggestions()});[...list.children].forEach((option,index)=>option.id=`${listId}-${index}`);name.setAttribute('aria-expanded',String(matches.length>0));name.removeAttribute('aria-activedescendant')};
+  name.addEventListener('input',showSuggestions);name.addEventListener('focus',()=>{clearTimeout(blurTimer);showSuggestions()});name.addEventListener('blur',()=>{blurTimer=setTimeout(closeSuggestions,200)});
+  name.addEventListener('keydown',event=>{const options=[...list.children];if(event.key==='Escape'&&!list.hidden){event.preventDefault();event.stopPropagation();closeSuggestions()}else if(!list.hidden&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const current=options.findIndex(option=>option.id===name.getAttribute('aria-activedescendant'));const index=event.key==='ArrowDown'?Math.min(current+1,options.length-1):(current<0?options.length-1:Math.max(current-1,0));options.forEach((option,i)=>option.setAttribute('aria-selected',String(i===index)));name.setAttribute('aria-activedescendant',options[index].id);options[index].scrollIntoView({block:'nearest'})}else if(event.key==='Enter'){event.preventDefault();const active=options.find(option=>option.id===name.getAttribute('aria-activedescendant'));if(!list.hidden&&active)active.click();else closeSuggestions()}});
+  nameWrap.append(name,list);
+  const amount=recipeRowControl('input',{type:'text',inputmode:'decimal',maxlength:'40',placeholder:'Menge',value:item.amount??''});amount.dataset.recipeField='amount';amount.setAttribute('aria-label','Menge');
+  const unit=recipeRowControl('select',{'aria-label':'Einheit'});unit.dataset.recipeField='unit';
+  const units=['','g','kg','ml','l','EL','TL','Prise','Stück','Dose','Bund'];
+  if(item.unit&&!units.includes(item.unit))units.push(item.unit);
+  units.forEach(value=>{const option=document.createElement('option');option.value=value;option.textContent=value||'Einheit';unit.append(option)});unit.value=item.unit||'';
+  const unitWrap=recipeRowControl('div',{className:'recipe-ingredient-unit'});
+  const unitLabel=recipeRowControl('span',{className:'recipe-ingredient-unit-label','aria-hidden':'true'});
+  const showUnit=()=>{unitLabel.textContent=unit.selectedOptions[0]?.textContent||'Einheit'};
+  unit.addEventListener('change',showUnit);
+  showUnit();
+  unitWrap.append(unitLabel,unit);
+
+  const noteId=`recipe-ingredient-note-${recipeIngredientSuggestionId}`;
+  const note=recipeRowControl('input',{id:noteId,type:'text',maxlength:'100',placeholder:'z. B. fein gehackt',value:item.note||'','aria-label':'Hinweis'});
+  note.dataset.recipeField='note';
+  note.hidden=!item.note;
+  const noteToggle=recipeRowControl('button',{type:'button',className:'recipe-ingredient-note-toggle',text:'Hinweis','aria-controls':noteId,'aria-expanded':String(!note.hidden)});
+  noteToggle.addEventListener('click',()=>{
+    note.hidden=!note.hidden;
+    noteToggle.setAttribute('aria-expanded',String(!note.hidden));
+    if(!note.hidden)note.focus({preventScroll:true});
+  });
+  const remove=recipeRowControl('button',{type:'button',className:'recipe-row-remove',text:'×','aria-label':'Zutat entfernen'});remove.addEventListener('click',()=>{row.remove();if(!container.children.length)renderRecipeIngredientRows([]);updateRecipePagers()});
+  row.append(nameWrap,remove,amount,unitWrap,noteToggle,note);
+  container.append(row);
+  return name;
 }
 function renderRecipeStepRows(steps=[]){
   const container=$('#recipe-step-rows');container.replaceChildren();
@@ -3696,7 +3704,14 @@ function deleteDish(){
   void removeDishProgressForCurrentScope(id);save();$('#dish-dialog').close();renderDishes();renderCalendar();showToast('Rezept gelöscht.');
 }
 $('#add-dish-btn').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#starter-add').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#search-dishes').addEventListener('input',renderDishes);$('#dishes-type').addEventListener('click',event=>{const button=event.target.closest('button[data-type]');if(!button)return;setRecipeTypeFilter($('#dishes-type'),button.dataset.type);renderDishes()});$('#close-dish-dialog').addEventListener('click',closeDishEditor);$('#cancel-dialog').addEventListener('click',closeDishEditor);$('#delete-dish').addEventListener('click',deleteDish);
-$('#recipe-add-ingredient').addEventListener('click',()=>{const rows=[...$('#recipe-ingredient-rows').querySelectorAll('.recipe-ingredient-row')].map(row=>Object.fromEntries([...row.querySelectorAll('[data-recipe-field]')].map(input=>[input.dataset.recipeField,input.value])));rows.push({name:'',amount:'',unit:'',note:''});recipeIngredientPage=rows.length-1;renderRecipeIngredientRows(rows);$('#recipe-ingredient-rows .recipe-ingredient-row:last-child input').focus()});
+$('#recipe-add-ingredient').addEventListener('click',()=>{
+  const container=$('#recipe-ingredient-rows');
+  const name=appendRecipeIngredientRow(container);
+  recipeIngredientPage=container.children.length-1;
+  updateRecipePagers();
+  revealDishEditorField(recipeEditorDialog,name,{alignTop:true});
+  name.focus({preventScroll:true});
+});
 $('#recipe-add-step').addEventListener('click',()=>{const steps=[...$('#recipe-step-rows').querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value);steps.push('');recipeStepPage=steps.length-1;renderRecipeStepRows(steps);$('#recipe-step-rows .recipe-step-row:last-child textarea').focus()});
 $('#dish-form').addEventListener('submit',event=>{
   event.preventDefault();

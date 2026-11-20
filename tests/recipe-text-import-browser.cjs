@@ -121,6 +121,26 @@ async function checkImportedEditor(page) {
       const layout = `${width}×${height} ${colorScheme}`;
       await editor.evaluate(dialog => dialog.ownerDocument.activeElement.blur());
       await checkEditorStyle(editor, layout, findings);
+      const measure = target => target.evaluate(async el => {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        const rect = el.getBoundingClientRect();
+        const dialog = el.closest('dialog');
+        const bounds = dialog.getBoundingClientRect();
+        const css = getComputedStyle(el);
+        const top = Math.max(bounds.top + dialog.clientTop, visualViewport.offsetTop);
+        const bottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, visualViewport.offsetTop + visualViewport.height);
+        const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        return {
+          focused: document.activeElement === el,
+          keyboardOpen: document.documentElement.classList.contains('dish-keyboard-open'),
+          value: el.value,
+          visible: rect.top >= top - 1 && rect.bottom <= bottom + 1 && hit === el,
+          height: rect.height,
+          fontSize: parseFloat(css.fontSize),
+          textWidth: Math.round(el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight)),
+          overflow: Math.max(dialog.scrollWidth - dialog.clientWidth, document.documentElement.scrollWidth - innerWidth)
+        };
+      });
       for (const [name, selector, value, minTextWidth] of fields) {
         const field = editor.locator(selector).first();
         if (name === 'Zutatenhinweis' && await field.isHidden()) await addNote.click();
@@ -132,26 +152,6 @@ async function checkImportedEditor(page) {
           Object.defineProperty(visualViewport, 'height', { configurable: true, value: visibleHeight });
           visualViewport.dispatchEvent(new Event('resize'));
         }, keyboardHeight);
-        const measure = target => target.evaluate(async el => {
-          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-          const rect = el.getBoundingClientRect();
-          const dialog = el.closest('dialog');
-          const bounds = dialog.getBoundingClientRect();
-          const css = getComputedStyle(el);
-          const top = Math.max(bounds.top + dialog.clientTop, visualViewport.offsetTop);
-          const bottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, visualViewport.offsetTop + visualViewport.height);
-          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-          return {
-            focused: document.activeElement === el,
-            keyboardOpen: document.documentElement.classList.contains('dish-keyboard-open'),
-            value: el.value,
-            visible: rect.top >= top - 1 && rect.bottom <= bottom + 1 && hit === el,
-            height: rect.height,
-            fontSize: parseFloat(css.fontSize),
-            textWidth: Math.round(el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight)),
-            overflow: Math.max(dialog.scrollWidth - dialog.clientWidth, document.documentElement.scrollWidth - innerWidth)
-          };
-        });
         const afterFocus = await measure(field);
         await field.fill(value);
         const state = await measure(field);
@@ -188,6 +188,38 @@ async function checkImportedEditor(page) {
       assert(await notes.first().isHidden());
       await addNote.click();
       assert.equal(await notes.first().inputValue(), 'vorher abspülen');
+
+      const ingredientNames = editor.getByRole('combobox', { name: 'Zutat', exact: true });
+      const originalCount = await ingredientNames.count();
+      await editor.locator('.recipe-ingredient-note-toggle').nth(1).click();
+      assert(await notes.nth(1).isVisible());
+      const addIngredient = editor.locator('#recipe-add-ingredient');
+      await addIngredient.tap();
+      assert.equal(await ingredientNames.count(), originalCount + 1, `${layout}, neue Zutatenzeile`);
+      const newIngredient = ingredientNames.last();
+      if (keyboardHeight < height) {
+        await page.evaluate(visibleHeight => {
+          Object.defineProperty(visualViewport, 'height', { configurable: true, value: visibleHeight });
+          Object.defineProperty(visualViewport, 'offsetTop', { configurable: true, value: 24 });
+          visualViewport.dispatchEvent(new Event('resize'));
+        }, keyboardHeight);
+      }
+      const afterAdd = await measure(newIngredient);
+      assert(afterAdd.focused && afterAdd.visible, `${layout}, neues Feld direkt nach dem Hinzufügen: ${JSON.stringify(afterAdd)}`);
+      // Do not click or fill the new field directly. Playwright could scroll it into view for us.
+      await page.keyboard.insertText('Zitronenmelisse');
+      const afterTyping = await measure(newIngredient);
+      assert(afterTyping.focused && afterTyping.visible && afterTyping.value === 'Zitronenmelisse',
+        `${layout}, Eingabe im neuen Feld: ${JSON.stringify(afterTyping)}`);
+      assert(await notes.first().isVisible(), `${layout}, zuvor geöffneter Hinweis bleibt geöffnet`);
+      assert(await notes.nth(1).isVisible(), `${layout}, leerer geöffneter Hinweis bleibt geöffnet`);
+      assert.equal(await notes.first().inputValue(), 'vorher abspülen');
+      assert.equal(await ingredientNames.first().inputValue(), 'Basmatireis');
+      await page.evaluate(() => {
+        delete visualViewport.height;
+        delete visualViewport.offsetTop;
+        visualViewport.dispatchEvent(new Event('resize'));
+      });
       await editor.evaluate(el => el.close());
     }
   }
