@@ -138,6 +138,18 @@ const catalogRecipePhotoFiles=new Map([
 let dialogScrollLockCount=0;
 let dialogScrollY=0;
 let lastVisualViewportHeight=0;
+let lastVisualViewportTop=0;
+let lastDishEditorField=null;
+function revealDishEditorField(dialog,field){
+  const viewport=window.visualViewport;
+  if(!dialog.open||document.activeElement!==field||!viewport)return;
+  const bounds=dialog.getBoundingClientRect(),rect=field.getBoundingClientRect();
+  const top=Math.max(bounds.top+dialog.clientTop,viewport.offsetTop)+8;
+  const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewport.offsetTop+viewport.height)-8;
+  // Scroll only the editor so revealing a lower field does not pan the iOS page.
+  if(rect.top<top||rect.height>bottom-top)dialog.scrollTop+=rect.top-top;
+  else if(rect.bottom>bottom)dialog.scrollTop+=rect.bottom-bottom;
+}
 function syncVisualViewport(){
   const viewport=window.visualViewport;
   if(!viewport)return;
@@ -145,11 +157,18 @@ function syncVisualViewport(){
   document.documentElement.style.setProperty('--visual-viewport-top',`${viewport.offsetTop}px`);
   const focused=document.activeElement;
   const textImportFocus=focused?.closest('#recipe-import-dialog[data-text-import][open]');
-  const editorFocus=focused?.matches('input, textarea')&&focused.closest('#dish-dialog[open], #recipe-import-dialog[data-trial][open]');
+  const isEditable=focused?.matches('input, textarea');
+  const dishEditor=isEditable&&focused.closest('#dish-dialog[open]');
+  const trialEditorFocus=isEditable&&focused.closest('#recipe-import-dialog[data-trial][open]');
   const viewportReduction=window.innerHeight-viewport.height;
-  document.documentElement.classList.toggle('dish-keyboard-open', Boolean(textImportFocus ? viewportReduction>100 : editorFocus&&viewportReduction>150));
+  const keyboardOpen=viewportReduction>(textImportFocus||dishEditor?100:150);
+  document.documentElement.classList.toggle('dish-keyboard-open',keyboardOpen&&Boolean(textImportFocus||dishEditor||trialEditorFocus));
   const heightChanged=lastVisualViewportHeight!==viewport.height;lastVisualViewportHeight=viewport.height;
-  if(heightChanged&&editorFocus&&document.documentElement.classList.contains('dish-keyboard-open'))requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
+  const topChanged=lastVisualViewportTop!==viewport.offsetTop;lastVisualViewportTop=viewport.offsetTop;
+  const dishFieldChanged=lastDishEditorField!==(dishEditor?focused:null);
+  lastDishEditorField=dishEditor?focused:null;
+  if(dishEditor&&(dishFieldChanged||keyboardOpen&&(heightChanged||topChanged)))requestAnimationFrame(()=>revealDishEditorField(dishEditor,focused));
+  if(heightChanged&&trialEditorFocus&&keyboardOpen)requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
   if(heightChanged&&focused?.matches('.shopping-row-editor input'))requestAnimationFrame(()=>revealShoppingEditorField(focused));
   if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
 }
@@ -180,23 +199,7 @@ document.querySelectorAll('dialog').forEach(dialog=>{
   dialog.addEventListener('close',()=>{unlockPageScroll();if(dialog.id==='dish-dialog')document.documentElement.classList.remove('dish-keyboard-open')});
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
-    if(dialog.id==='pantry-dialog')return;
-    if(event.target.id==='dish-ingredient-input'||event.target.id==='dish-ingredient'){
-      const field=event.target.closest('.dish-ingredient-suggest');
-      const reveal=()=>{
-        field.scrollIntoView({block:'nearest',inline:'nearest'});
-      };
-      let completed=false;
-      const onViewportResize=()=>{
-        if(completed)return;
-        completed=true;
-        setTimeout(()=>requestAnimationFrame(reveal),120);
-        window.visualViewport?.removeEventListener('resize',onViewportResize);
-      };
-      window.visualViewport?.addEventListener('resize',onViewportResize);
-      setTimeout(()=>{if(!completed){completed=true;reveal();window.visualViewport?.removeEventListener('resize',onViewportResize)}},500);
-      return;
-    }
+    if(dialog.id==='pantry-dialog'||(dialog.id==='dish-dialog'&&event.target.matches('input,textarea')))return;
     requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
   });
   const showModal=dialog.showModal.bind(dialog);

@@ -21,6 +21,105 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+async function checkImportedEditor(page) {
+  const findings = [];
+  const recipe = 'Reispfanne\n2 Portionen\nZutaten\n250 g Reis\n1 Paprika\nZubereitung\nReis kochen.\nPaprika schneiden und unterheben.';
+  for (const [width, height, keyboardHeight] of [[320, 568, 250], [393, 852, 420], [844, 390, 260], [1440, 900, 900]]) {
+    await page.setViewportSize({ width, height });
+    for (const colorScheme of ['light', 'dark']) {
+      await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+      await page.evaluate(() => openRecipeCreation());
+      await page.getByRole('button', { name: 'Text importieren', exact: true }).click();
+      await page.getByRole('textbox', { name: 'Rezepttext einfügen' }).fill(recipe);
+      await page.getByRole('button', { name: 'Rezept erkennen' }).click();
+      const editor = page.locator('#dish-dialog');
+      assert.equal(await editor.locator('#dish-recipe-title').inputValue(), 'Reispfanne');
+      for (const section of ['ingredients', 'preparation', 'nutrition']) {
+        const details = editor.locator(`#editor-${section}`);
+        if (!await details.evaluate(el => el.open)) await details.locator('summary').click();
+        assert(await details.evaluate(el => el.open), `Editor section ${section} must open`);
+      }
+      assert.match(await editor.getByRole('combobox', { name: 'Zutat', exact: true }).first().inputValue(), /^reis$/i);
+      assert.equal(await editor.getByRole('textbox', { name: 'Zubereitungsschritt 2' }).inputValue(), 'Paprika schneiden und unterheben.');
+
+      const fields = [
+        ['Rezeptname', '#dish-recipe-title', 'Reispfanne mit Paprika', 160],
+        ['Kategorie', '#dish-ingredient', 'Vegetarisch', 130],
+        ['Zeit', '#dish-minutes', '45', 48],
+        ['Portionen', '#recipe-servings', '4', 48],
+        ['Zutat', '[data-recipe-field="name"]', 'Basmatireis', 130],
+        ['Menge', '[data-recipe-field="amount"]', '300', 44],
+        ['Zutatenhinweis', '[data-recipe-field="note"]', 'vorher abspülen', 130],
+        ['Zubereitung', '[data-recipe-field="step"]', 'Reis in Salzwasser kochen.', 145],
+        ['Nährwert', '.dish-nutrition-fieldset input', '520', 48]
+      ];
+      const layout = `${width}×${height} ${colorScheme}`;
+      for (const [name, selector, value, minTextWidth] of fields) {
+        const field = editor.locator(selector).first();
+        // Tap while the screen is full, then let the editor react to the keyboard resizing it.
+        if (keyboardHeight < height) await field.tap();
+        else await field.click();
+        await page.evaluate(visibleHeight => {
+          if (visibleHeight === innerHeight) return;
+          Object.defineProperty(visualViewport, 'height', { configurable: true, value: visibleHeight });
+          visualViewport.dispatchEvent(new Event('resize'));
+        }, keyboardHeight);
+        const measure = target => target.evaluate(async el => {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const rect = el.getBoundingClientRect();
+          const dialog = el.closest('dialog');
+          const bounds = dialog.getBoundingClientRect();
+          const css = getComputedStyle(el);
+          const top = Math.max(bounds.top + dialog.clientTop, visualViewport.offsetTop);
+          const bottom = Math.min(bounds.top + dialog.clientTop + dialog.clientHeight, visualViewport.offsetTop + visualViewport.height);
+          const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          return {
+            focused: document.activeElement === el,
+            keyboardOpen: document.documentElement.classList.contains('dish-keyboard-open'),
+            value: el.value,
+            visible: rect.top >= top - 1 && rect.bottom <= bottom + 1 && hit === el,
+            height: rect.height,
+            fontSize: parseFloat(css.fontSize),
+            textWidth: Math.round(el.clientWidth - parseFloat(css.paddingLeft) - parseFloat(css.paddingRight)),
+            overflow: Math.max(dialog.scrollWidth - dialog.clientWidth, document.documentElement.scrollWidth - innerWidth)
+          };
+        });
+        const afterFocus = await measure(field);
+        await field.fill(value);
+        const state = await measure(field);
+        if (!afterFocus.visible || !state.focused || state.value !== value || !state.visible || state.overflow > 1 || state.keyboardOpen !== (keyboardHeight < height) ||
+            (keyboardHeight < height && (state.height < 44 || state.fontSize < 16 || state.textWidth < minTextWidth))) {
+          findings.push(`${layout}, ${name}: ${JSON.stringify({ ...state, visibleOnFocus: afterFocus.visible, minTextWidth })}`);
+        }
+        if (name === 'Menge' && keyboardHeight < height) {
+          await page.keyboard.press('Tab');
+          await page.keyboard.press('Tab');
+          // iOS can move the visual viewport without changing its height.
+          await page.evaluate(() => {
+            Object.defineProperty(visualViewport, 'offsetTop', { configurable: true, value: 24 });
+            visualViewport.dispatchEvent(new Event('scroll'));
+          });
+          const note = await measure(editor.locator('[data-recipe-field="note"]').first());
+          if (!note.focused || !note.visible || !note.keyboardOpen) {
+            findings.push(`${layout}, Fokuswechsel Menge → Zutatenhinweis: ${JSON.stringify(note)}`);
+          }
+        }
+        await page.evaluate(() => {
+          document.activeElement.blur();
+          delete visualViewport.height;
+          delete visualViewport.offsetTop;
+          visualViewport.dispatchEvent(new Event('resize'));
+        });
+      }
+      for (const [, selector, value] of fields) {
+        assert.equal(await editor.locator(selector).first().inputValue(), value, `${layout}, retained draft value for ${selector}`);
+      }
+      await editor.evaluate(el => el.close());
+    }
+  }
+  assert(findings.length === 0, `Imported recipe editor findings:\n${findings.join('\n')}`);
+}
+
 (async () => {
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const browser = await chromium.launch();
@@ -197,6 +296,8 @@ const server = http.createServer(async (req, res) => {
     await close;
     assert.equal(message, 'Rezepttext verwerfen?');
     console.log('Text import passed layout, scrolling, touch swipes, simulated keyboard, recipe recognition, and screenshot-to-text switching.');
+    await checkImportedEditor(page);
+    console.log('Imported editor passed focus, viewport, field size and draft checks.');
   } finally {
     await browser.close();
   }
