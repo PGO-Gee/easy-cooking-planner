@@ -756,6 +756,20 @@ html.design #recipe-add-ingredient { margin-top:4px; }
   html.design #dish-form .is-quick-entry .recipe-row-remove { position:static;grid-area:remove; }
 }
 html.design .recipe-step-row textarea { flex:1;min-width:150px; }
+html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child { padding-block:4px; }
+html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child textarea {
+  min-height:44px;
+  height:80px;
+  padding:8px 10px;
+  resize:none;
+}
+html.design #recipe-add-step { margin-top:4px; }
+@media(min-width:600px) and (max-height:500px) {
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child { flex-wrap:nowrap;align-items:center; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child textarea { height:48px; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child .recipe-step-number { padding-top:0; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child .recipe-step-actions { display:flex;flex-shrink:0; }
+}
 html.design #dish-form .dialog-actions { position:static;display:flex;flex-wrap:wrap;background:var(--canvas);border-top:1px solid var(--line);padding:16px 0 0;margin:18px 0 0; }
 html.design #dish-form .dialog-actions button[type=submit] { flex:1; }
 html.design .recipe-row-pager,html.design .dish-wizard-progress,html.design .dish-wizard-section { display:none; }

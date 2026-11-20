@@ -286,6 +286,29 @@ async function checkImportedEditor(page) {
       assert.equal(await ingredientNames.first().inputValue(), 'Reis');
       await checkEntry();
       await resetEntryKeyboard();
+
+      const preparation = editor.locator('#editor-preparation');
+      if (!await preparation.evaluate(el => el.open)) await preparation.locator('summary').click();
+      const steps = preparation.getByRole('textbox', { name: /Zubereitungsschritt/ });
+      const addStep = preparation.locator('#recipe-add-step');
+      assert.equal(await steps.count(), 1);
+      await steps.first().tap();
+      await openEntryKeyboard();
+      const stepValues = ['Reis und Gemüse gründlich waschen.', 'Reis kochen.\nGemüse schneiden.', 'Alles mischen und servieren.'];
+      for (const [index, value] of stepValues.entries()) {
+        if (index > 0) await tapVisible(addStep);
+        assert.equal(await steps.count(), index + 1);
+        const step = steps.last();
+        const beforeTyping = await measure(step);
+        assert(beforeTyping.focused && beforeTyping.visible, `${layout}, Schritt ${index + 1} vor der Eingabe: ${JSON.stringify(beforeTyping)}`);
+        await page.keyboard.insertText(value);
+        const afterTyping = await measure(step);
+        assert(afterTyping.focused && afterTyping.visible && afterTyping.value === value,
+          `${layout}, Schritt ${index + 1} nach der Eingabe: ${JSON.stringify(afterTyping)}`);
+        assert((await measure(addStep)).visible, `${layout}, Plus-Button für den nächsten Schritt`);
+      }
+      assert.deepEqual(await steps.evaluateAll(fields => fields.map(field => field.value)), stepValues);
+      await resetEntryKeyboard();
       await editor.evaluate(el => el.close());
     }
   }

@@ -73,11 +73,12 @@ try{
       $('#mix-btn').click();
       const plannerOpening={
         menuOpenWhenFocused,
-        waiting:getComputedStyle(planner).opacity==='0',
+        open:planner.open,
+        opacity:getComputedStyle(planner).opacity,
+        backdropOpacity:getComputedStyle(planner,'::backdrop').opacity,
         focused:document.activeElement===closePlanner,
         draft:$('#pantry-selected .pantry-chip button')?.getAttribute('aria-label')
       };
-      for(let frame=0;frame<12&&planner.classList.contains('is-waiting-to-reveal');frame++)await new Promise(resolve=>requestAnimationFrame(resolve));
       const plannerPanel=sample(planner);
       await new Promise(resolve=>{planner.addEventListener('close',resolve,{once:true});closePlanner.click()});
       const plannerFocusReturned=document.activeElement===plan.querySelector('summary');
@@ -90,8 +91,8 @@ try{
       return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned};
     });
     const condition=`${width}×${height} ${theme} ${reducedMotion}`;
-    for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'?0:150,fits:true},`${name} ${condition}`);
-    assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,waiting:true,focused:true,draft:'Kartoffeln entfernen'},condition);
+    for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'||name==='plannerPanel'?0:150,fits:true},`${name} ${condition}`);
+    assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,open:true,opacity:'1',backdropOpacity:'1',focused:true,draft:'Kartoffeln entfernen'},condition);
     assert.equal(panels.plannerFocusReturned,true,condition);
   }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){

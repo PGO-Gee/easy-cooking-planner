@@ -145,14 +145,15 @@ function revealDishEditorField(dialog,field){
   if(!dialog.open)return;
   const bounds=dialog.getBoundingClientRect(),rect=field.getBoundingClientRect();
   const viewportTop=viewport?.offsetTop??0;
-  const entry=field.closest('.recipe-ingredient-row.is-quick-entry:last-child');
+  const entry=field.closest('.recipe-ingredient-row.is-quick-entry:last-child, .recipe-step-row:last-child');
   const viewportHeight=viewport?.height??window.innerHeight;
   const inset=entry&&viewportHeight<190?2:8;
   const top=Math.max(bounds.top+dialog.clientTop,viewportTop)+inset;
   const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewportTop+viewportHeight)-inset;
   if(entry){
     const card=entry.getBoundingClientRect();
-    const addBottom=dialog.querySelector('#recipe-add-ingredient').getBoundingClientRect().bottom;
+    const addButton=dialog.querySelector(field.dataset.recipeField==='step'?'#recipe-add-step':'#recipe-add-ingredient');
+    const addBottom=addButton.getBoundingClientRect().bottom;
     const suggestions=field.matches('[data-recipe-field=name]')&&entry.querySelector('.recipe-ingredient-suggestions:not([hidden])');
     const fits=addBottom-card.top<=bottom-top;
     if(fits){
@@ -222,7 +223,7 @@ function unlockPageScroll(){
   document.body.style.removeProperty('top');
   window.scrollTo(0,dialogScrollY);
 }
-function setupNativeDialog(dialog,{restoreFocus=false}={}){
+function setupNativeDialog(dialog,{restoreFocus=false,revealImmediately=false}={}){
   const show=dialog.showModal.bind(dialog);
   let opener=null,cancelReveal=null,motion=null;
   const resetReveal=()=>{
@@ -234,7 +235,7 @@ function setupNativeDialog(dialog,{restoreFocus=false}={}){
     if(dialog.open)return;
     resetReveal();
     opener=document.activeElement;
-    dialog.classList.add('is-waiting-to-reveal');
+    if(!revealImmediately)dialog.classList.add('is-waiting-to-reveal');
     lockPageScroll();
     try{
       syncVisualViewport();
@@ -244,6 +245,7 @@ function setupNativeDialog(dialog,{restoreFocus=false}={}){
       unlockPageScroll();
       throw error;
     }
+    if(revealImmediately)return;
     // Let native focus and the iOS visual viewport settle before revealing the panel.
     cancelReveal=afterDialogBoundsSettle(dialog,()=>{
       cancelReveal=null;
@@ -259,7 +261,7 @@ function setupNativeDialog(dialog,{restoreFocus=false}={}){
   });
 }
 document.querySelectorAll('dialog').forEach(dialog=>{
-  setupNativeDialog(dialog);
+  setupNativeDialog(dialog,{revealImmediately:dialog.id==='pantry-dialog'});
   dialog.addEventListener('close',()=>{if(dialog.id==='dish-dialog'&&!dialog.open)document.documentElement.classList.remove('dish-keyboard-open')});
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
@@ -2406,19 +2408,47 @@ function appendRecipeIngredientRow(container,item){
   container.append(row);
   return name;
 }
-function renderRecipeStepRows(steps=[]){
-  const container=$('#recipe-step-rows');container.replaceChildren();
-  (steps.length?steps:['']).forEach((step,index)=>{
-    const row=document.createElement('div');row.className='recipe-step-row';
-    const number=recipeRowControl('span',{className:'recipe-step-number',text:`${index+1}.`});number.setAttribute('aria-hidden','true');
-    const text=recipeRowControl('textarea',{rows:'5',maxlength:'1200',placeholder:`Schritt ${index+1}`});text.value=step;text.dataset.recipeField='step';text.setAttribute('aria-label',`Zubereitungsschritt ${index+1}`);
-    const actions=document.createElement('div');actions.className='recipe-step-actions';
-    [['↑','Schritt nach oben',-1],['↓','Schritt nach unten',1],['×','Schritt löschen',0]].forEach(([label,aria,direction])=>{const button=recipeRowControl('button',{type:'button',className:'recipe-row-move',text:label,'aria-label':aria});button.disabled=direction<0?index===0:direction>0?index===container.children.length:false;button.addEventListener('click',()=>{if(direction===0){row.remove();renderRecipeStepRows([...container.querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value))}else{const sibling=direction<0?row.previousElementSibling:row.nextElementSibling;if(sibling){direction<0?container.insertBefore(row,sibling):container.insertBefore(sibling,row);recipeStepPage=Math.max(0,recipeStepPage+direction)}renderRecipeStepRows([...container.querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value))}});actions.append(button)});
-    row.append(number,text,actions);container.append(row);
+function appendRecipeStepRow(container,step=''){
+  const index=container.children.length;
+  const row=recipeRowControl('div',{className:'recipe-step-row'});
+  const number=recipeRowControl('span',{className:'recipe-step-number',text:`${index+1}.`,'aria-hidden':'true'});
+  const text=recipeRowControl('textarea',{rows:'5',maxlength:'1200',placeholder:`Schritt ${index+1}`,'aria-label':`Zubereitungsschritt ${index+1}`});
+  text.value=step;
+  text.dataset.recipeField='step';
+  const actions=recipeRowControl('div',{className:'recipe-step-actions'});
+  [['↑','Schritt nach oben',-1],['↓','Schritt nach unten',1],['×','Schritt löschen',0]].forEach(([label,aria,direction])=>{
+    const button=recipeRowControl('button',{type:'button',className:'recipe-row-move',text:label,'aria-label':aria});
+    button.addEventListener('click',()=>{
+      if(direction===0)row.remove();
+      else{
+        const sibling=direction<0?row.previousElementSibling:row.nextElementSibling;
+        if(sibling){
+          direction<0?container.insertBefore(row,sibling):container.insertBefore(sibling,row);
+          recipeStepPage=Math.max(0,recipeStepPage+direction);
+        }
+      }
+      renderRecipeStepRows([...container.querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value));
+    });
+    actions.append(button);
   });
-  [...container.children].forEach((row,index)=>{row.querySelector('.recipe-step-number').textContent=`${index+1}.`;const buttons=row.querySelectorAll('button');buttons[0].disabled=index===0;buttons[1].disabled=index===container.children.length-1});
+  row.append(number,text,actions);
+  container.append(row);
+  return text;
+}
+function updateRecipeStepActions(container){
+  [...container.children].forEach((row,index)=>{
+    const [up,down]=row.querySelectorAll('button');
+    up.disabled=index===0;
+    down.disabled=index===container.children.length-1;
+  });
   const addButton=$('#recipe-add-step'),atLimit=container.children.length>=100;addButton.disabled=atLimit;addButton.textContent=atLimit?'Maximal 100 Schritte':'＋ Schritt hinzufügen';
   updateRecipePagers();
+}
+function renderRecipeStepRows(steps=[]){
+  const container=$('#recipe-step-rows');
+  container.replaceChildren();
+  (steps.length?steps:['']).forEach(step=>appendRecipeStepRow(container,step));
+  updateRecipeStepActions(container);
 }
 function recipeEditorValue(){
   const servingsText=$('#recipe-servings').value.trim(),servings=servingsText?Number(servingsText):null;
@@ -3802,7 +3832,15 @@ $('#recipe-add-ingredient').addEventListener('click',()=>{
   revealDishEditorField(recipeEditorDialog,name);
   name.focus({preventScroll:true});
 });
-$('#recipe-add-step').addEventListener('click',()=>{const steps=[...$('#recipe-step-rows').querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value);steps.push('');recipeStepPage=steps.length-1;renderRecipeStepRows(steps);$('#recipe-step-rows .recipe-step-row:last-child textarea').focus()});
+$('#recipe-add-step').addEventListener('click',()=>{
+  const container=$('#recipe-step-rows');
+  if(container.children.length>=100)return;
+  const step=appendRecipeStepRow(container);
+  recipeStepPage=container.children.length-1;
+  updateRecipeStepActions(container);
+  revealDishEditorField(recipeEditorDialog,step);
+  step.focus({preventScroll:true});
+});
 $('#dish-form').addEventListener('submit',event=>{
   event.preventDefault();
   if(typeof renderRecipeForm==='function'){for(const key of ['name','ingredients','nutrition'])if(!validateRecipeSection(key))return;}
