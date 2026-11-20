@@ -55,6 +55,27 @@ try{
     await page.keyboard.press('Escape');
     await page.waitForFunction(()=>document.activeElement.id==='account-avatar'&&!document.body.classList.contains('has-open-dialog'));
   }
+  for(const [width,height] of [[320,568],[390,844],[844,390],[390,340],[1440,900]])for(const theme of ['light','dark'])for(const reducedMotion of ['no-preference','reduce']){
+    await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion});
+    const panels=await page.evaluate(async()=>{
+      themeOverride=null;applyTheme();
+      const sample=element=>{
+        const {left,right}=element.getBoundingClientRect();
+        return {duration:element.getAnimations()[0]?.effect.getTiming().duration??0,fits:left>=-1&&right<=innerWidth+1};
+      };
+      const plan=$('#plan-menu'),list=$('#shopping-menu');
+      setView('week');plan.querySelector('summary').click();
+      const planPanel=sample(plan.querySelector('.ui-menu-panel'));plan.open=false;
+      state.manualShoppingItems[keyFor(mondayFor(rangeStart()))]=['Küchenrolle'];
+      openShoppingList();list.querySelector('summary').click();
+      const listPanel=sample(list.querySelector('.ui-menu-panel'));list.open=false;
+      $('.shopping-edit-button[data-ingredient="küchenrolle"]').click();
+      const editor=sample($('.shopping-row-editor:not([hidden])'));
+      await openRecipe('ui-0',{from:'dishes'});
+      return {planPanel,listPanel,editor,recipe:sample($('#cooking-content'))};
+    });
+    for(const [name,panel] of Object.entries(panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'?0:150,fits:true},`${name} ${width}×${height} ${theme} ${reducedMotion}`);
+  }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme()});await fixture(page);
     for(const screen of ['week','dishes','prepare','recipe','cook','shopping','edit']){

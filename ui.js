@@ -41,11 +41,6 @@ const uiIcons={
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
 function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
-function weekDialogOffscreenTransform(dialog){return `translateY(-${dialog.getBoundingClientRect().bottom+16}px)`}
-function animateWeekDialogIn(dialog){
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return null;
-  return dialog.animate([{transform:weekDialogOffscreenTransform(dialog)},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
-}
 function afterDialogBoundsSettle(element,reveal){
   let frame,previousBounds;
   const checkBounds=()=>{
@@ -213,9 +208,16 @@ function appendCookingEntryActions(dialog,date,mealIndex,dishId){
   dialog.append(uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
 }
 
-function showDesktopRecipe(){
-  if(!uiDesktop()||recipeDetailPreviousView!=='week')return;
-  const dialog=uiDialog('recipe-detail-dialog','Rezept');const content=$('#cooking-content');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();
+let recipeOverviewMotion=null;
+function presentRecipeOverview(){
+  recipeOverviewMotion?.cancel();
+  recipeOverviewMotion=null;
+  const content=$('#cooking-content');
+  if(!uiDesktop()||recipeDetailPreviousView!=='week'){
+    recipeOverviewMotion=fadeDialogIn(content);
+    return;
+  }
+  const dialog=uiDialog('recipe-detail-dialog','Rezept');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();
   dialog.addEventListener('close',()=>{$('#cooking-view').append(content);if(cookingStage==='overview'){setView('week',{render:false});uiRecipeOpener?.focus({preventScroll:true})}},{once:true});
 }
 function enhanceRecipeOverview(dish){

@@ -212,7 +212,8 @@ async function checkImportedEditor(page) {
         assert(box && (await measure(control)).visible, `${layout}, ${control} muss ohne Scrollen erreichbar sein`);
         await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
       };
-      if (keyboardHeight < height) {
+      const openEntryKeyboard = async () => {
+        if (keyboardHeight === height) return;
         await page.evaluate(visibleHeight => {
           Object.defineProperty(visualViewport, 'height', { configurable: true, value: visibleHeight });
           Object.defineProperty(visualViewport, 'offsetTop', { configurable: true, value: 24 });
@@ -222,7 +223,8 @@ async function checkImportedEditor(page) {
           }
           visualViewport.dispatchEvent(new Event('resize'));
         }, width > height ? 150 : keyboardHeight);
-      }
+      };
+      await openEntryKeyboard();
       const afterAdd = await measure(newIngredient);
       assert(afterAdd.focused && afterAdd.visible, `${layout}, neues Feld direkt nach dem Hinzufügen: ${JSON.stringify(afterAdd)}`);
       // Do not click or fill the new field directly. Playwright could scroll it into view for us.
@@ -255,12 +257,35 @@ async function checkImportedEditor(page) {
       assert(await notes.nth(1).isVisible(), `${layout}, leerer geöffneter Hinweis bleibt geöffnet`);
       assert.equal(await notes.first().inputValue(), 'vorher abspülen');
       assert.equal(await ingredientNames.first().inputValue(), 'Basmatireis');
-      await page.evaluate(() => {
+      const resetEntryKeyboard = () => page.evaluate(() => {
         delete visualViewport.height;
         delete visualViewport.offsetTop;
         document.getElementById('dish-dialog').style.removeProperty('max-height');
         visualViewport.dispatchEvent(new Event('resize'));
       });
+      await resetEntryKeyboard();
+      await editor.evaluate(el => el.close());
+
+      // A blank recipe starts with a single ingredient even before Add is tapped.
+      await page.evaluate(() => openRecipeCreation());
+      await page.locator('#recipe-import-manual').click();
+      const ingredients = editor.locator('#editor-ingredients');
+      if (!await ingredients.evaluate(el => el.open)) await ingredients.locator('summary').click();
+      assert.equal(await ingredientNames.count(), 1);
+      await ingredientNames.first().tap();
+      await openEntryKeyboard();
+      assert((await measure(ingredientNames.first())).focused, `${layout}, Fokus in der automatisch angelegten Zutat`);
+      await checkEntry();
+      await page.keyboard.insertText('Reis');
+      await checkEntry();
+      await tapVisible(newAmount);
+      await page.keyboard.insertText('50');
+      assert.equal(await newAmount.inputValue(), '50');
+      await tapVisible(addIngredient);
+      assert.equal(await ingredientNames.count(), 2);
+      assert.equal(await ingredientNames.first().inputValue(), 'Reis');
+      await checkEntry();
+      await resetEntryKeyboard();
       await editor.evaluate(el => el.close());
     }
   }

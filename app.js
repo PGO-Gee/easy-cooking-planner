@@ -222,7 +222,7 @@ function unlockPageScroll(){
   document.body.style.removeProperty('top');
   window.scrollTo(0,dialogScrollY);
 }
-function setupNativeDialog(dialog,{restoreFocus=false,slide=false}={}){
+function setupNativeDialog(dialog,{restoreFocus=false}={}){
   const show=dialog.showModal.bind(dialog);
   let opener=null,cancelReveal=null,motion=null;
   const resetReveal=()=>{
@@ -234,7 +234,7 @@ function setupNativeDialog(dialog,{restoreFocus=false,slide=false}={}){
     if(dialog.open)return;
     resetReveal();
     opener=document.activeElement;
-    if(!slide)dialog.classList.add('is-waiting-to-reveal');
+    dialog.classList.add('is-waiting-to-reveal');
     lockPageScroll();
     try{
       syncVisualViewport();
@@ -243,10 +243,6 @@ function setupNativeDialog(dialog,{restoreFocus=false,slide=false}={}){
       resetReveal();
       unlockPageScroll();
       throw error;
-    }
-    if(slide){
-      motion=animateWeekDialogIn(dialog);
-      return;
     }
     // Let native focus and the iOS visual viewport settle before revealing the panel.
     cancelReveal=afterDialogBoundsSettle(dialog,()=>{
@@ -263,7 +259,7 @@ function setupNativeDialog(dialog,{restoreFocus=false,slide=false}={}){
   });
 }
 document.querySelectorAll('dialog').forEach(dialog=>{
-  setupNativeDialog(dialog,{slide:dialog.id==='choose-dialog'});
+  setupNativeDialog(dialog);
   dialog.addEventListener('close',()=>{if(dialog.id==='dish-dialog'&&!dialog.open)document.documentElement.classList.remove('dish-keyboard-open')});
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
@@ -2346,8 +2342,11 @@ function renderRecipeIngredientRows(items=[]){
   else appendRecipeIngredientRow(container);
   updateRecipePagers();
 }
-function appendRecipeIngredientRow(container,item={name:''},{showNote=Boolean(item.note)}={}){
+function appendRecipeIngredientRow(container,item){
+  const quickEntry=!item;
+  item??={name:''};
   const row=document.createElement('div');row.className='recipe-ingredient-row has-ingredient-note';
+  row.classList.toggle('is-quick-entry',quickEntry);
   const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
   const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
   const name=recipeRowControl('input',{type:'text',maxlength:'100',autocomplete:'off',placeholder:'Zutat',value:normalizeIngredient(item.name),role:'combobox','aria-autocomplete':'list','aria-expanded':'false','aria-controls':listId});name.dataset.recipeField='name';name.setAttribute('aria-label','Zutat');
@@ -2377,7 +2376,7 @@ function appendRecipeIngredientRow(container,item={name:''},{showNote=Boolean(it
   const noteId=`recipe-ingredient-note-${recipeIngredientSuggestionId}`;
   const note=recipeRowControl('input',{id:noteId,type:'text',maxlength:'100',placeholder:'z. B. fein gehackt',value:item.note||'','aria-label':'Hinweis'});
   note.dataset.recipeField='note';
-  note.hidden=!showNote;
+  note.hidden=!(quickEntry||item.note);
   const noteToggle=recipeRowControl('button',{type:'button',className:'recipe-ingredient-note-toggle',text:'Hinweis','aria-controls':noteId,'aria-expanded':String(!note.hidden)});
   noteToggle.addEventListener('click',()=>{
     note.hidden=!note.hidden;
@@ -3508,7 +3507,7 @@ async function openRecipe(dishId,{from='cooking',servings=null}={}){
   selectedRecipeDishId=dishId;cookingProgress=progress;
   selectedCookServings=Number(servings)||Number(cookingProgress?.servings)||Number(dish.recipe?.servings)||2;
   cookingStage='overview';setView('cooking',{render:false});renderCooking({photo:photoReady?photo:null});
-  if(typeof showDesktopRecipe==='function')showDesktopRecipe();
+  if(typeof presentRecipeOverview==='function')presentRecipeOverview();
   window.scrollTo(0,0);
 }
 function renderRecipeOverview(dish,preparedPhoto=undefined){
@@ -3779,8 +3778,7 @@ $('#recipe-add-ingredient').addEventListener('click',()=>{
       previous.querySelector('.recipe-ingredient-note-toggle').setAttribute('aria-expanded','false');
     }
   }
-  const name=appendRecipeIngredientRow(container,{name:''},{showNote:true});
-  container.lastElementChild.classList.add('is-quick-entry');
+  const name=appendRecipeIngredientRow(container);
   recipeIngredientPage=container.children.length-1;
   updateRecipePagers();
   revealDishEditorField(recipeEditorDialog,name);
