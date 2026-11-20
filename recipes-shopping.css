@@ -389,7 +389,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .nav-item[hidden]{display:none!important}
 #dish-dialog:focus{outline:none}
 #dish-dialog{box-sizing:border-box;max-height:calc(var(--visual-viewport-height,100dvh) - 24px);overflow:auto;overscroll-behavior:contain}
-.dish-keyboard-open :is(#dish-dialog[open], #recipe-import-dialog[data-trial][open]) {
+.dish-keyboard-open :is(#dish-dialog[open], #recipe-import-dialog:is([data-trial], [data-text-import])[open]) {
   position: fixed;
   inset-block-start: calc(var(--visual-viewport-top, 0px) + 8px + env(safe-area-inset-top));
   inset-block-end: auto;
@@ -565,6 +565,31 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 #recipe-import-dialog .dialog-head > div { min-width: 0; }
 #recipe-import-dialog .dialog-head h2, #recipe-import-dialog .eyebrow { overflow-wrap: anywhere; }
 #recipe-import-dialog .dialog-head .close-button { flex: 0 0 44px; }
+#recipe-import-dialog[data-text-import] {
+  width: min(560px, calc(100% - 2 * max(12px, env(safe-area-inset-left), env(safe-area-inset-right))));
+}
+#recipe-import-dialog[data-text-import] .eyebrow,
+#recipe-import-dialog[data-text-import] #recipe-import-input > label { display: none; }
+#recipe-import-dialog[data-text-import] .dialog-head { margin-bottom: 8px; }
+#recipe-import-dialog[data-text-import] #recipe-import-hint { margin: 0 0 8px; }
+#recipe-import-dialog[data-text-import] #recipe-import-text { box-sizing: border-box; }
+#recipe-import-dialog[data-text-import] .dialog-actions {
+  position: static;
+  margin: 12px 0 0;
+  padding: 8px 0 0;
+  background: transparent;
+}
+#recipe-import-dialog[data-text-import] .dialog-actions button { min-width: 44px; }
+.dish-keyboard-open #recipe-import-dialog[data-text-import] .recipe-import-content { padding: 4px 12px; }
+.dish-keyboard-open #recipe-import-dialog[data-text-import] .dialog-head { margin-bottom: 4px; }
+.dish-keyboard-open #recipe-import-dialog[data-text-import] #recipe-import-hint { display: none; }
+.dish-keyboard-open #recipe-import-dialog[data-text-import] .dialog-actions { margin-top: 6px; padding-top: 4px; }
+.dish-keyboard-open #recipe-import-dialog[data-text-import] #recipe-import-text {
+  min-height: 64px;
+  height: clamp(64px, calc(var(--visual-viewport-height, 100dvh) - 145px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 240px);
+  padding: 8px 10px;
+  resize: none;
+}
 @media (max-width: 600px) {
   #recipe-import-input .dialog-actions { width: auto; margin: 12px -16px -16px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
 }

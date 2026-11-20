@@ -144,8 +144,10 @@ function syncVisualViewport(){
   document.documentElement.style.setProperty('--visual-viewport-height',`${viewport.height}px`);
   document.documentElement.style.setProperty('--visual-viewport-top',`${viewport.offsetTop}px`);
   const focused=document.activeElement;
+  const textImportFocus=focused?.closest('#recipe-import-dialog[data-text-import][open]');
   const editorFocus=focused?.matches('input, textarea')&&focused.closest('#dish-dialog[open], #recipe-import-dialog[data-trial][open]');
-  document.documentElement.classList.toggle('dish-keyboard-open', window.innerHeight-viewport.height>150 && Boolean(editorFocus));
+  const viewportReduction=window.innerHeight-viewport.height;
+  document.documentElement.classList.toggle('dish-keyboard-open', Boolean(textImportFocus ? viewportReduction>100 : editorFocus&&viewportReduction>150));
   const heightChanged=lastVisualViewportHeight!==viewport.height;lastVisualViewportHeight=viewport.height;
   if(heightChanged&&editorFocus&&document.documentElement.classList.contains('dish-keyboard-open'))requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
   if(heightChanged&&focused?.matches('.shopping-row-editor input'))requestAnimationFrame(()=>revealShoppingEditorField(focused));
@@ -2450,7 +2452,11 @@ function applyRecipeImport(result,source,notice=''){
 const recipeImportDialog=$('#recipe-import-dialog'),recipeImportInput=$('#recipe-import-input'),recipeImportText=$('#recipe-import-text'),recipeImportError=$('#recipe-import-error');let creationDefaultType='meal';
 let trialImportTarget=null;
 const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze')});
-function updateRecipeImportAction(){ $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim()||(recipeImportInput.classList.contains('screenshot-mode')&&!fullRecipeOCR.hasRecognized()) }
+function updateRecipeImportAction(){
+  const screenshotMode=recipeImportInput.classList.contains('screenshot-mode');
+  $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim()||(screenshotMode&&!fullRecipeOCR.hasRecognized());
+  $('#recipe-import-back').disabled=screenshotMode&&fullRecipeOCR.isBusy();
+}
 recipeImportText.addEventListener('input',updateRecipeImportAction);
 fullRecipeOCR.panel.addEventListener('ocr-state-change',updateRecipeImportAction);
 function openRecipeCreation(defaultType='meal',{trialDate=null}={}){
@@ -2458,11 +2464,12 @@ function openRecipeCreation(defaultType='meal',{trialDate=null}={}){
   trialImportTarget=trialDate?{date:trialDate,scope:authScope,householdId:currentHouseholdId}:null;
   const trial=Boolean(trialImportTarget);
   recipeImportDialog.toggleAttribute('data-trial',trial);
+  recipeImportDialog.removeAttribute('data-text-import');
   $('#recipe-import-title').textContent=trial?'Probegericht einplanen':'Rezept hinzufügen';
   recipeImportDialog.querySelector('.eyebrow').hidden=trial;
   recipeImportInput.hidden=!trial;$('#recipe-import-choice').hidden=trial;
-  fullRecipeOCR.panel.hidden=trial;$('#recipe-import-back').hidden=trial;
-  $('#recipe-import-hint').textContent=trial?'Ein Name genügt. Du kannst auch Zutaten und Zubereitung einfügen.':'Der Import ist für deutsche Rezepttexte ausgelegt. Bitte prüfe das Ergebnis. Die Auswertung erfolgt nur auf diesem Gerät.';
+  fullRecipeOCR.panel.hidden=true;$('#recipe-import-back').hidden=trial;
+  $('#recipe-import-hint').textContent=trial?'Ein Name genügt. Du kannst auch Zutaten und Zubereitung einfügen.':'Deutsche Rezepttexte werden auf diesem Gerät ausgewertet.';
   recipeImportText.placeholder=trial?'Name oder Rezepttext …':'Zutaten und Zubereitung hier einfügen …';
   recipeImportText.rows=trial?5:10;
   if(trial)recipeImportText.maxLength=window.WochentischRecipeImport.MAX_SOURCE;
@@ -2476,11 +2483,27 @@ function closeRecipeImport(){if((recipeImportText.value.trim()||fullRecipeOCR.ha
 $('#recipe-import-close').addEventListener('click',closeRecipeImport);
 recipeImportDialog.addEventListener('cancel',event=>{if(event.target!==recipeImportDialog)return;event.preventDefault();closeRecipeImport()});
 $('#recipe-import-manual').addEventListener('click',()=>{if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Selbst eingeben?'))return;recipeImportDialog.close();openDish('',{defaultType:creationDefaultType})});
-$('#recipe-import-text-choice').addEventListener('click',()=>{recipeImportInput.classList.remove('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;updateRecipeImportAction();recipeImportText.focus()});
-$('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.open=true;updateRecipeImportAction();fullRecipeOCR.panel.querySelector('input').focus()});
-$('#recipe-import-back').addEventListener('click',()=>{recipeImportInput.hidden=true;$('#recipe-import-choice').hidden=false;recipeImportError.hidden=true;$('#recipe-import-text-choice').focus()});
+$('#recipe-import-text-choice').addEventListener('click',()=>{
+  recipeImportDialog.setAttribute('data-text-import','');
+  $('#recipe-import-title').textContent='Rezepttext einfügen';
+  recipeImportInput.classList.remove('screenshot-mode');
+  fullRecipeOCR.panel.hidden=true;
+  $('#recipe-import-choice').hidden=true;
+  recipeImportInput.hidden=false;
+  updateRecipeImportAction();
+  recipeImportText.focus({preventScroll:true});
+});
+$('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.hidden=false;fullRecipeOCR.panel.open=true;updateRecipeImportAction();fullRecipeOCR.panel.querySelector('input').focus()});
+$('#recipe-import-back').addEventListener('click',()=>{
+  recipeImportDialog.removeAttribute('data-text-import');
+  $('#recipe-import-title').textContent='Rezept hinzufügen';
+  recipeImportInput.hidden=true;
+  $('#recipe-import-choice').hidden=false;
+  recipeImportError.hidden=true;
+  $('#recipe-import-text-choice').focus();
+});
 $('#recipe-import-analyze').addEventListener('click',()=>{
-  if(fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Screenshots werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;
+  if(recipeImportInput.classList.contains('screenshot-mode')&&fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Screenshots werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;
   const source=recipeImportText.value,result=window.WochentischRecipeImport.parse(source),message=recipeImportMessage(result);
   const target=trialImportTarget;
   const trialTitleOnly=target&&!result.error&&!result.ingredients.length&&!result.steps.length;
