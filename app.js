@@ -2479,7 +2479,35 @@ function openRecipeCreation(defaultType='meal',{trialDate=null}={}){
   recipeImportDialog.showModal();
   if(trial)recipeImportText.focus({preventScroll:true});
 }
-function closeRecipeImport(){if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm(trialImportTarget?'Rezepttext verwerfen?':'Ausgewählte Bilder und eingefügter Text gehen verloren. Wirklich abbrechen?'))return;recipeImportDialog.close()}
+let recipeImportTouchY=null;
+let recipeImportTouchInDialog=false;
+recipeImportDialog.addEventListener('touchstart',event=>{
+  recipeImportTouchY=null;
+  if(!recipeImportDialog.hasAttribute('data-text-import')||event.touches.length!==1)return;
+  const touch=event.touches[0],bounds=recipeImportDialog.getBoundingClientRect();
+  recipeImportTouchY=touch.clientY;
+  recipeImportTouchInDialog=touch.clientX>=bounds.left&&touch.clientX<=bounds.right&&touch.clientY>=bounds.top&&touch.clientY<=bounds.bottom;
+},{passive:true});
+recipeImportDialog.addEventListener('touchmove',event=>{
+  if(event.touches.length!==1){recipeImportTouchY=null;return}
+  if(recipeImportTouchY===null||!recipeImportDialog.hasAttribute('data-text-import'))return;
+  const y=event.touches[0].clientY,delta=recipeImportTouchY-y;
+  recipeImportTouchY=y;
+  if(!delta)return;
+
+  // Keep iOS from panning the page when the gesture has no room to scroll locally.
+  const scrollArea=event.target===recipeImportText&&recipeImportText.scrollHeight>recipeImportText.clientHeight
+    ?recipeImportText:recipeImportDialog;
+  const maxScroll=scrollArea.scrollHeight-scrollArea.clientHeight;
+  const canScroll=recipeImportTouchInDialog&&(delta>0?scrollArea.scrollTop<maxScroll-1:scrollArea.scrollTop>0);
+  if(!canScroll&&event.cancelable)event.preventDefault();
+},{passive:false});
+function closeRecipeImport(){
+  const hasImages=fullRecipeOCR.hasDraft();
+  const message=hasImages?'Rezeptimport mit den ausgewählten Bildern verwerfen?':'Rezepttext verwerfen?';
+  if((recipeImportText.value.trim()||hasImages)&&!confirm(message))return;
+  recipeImportDialog.close();
+}
 $('#recipe-import-close').addEventListener('click',closeRecipeImport);
 recipeImportDialog.addEventListener('cancel',event=>{if(event.target!==recipeImportDialog)return;event.preventDefault();closeRecipeImport()});
 $('#recipe-import-manual').addEventListener('click',()=>{if((recipeImportText.value.trim()||fullRecipeOCR.hasDraft())&&!confirm('Ausgewählte Bilder und eingefügter Text gehen verloren. Selbst eingeben?'))return;recipeImportDialog.close();openDish('',{defaultType:creationDefaultType})});

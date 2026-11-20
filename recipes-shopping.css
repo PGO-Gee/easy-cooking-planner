@@ -567,12 +567,13 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 #recipe-import-dialog .dialog-head .close-button { flex: 0 0 44px; }
 #recipe-import-dialog[data-text-import] {
   width: min(560px, calc(100% - 2 * max(12px, env(safe-area-inset-left), env(safe-area-inset-right))));
+  overscroll-behavior-y: none;
 }
 #recipe-import-dialog[data-text-import] .eyebrow,
 #recipe-import-dialog[data-text-import] #recipe-import-input > label { display: none; }
 #recipe-import-dialog[data-text-import] .dialog-head { margin-bottom: 8px; }
 #recipe-import-dialog[data-text-import] #recipe-import-hint { margin: 0 0 8px; }
-#recipe-import-dialog[data-text-import] #recipe-import-text { box-sizing: border-box; }
+#recipe-import-dialog[data-text-import] #recipe-import-text { box-sizing: border-box; overscroll-behavior-y: none; }
 #recipe-import-dialog[data-text-import] .dialog-actions {
   position: static;
   margin: 12px 0 0;
