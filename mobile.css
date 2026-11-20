@@ -1209,6 +1209,14 @@ body { background: radial-gradient(ellipse at 85% 0%, #d9edf5, transparent 38%),
 }
 
 @media (max-width: 700px), (orientation: landscape) and (max-height: 500px) and (pointer: coarse) {
+  #pantry-dialog[open] {
+    position: fixed;
+    inset: calc(var(--visual-viewport-top, 0px) + 12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) auto calc(12px + env(safe-area-inset-left));
+    width: min(480px, calc(100% - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+    max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    margin: 0 auto;
+  }
+
   #choose-dialog[open] {
     position: fixed;
     top: calc(var(--visual-viewport-top, 0px) + 8px + env(safe-area-inset-top));

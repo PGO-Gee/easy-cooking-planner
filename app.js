@@ -1767,7 +1767,25 @@ window.visualViewport?.addEventListener('scroll',()=>requestAnimationFrame(revea
 window.addEventListener('scroll',positionShoppingSuggestions,true);
 function renderShoppingItemSuggestions(){$('#shopping-add-status').hidden=true;const input=$('#shopping-item-input'),list=$('#shopping-item-suggestions'),query=manualItemKey(window.WochentischRecipes.parseShoppingItem(input.value).name),catalog=[...(window.COMMON_MAIN_INGREDIENTS||[]),...state.dishes.flatMap(dish=>dish.ingredients||[])],values=new Map();catalog.forEach(raw=>{const name=normalizeManualItem(raw),key=manualItemKey(name);if(name&&key&&!values.has(key))values.set(key,name)});const matches=query?[...values.values()].filter(name=>manualItemKey(name).includes(query)).sort((a,b)=>a.localeCompare(b,'de-DE')).slice(0,8):[];renderIngredientOptions(list,matches,addManualShoppingItem);list.scrollTop=0;positionShoppingSuggestions();input.setAttribute('aria-expanded',String(matches.length>0))}
 function addPantryIngredient(value){const name=normalizeIngredient(value);if(!name)return;const key=ingredientKey(name);if(!pantryDraft.some(item=>ingredientKey(item)===key))pantryDraft.push(name);$('#pantry-input').value='';renderPantryEditor();$('#pantry-input').focus()}
-function openPantryPlanner(){const key=keyFor(mondayFor(rangeStart())),dialog=$('#pantry-dialog'),input=$('#pantry-input');pantryDraft=(state.pantryIngredients?.[key]||[]).slice();input.value='';try{if(!dialog.open)dialog.showModal();renderPantryEditor();requestAnimationFrame(()=>$('#pantry-close').focus({preventScroll:true}))}catch(error){console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.')}}
+function openPantryPlanner(){
+  const dialog=$('#pantry-dialog');
+  if(dialog.open)return;
+  const key=keyFor(mondayFor(rangeStart()));
+  pantryDraft=(state.pantryIngredients?.[key]||[]).slice();
+  $('#pantry-input').value='';
+  try{
+    renderPantryEditor();
+    const planMenu=$('#plan-menu');
+    if(planMenu?.open){
+      planMenu.open=false;
+      planMenu.querySelector('summary').focus({preventScroll:true});
+    }
+    dialog.showModal();
+  }catch(error){
+    console.error('Wochenplan-Dialog konnte nicht geöffnet werden:',error);
+    showToast('Der Wochenplan-Dialog konnte gerade nicht geöffnet werden. Bitte erneut versuchen.');
+  }
+}
 function renderPantryEditor(){const selected=$('#pantry-selected'),input=$('#pantry-input'),list=$('#pantry-suggestions'),query=ingredientKey(input.value);selected.replaceChildren();$('#pantry-selected-count').textContent=pantryDraft.length;$('#pantry-empty-selection').hidden=pantryDraft.length>0;pantryDraft.forEach(name=>{const chip=document.createElement('span');chip.className='pantry-chip';const icon=document.createElement('span');icon.className='pantry-ingredient-icon';icon.setAttribute('aria-hidden','true');icon.textContent=ingredientIcon(name);const label=document.createElement('span');label.textContent=name;const remove=document.createElement('button');remove.type='button';remove.className='pantry-chip-remove';remove.setAttribute('aria-label',`${name} entfernen`);remove.textContent='×';remove.addEventListener('click',()=>{pantryDraft=pantryDraft.filter(item=>ingredientKey(item)!==ingredientKey(name));renderPantryEditor()});chip.append(icon,label,remove);selected.append(chip)});const matches=query?availablePantryIngredients().filter(name=>ingredientKey(name).includes(query)&&!pantryDraft.some(item=>ingredientKey(item)===ingredientKey(name))).slice(0,8):[];renderIngredientOptions(list,matches,addPantryIngredient);input.setAttribute('aria-expanded',String(matches.length>0));input.removeAttribute('aria-activedescendant')}
 function planningIngredientOverlap(dishes,keyForIngredient=ingredientKey){
   const excluded=new Set(['Salz','Pfeffer','Paprikapulver','Geräuchertes Paprikapulver','Currypulver','Kreuzkümmel','Kurkuma','Chiliflocken','Cayennepfeffer','Zimt','Muskatnuss','Oregano','Thymian','Rosmarin','Basilikum','Petersilie','Schnittlauch','Dill','Koriander','Minze','Lorbeerblätter','Italienische Kräuter','Kräuter der Provence','Wasser','Rapsöl','Olivenöl','Sesamöl','Kokosöl','Sonnenblumenöl','Öl','Essig','Balsamico','Apfelessig','Gemüsebrühe','Hühnerbrühe','Rinderbrühe','Brühe','Gemüsefond','Hühnerfond','Rinderfond','Fond'].map(ingredientKey));

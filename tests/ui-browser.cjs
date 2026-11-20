@@ -65,16 +65,34 @@ try{
       };
       const plan=$('#plan-menu'),list=$('#shopping-menu');
       setView('week');plan.querySelector('summary').click();
-      const planPanel=sample(plan.querySelector('.ui-menu-panel'));plan.open=false;
+      const planPanel=sample(plan.querySelector('.ui-menu-panel'));
+      const planner=$('#pantry-dialog'),closePlanner=$('#pantry-close'),draftWeek=keyFor(mondayFor(rangeStart()));
+      state.pantryIngredients[draftWeek]=['Kartoffeln'];
+      let menuOpenWhenFocused;
+      closePlanner.addEventListener('focus',()=>{menuOpenWhenFocused=plan.open},{once:true});
+      $('#mix-btn').click();
+      const plannerOpening={
+        menuOpenWhenFocused,
+        waiting:getComputedStyle(planner).opacity==='0',
+        focused:document.activeElement===closePlanner,
+        draft:$('#pantry-selected .pantry-chip button')?.getAttribute('aria-label')
+      };
+      for(let frame=0;frame<12&&planner.classList.contains('is-waiting-to-reveal');frame++)await new Promise(resolve=>requestAnimationFrame(resolve));
+      const plannerPanel=sample(planner);
+      await new Promise(resolve=>{planner.addEventListener('close',resolve,{once:true});closePlanner.click()});
+      const plannerFocusReturned=document.activeElement===plan.querySelector('summary');
       state.manualShoppingItems[keyFor(mondayFor(rangeStart()))]=['Küchenrolle'];
       openShoppingList();list.querySelector('summary').click();
       const listPanel=sample(list.querySelector('.ui-menu-panel'));list.open=false;
       $('.shopping-edit-button[data-ingredient="küchenrolle"]').click();
       const editor=sample($('.shopping-row-editor:not([hidden])'));
       await openRecipe('ui-0',{from:'dishes'});
-      return {planPanel,listPanel,editor,recipe:sample($('#cooking-content'))};
+      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned};
     });
-    for(const [name,panel] of Object.entries(panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'?0:150,fits:true},`${name} ${width}×${height} ${theme} ${reducedMotion}`);
+    const condition=`${width}×${height} ${theme} ${reducedMotion}`;
+    for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'?0:150,fits:true},`${name} ${condition}`);
+    assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,waiting:true,focused:true,draft:'Kartoffeln entfernen'},condition);
+    assert.equal(panels.plannerFocusReturned,true,condition);
   }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme()});await fixture(page);
