@@ -41,15 +41,37 @@ const uiIcons={
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
 function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
+function afterDialogBoundsSettle(element,reveal){
+  let frame,previousBounds;
+  const checkBounds=()=>{
+    syncVisualViewport();
+    const {top,left,width,height}=element.getBoundingClientRect();
+    const bounds=[top,left,width,height];
+    if(previousBounds&&bounds.every((value,index)=>value===previousBounds[index])){
+      reveal();
+      return;
+    }
+    previousBounds=bounds;
+    frame=requestAnimationFrame(checkBounds);
+  };
+  frame=requestAnimationFrame(checkBounds);
+  return ()=>cancelAnimationFrame(frame);
+}
+function fadeDialogIn(element){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return null;
+  return element.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
+}
 function cookingEntryOverlay(dialog){
   // Keep this menu out of the native dialog top layer: iOS can reposition it
   // after showModal() has focused its contents on a scrolled page.
   const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
   dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
-  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null;
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null,cancelReveal=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
-  const stopMotion=()=>{if(motion){motion.onfinish=null;motion.cancel();motion=null}};
-  const offscreenTransform=()=>`translateY(-${dialog.getBoundingClientRect().bottom+16}px)`;
+  const stopMotion=()=>{
+    cancelReveal?.();cancelReveal=null;
+    if(motion){motion.onfinish=null;motion.cancel();motion=null}
+  };
   const close=dialog.close.bind(dialog);
   const release=()=>{
     inertSiblings.forEach(element=>{element.inert=false});inertSiblings=[];
@@ -57,6 +79,7 @@ function cookingEntryOverlay(dialog){
   };
   dialog.showModal=()=>{
     if(dialog.open)return;
+    layer.style.opacity='0';
     stopMotion();layer.classList.remove('is-closing');dialog.inert=false;
     opener=document.activeElement;lockPageScroll();locked=true;
     try{
@@ -65,21 +88,27 @@ function cookingEntryOverlay(dialog){
       inertSiblings.forEach(element=>{element.inert=true});
       layer.hidden=false;dialog.setAttribute('open','');dialog.scrollTop=0;
       dialog.querySelector('.close-button').focus({preventScroll:true});
-      if(!reducedMotion.matches)motion=dialog.animate([{transform:offscreenTransform()},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
-    }catch(error){dialog.removeAttribute('open');layer.hidden=true;release();throw error}
+      // On iOS the scroll lock and focus can move the visual viewport after
+      // the dialog is laid out. Keep it transparent until its bounds settle.
+      cancelReveal=afterDialogBoundsSettle(layer,()=>{
+        cancelReveal=null;
+        motion=fadeDialogIn(layer);
+        layer.style.removeProperty('opacity');
+      });
+    }catch(error){dialog.removeAttribute('open');layer.hidden=true;layer.style.removeProperty('opacity');release();throw error}
   };
   dialog.close=(...args)=>{
     if(!dialog.open)return;
-    const transform=getComputedStyle(dialog).transform;
+    const opacity=!cancelReveal&&!reducedMotion.matches?Number(getComputedStyle(layer).opacity):0;
     stopMotion();
     // Close logically now so actions can open the recipe or chooser immediately.
     // The inert menu remains visible only for its exit animation.
     layer.classList.add('is-closing');dialog.inert=true;
     close(...args);release();
     if(opener?.isConnected)opener.focus({preventScroll:true});
-    const finish=()=>{layer.hidden=true;layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
-    if(reducedMotion.matches){finish();return}
-    motion=dialog.animate([{transform},{transform:offscreenTransform()}],{duration:200,easing:'cubic-bezier(.4,0,1,1)',fill:'forwards'});
+    const finish=()=>{layer.hidden=true;layer.style.removeProperty('opacity');layer.classList.remove('is-closing');dialog.inert=false;stopMotion()};
+    if(opacity===0){finish();return}
+    motion=layer.animate([{opacity},{opacity:0}],{duration:120,easing:'ease-in',fill:'forwards'});
     motion.onfinish=finish;
   };
   dialog.addEventListener('keydown',event=>{
@@ -110,8 +139,7 @@ function uiDialog(id,title){
   const head=document.createElement('div');head.className='dialog-head';const heading=document.createElement('h2');heading.id=`${id}-title`;heading.textContent=title;
   const close=uiButton('×',()=>dialog.close(),{className:'close-button'});close.setAttribute('aria-label','Schließen');head.append(heading,close);dialog.append(head);document.body.append(dialog);
   if(id==='cooking-entry-dialog')return cookingEntryOverlay(dialog);
-  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;lockPageScroll();try{syncVisualViewport();show()}catch(error){unlockPageScroll();throw error}};
-  dialog.addEventListener('close',()=>{unlockPageScroll();if(opener?.isConnected)opener.focus({preventScroll:true})});
+  setupNativeDialog(dialog,{restoreFocus:true});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
   return dialog;
 }
@@ -141,14 +169,16 @@ function enhanceWeekView(days){
       if(meal.classList.contains('focus-meal')){const date=document.createElement('p');date.className='meal-date';date.textContent=formatChooserDate(days[index].date);meal.querySelector('.meal-title').before(date)}
       const picture=meal.querySelector('.recipe-list-photo');if(picture&&meal.classList.contains('focus-meal')){const full=recipePhoto(dish);if(full)picture.src=full.src}
       if(!picture)meal.prepend(uiPlaceholder('meal-image-placeholder'));
-      meal.querySelector('.meal-ingredient').textContent=plannedEntryLabel(days[index].date,mealIndex);
+      meal.querySelector('.meal-ingredient').textContent=`${dish.isTrial?'Probegericht · ':''}${plannedEntryLabel(days[index].date,mealIndex)}`;
+      const mealLabel=`${dish.name} öffnen${dish.isTrial?', Probegericht':''}`;
+      meal.setAttribute('aria-label',mealLabel);
       meal.querySelector('.meal-time').textContent=`${dish.time||30} Min.`;
       meal.querySelector('.meal-nutrition').hidden=true;
       meal.querySelector('.meal-actions')?.remove();
       if(meal.classList.contains('is-pinned')){
         const indicator=uiIcon('pin');indicator.classList.add('meal-pin-indicator');indicator.title='Fixiert';
         meal.querySelector('.meal-name').prepend(indicator);
-        meal.setAttribute('aria-label',`${dish.name} öffnen, fixiert`);
+        meal.setAttribute('aria-label',`${mealLabel}, fixiert`);
       }
 
     });
@@ -162,10 +192,11 @@ function renderWeekPreview(){
   if(!dish){const body=document.createElement('div');body.className='week-preview-body empty-preview';const date=document.createElement('p');date.textContent=formatChooserDate(entry.date);const h=document.createElement('h2');h.textContent=entry.isRest?'Reste':'Nicht geplant';const copy=document.createElement('p'),linked=window.WochentischCookingPlan.restsAt(state,keyFor(entry.date));copy.textContent=entry.isRest?'':'Wähle ein Gericht aus deiner Sammlung.';if(linked.length)body.append(uiButton('Restetag ansehen',()=>openLinkedRest(entry.date),{className:'primary-button'}));body.append(date,h,copy,uiButton('Gericht auswählen',()=>chooseDish(uiSelectedDay),{className:'primary-button',icon:'plus'}));preview.append(body);preview.classList.toggle('rest-preview',entry.isRest);return}
   preview.classList.remove('rest-preview');const photo=recipePhoto(dish);if(photo)preview.append(photo);else{const placeholder=document.createElement('div');placeholder.className='recipe-placeholder';placeholder.append(uiIcon('dishes'));preview.append(placeholder)}
   const body=document.createElement('div');body.className='week-preview-body';const date=document.createElement('p');date.className='recipe-date';date.textContent=formatChooserDate(entry.date);
-  const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
+  const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.isTrial?'Probegericht · ':''}${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
   body.append(date,title,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
   body.append(uiButton('Kochmenge ändern',()=>openCookingEntryOptions(entry.date,uiSelectedMeal,{editQuantity:true}),{className:'secondary-button'}));
   body.append(uiButton('Rezept ansehen',()=>openRecipe(dish.id,{from:'week',servings:window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal))}),{icon:'dishes',className:'primary-button'}));
+  if(dish.isTrial)body.append(uiButton('In meine Gerichte übernehmen',()=>openDish(dish.id,{promoteTrial:true})));
   body.append(uiButton('Weiteres Gericht hinzufügen',()=>chooseDish(uiSelectedDay),{icon:'plus',className:'text-button'}));
   if(dishes.length>1){const others=document.createElement('div');others.className='preview-other';dishes.forEach((item,index)=>{const b=uiButton(item.name,()=>{uiSelectedMeal=index;renderWeekPreview()});b.setAttribute('aria-pressed',String(index===uiSelectedMeal));others.append(b)});body.append(others)}
   preview.append(body);
@@ -177,9 +208,16 @@ function appendCookingEntryActions(dialog,date,mealIndex,dishId){
   dialog.append(uiButton('Gericht entfernen',()=>{dialog.close();removeMealFromDay(date,mealIndex,dishId)},{className:'text-button danger-action'}));
 }
 
-function showDesktopRecipe(){
-  if(!uiDesktop()||recipeDetailPreviousView!=='week')return;
-  const dialog=uiDialog('recipe-detail-dialog','Rezept');const content=$('#cooking-content');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();
+let recipeOverviewMotion=null;
+function presentRecipeOverview(){
+  recipeOverviewMotion?.cancel();
+  recipeOverviewMotion=null;
+  const content=$('#cooking-content');
+  if(!uiDesktop()||recipeDetailPreviousView!=='week'){
+    recipeOverviewMotion=fadeDialogIn(content);
+    return;
+  }
+  const dialog=uiDialog('recipe-detail-dialog','Rezept');uiRecipeOpener=document.activeElement;dialog.append(content);$('#week-view').classList.remove('hidden');$('#cooking-view').classList.add('hidden');dialog.showModal();
   dialog.addEventListener('close',()=>{$('#cooking-view').append(content);if(cookingStage==='overview'){setView('week',{render:false});uiRecipeOpener?.focus({preventScroll:true})}},{once:true});
 }
 function enhanceRecipeOverview(dish){
@@ -341,7 +379,7 @@ function renderRecipeForm(){
   const form=$('#dish-form');form.noValidate=true;form.classList.remove('is-dish-wizard','is-dish-edit-wizard');
   Object.values(recipeEditorGroups).flat().forEach(el=>el.hidden=false);$('.recipe-servings-control').hidden=false;$('.recipe-editor-hint').hidden=false;portionHint.hidden=true;servingsSuffix.hidden=false;$('.recipe-servings-field').textContent='Basis-Portionen';$('#recipe-servings').placeholder='–';
   Object.values(sectionImportPanels).forEach(entry=>entry.panel.hidden=false);dishImportSource.hidden=!dishImport;dishImportDefaults.hidden=!dishImport;
-  $('.recipe-editor-section').hidden=false;$('#recipe-editor-heading').hidden=true;$('#dish-form .form-row').hidden=false;$('#cancel-dialog').hidden=false;$('#delete-dish').hidden=!$('#dish-id').value||recipeEditorMode==='catalog';form.querySelector('[type="submit"]').hidden=false;
+  $('.recipe-editor-section').hidden=false;$('#recipe-editor-heading').hidden=true;$('#dish-form .form-row').hidden=false;$('#cancel-dialog').hidden=false;$('#delete-dish').hidden=!$('#dish-id').value||recipeEditorMode==='catalog'||Boolean(trialEditor);form.querySelector('[type="submit"]').hidden=false;
   updateDishTypeFields();
 }
 function initializeDesign(){

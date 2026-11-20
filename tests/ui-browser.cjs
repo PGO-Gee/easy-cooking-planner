@@ -20,6 +20,81 @@ try{
   const context=await browser.newContext({serviceWorkers:'block'});await context.route('https://**/*',route=>route.abort());const page=await context.newPage();page.on('pageerror',error=>errors.push(error.message));page.on('dialog',async dialog=>{console.log('App confirmation: '+dialog.message());await dialog.dismiss()});
   await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>typeof initializeDesign==='function'&&document.documentElement.classList.contains('design'));await fixture(page);await page.waitForTimeout(200);
   if(process.env.UI_SMOKE_ONLY){await page.screenshot({path:path.join(out,'smoke.png'),fullPage:true});console.log(JSON.stringify({errors,body:await page.locator('body').innerText()},null,2));return}
+  await page.setViewportSize({width:390,height:844});
+  for(const reducedMotion of ['no-preference','reduce']){
+    await page.emulateMedia({reducedMotion});
+    const frames=await page.evaluate(async()=>{
+      const viewport=window.visualViewport,dialog=$('#account-dialog'),opener=$('#account-avatar');
+      const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(resolve));
+      const pan=value=>{
+        Object.defineProperty(viewport,'offsetTop',{configurable:true,value});
+        viewport.dispatchEvent(new Event('scroll'));
+      };
+      const sample=()=>({
+        top:dialog.getBoundingClientRect().top,
+        opacity:Number(getComputedStyle(dialog).opacity),
+        backdropOpacity:Number(getComputedStyle(dialog,'::backdrop').opacity),
+        animating:dialog.getAnimations().some(animation=>animation.effect?.target===dialog)
+      });
+      try{
+        pan(70);opener.focus();opener.click();
+        const first=sample();
+        await nextFrame();pan(30);
+        await nextFrame();const moving=sample();
+        await nextFrame();const settled=sample();
+        return {first,moving,settled};
+      }finally{
+        delete viewport.offsetTop;
+        viewport.dispatchEvent(new Event('scroll'));
+      }
+    });
+    assert.deepEqual([frames.first.top,frames.moving.top,frames.settled.top],[82,42,42]);
+    assert([frames.first,frames.moving].every(frame=>frame.opacity===0&&frame.backdropOpacity===0&&!frame.animating),JSON.stringify(frames));
+    assert.equal(frames.settled.animating,reducedMotion==='no-preference');
+    if(reducedMotion==='reduce')assert.equal(frames.settled.opacity,1);
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(()=>document.activeElement.id==='account-avatar'&&!document.body.classList.contains('has-open-dialog'));
+  }
+  for(const [width,height] of [[320,568],[390,844],[844,390],[390,340],[1440,900]])for(const theme of ['light','dark'])for(const reducedMotion of ['no-preference','reduce']){
+    await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion});
+    const panels=await page.evaluate(async()=>{
+      themeOverride=null;applyTheme();
+      const sample=element=>{
+        const {left,right}=element.getBoundingClientRect();
+        return {duration:element.getAnimations()[0]?.effect.getTiming().duration??0,fits:left>=-1&&right<=innerWidth+1};
+      };
+      const plan=$('#plan-menu'),list=$('#shopping-menu');
+      setView('week');plan.querySelector('summary').click();
+      const planPanel=sample(plan.querySelector('.ui-menu-panel'));
+      const planner=$('#pantry-dialog'),closePlanner=$('#pantry-close'),draftWeek=keyFor(mondayFor(rangeStart()));
+      state.pantryIngredients[draftWeek]=['Kartoffeln'];
+      let menuOpenWhenFocused;
+      closePlanner.addEventListener('focus',()=>{menuOpenWhenFocused=plan.open},{once:true});
+      $('#mix-btn').click();
+      const plannerOpening={
+        menuOpenWhenFocused,
+        open:planner.open,
+        opacity:getComputedStyle(planner).opacity,
+        backdropOpacity:getComputedStyle(planner,'::backdrop').opacity,
+        focused:document.activeElement===closePlanner,
+        draft:$('#pantry-selected .pantry-chip button')?.getAttribute('aria-label')
+      };
+      const plannerPanel=sample(planner);
+      await new Promise(resolve=>{planner.addEventListener('close',resolve,{once:true});closePlanner.click()});
+      const plannerFocusReturned=document.activeElement===plan.querySelector('summary');
+      state.manualShoppingItems[keyFor(mondayFor(rangeStart()))]=['Küchenrolle'];
+      openShoppingList();list.querySelector('summary').click();
+      const listPanel=sample(list.querySelector('.ui-menu-panel'));list.open=false;
+      $('.shopping-edit-button[data-ingredient="küchenrolle"]').click();
+      const editor=sample($('.shopping-row-editor:not([hidden])'));
+      await openRecipe('ui-0',{from:'dishes'});
+      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned};
+    });
+    const condition=`${width}×${height} ${theme} ${reducedMotion}`;
+    for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'||name==='plannerPanel'?0:150,fits:true},`${name} ${condition}`);
+    assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,open:true,opacity:'1',backdropOpacity:'1',focused:true,draft:'Kartoffeln entfernen'},condition);
+    assert.equal(panels.plannerFocusReturned,true,condition);
+  }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme()});await fixture(page);
     for(const screen of ['week','dishes','prepare','recipe','cook','shopping','edit']){

@@ -11,6 +11,25 @@ async function fixture(page){await page.evaluate(async()=>{
 })}
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));fs.mkdirSync(out,{recursive:true});const browser=await chromium.launch({headless:true,...(process.env.WOCHENTISCH_BROWSER_EXECUTABLE?{executablePath:process.env.WOCHENTISCH_BROWSER_EXECUTABLE}:{channel:'chrome'})});
 try{const context=await browser.newContext({hasTouch:true,serviceWorkers:'block'});await context.route('https://**/*',r=>r.abort());const page=await context.newPage();await page.goto(`http://127.0.0.1:${server.address().port}/`);await page.waitForFunction(()=>typeof initializePlanningUI==='function'&&document.documentElement.classList.contains('design'));await fixture(page);
+for(const [width,height] of [[320,568],[844,390],[1440,900]])for(const reducedMotion of ['no-preference','reduce']){
+ await page.setViewportSize({width,height});
+ await page.emulateMedia({reducedMotion});
+ const animation=await page.evaluate(async()=>{
+  await renderCalendar();
+  const dialog=$('#choose-dialog');
+  $('#calendar .empty-day .add-meal').click();
+  if(uiDesktop())$('#week-preview .primary-button').click();
+  const waiting=dialog.open&&getComputedStyle(dialog).opacity==='0';
+  for(let frame=0;frame<12&&dialog.classList.contains('is-waiting-to-reveal');frame++)await new Promise(resolve=>requestAnimationFrame(resolve));
+  const motion=dialog.getAnimations().find(animation=>animation.effect.target===dialog);
+  return {waiting,duration:motion?.effect.getTiming().duration??0,keyframes:motion?.effect.getKeyframes().map(frame=>frame.opacity)??[]};
+ });
+ assert.deepEqual(animation,reducedMotion==='reduce'
+  ?{waiting:true,duration:0,keyframes:[]}
+  :{waiting:true,duration:150,keyframes:['0','1']},`${width}×${height} ${reducedMotion}`);
+ await page.keyboard.press('Escape');
+ await page.waitForFunction(()=>!$('#choose-dialog').open&&!document.body.classList.contains('has-open-dialog'));
+}
 for(const [width,height] of [[320,568],[390,844],[844,390],[1440,900],[390,360],[320,280]])for(const theme of ['light','dark']){
  await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme();if($('#choose-dialog').open)$('#choose-dialog').close();chooseDish(0)});
  assert.notEqual(await page.evaluate(()=>document.activeElement.id),'choose-dish-search');
@@ -26,5 +45,5 @@ for(const [width,height] of [[320,568],[390,844],[844,390],[1440,900],[390,360],
  await page.locator('#choose-dish-list .choose-item:visible').click();assert.equal(await page.locator('#choose-dialog').getAttribute('open'),null);
 }
 await page.evaluate(()=>chooseDish(1));await page.locator('#choose-more-options summary').click();await page.locator('#choose-rest-action').click();assert.equal(await page.locator('#choose-dialog').getAttribute('open'),null);
-console.log('Chooser: 12 viewport/theme combinations, filter, empty state, scroll, selection, and rest action passed.');
+console.log('Chooser: empty-day entry animations, 12 viewport/theme combinations, filter, empty state, scroll, selection, and rest action passed.');
 }finally{await browser.close();server.close()}})().catch(e=>{console.error(e);process.exitCode=1;server.close()});

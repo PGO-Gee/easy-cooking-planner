@@ -79,7 +79,15 @@
     return change(project(draft,entries),id,{portions,days});
   }
   function manualRest(state,date){const draft=clone(state),entries=normalizeEntries(draft);makeSpace(draft,entries,date,1,null);const next=project(draft,entries),c=coordinates(date);next.restDays[c.week]=[...new Set([...(next.restDays[c.week]||[]),c.day])].sort((a,b)=>a-b);return next}
-  function remove(state,id){const entries=normalizeEntries(state);delete entries[id];return project(state,entries)}
+  function remove(state,id){
+    const entries=normalizeEntries(state),dishId=entries[id]?.dishId;
+    delete entries[id];
+    const next=project(state,entries);
+    if(next.dishes?.some(dish=>dish.id===dishId&&dish.isTrial)&&!Object.values(entries).some(entry=>entry.dishId===dishId)){
+      next.dishes=next.dishes.filter(dish=>dish.id!==dishId);
+    }
+    return next;
+  }
   function removeRest(state,id,date){const entries=normalizeEntries(state);if(entries[id])entries[id].restDates=entries[id].restDates.filter(d=>d!==date);return project(state,entries)}
   function unit(value){const raw=String(value||'').trim(),key=raw.toLocaleLowerCase('de-DE').replace(/\.$/,'');const units={g:['g',1],gramm:['g',1],kg:['g',1000],kilogramm:['g',1000],ml:['ml',1],milliliter:['ml',1],l:['ml',1000],liter:['ml',1000],stück:['Stück',1],st:['Stück',1],stk:['Stück',1],el:['EL',1],esslöffel:['EL',1],tl:['TL',1],teelöffel:['TL',1]};return units[key]||[raw,1]}
   function demand(meals,hidden={}){

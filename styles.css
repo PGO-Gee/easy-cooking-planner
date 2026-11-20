@@ -514,6 +514,14 @@ html.design .ui-menu > summary { display:flex;align-items:center;justify-content
 html.design summary::-webkit-details-marker { display:none; }
 html.design .ui-menu-panel { position:absolute;z-index:45;right:0;top:calc(100% + 8px);width:min(300px,calc(100vw - 32px));max-height:calc(var(--visual-viewport-height,100dvh) - 120px);overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--paper);box-shadow:0 8px 26px #101f3520; }
 html.design .ui-menu-panel button { justify-content:flex-start; }
+@keyframes panel-fade-in {
+  from { opacity:0; }
+  to { opacity:1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ui-menu[open] > .ui-menu-panel,
+  .shopping-row-editor:not([hidden]) { animation:panel-fade-in 150ms ease-out; }
+}
 html.design .week-toolbar { display:block;height:auto;margin:0;border:0;padding:0;background:transparent;box-shadow:none; }
 html.design .week-switch { display:grid;grid-template-columns:44px 1fr 44px;gap:4px;white-space:normal;background:transparent;border:0; }
 html.design .week-switch .today-button { grid-column:1/-1; }
@@ -604,6 +612,11 @@ html.design #dish-list .dish-ingredient,html.design #dish-list .dish-nutrition,h
 html.design #catalog-btn { width:100%;justify-content:flex-start;background:var(--paper);border:1px solid var(--line);border-radius:12px; }
 html.design dialog { max-width:calc(100vw - 24px);max-height:calc(var(--visual-viewport-height,100dvh) - 24px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));border:1px solid var(--line);border-radius:20px;background:var(--canvas);color:var(--ink);box-shadow:0 20px 70px #101f3530;overflow:auto;overscroll-behavior:contain; }
 html.design dialog::backdrop { background:#111b2b70;backdrop-filter:none; }
+dialog[open].is-waiting-to-reveal,
+dialog[open].is-waiting-to-reveal::backdrop { opacity:0;transition:none; }
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open]::backdrop { transition:opacity 150ms ease-out; }
+}
 html.design .ui-dialog { width:min(520px,calc(100vw - 24px));padding:20px; }
 html.design .ui-dialog > button,html.design .ui-dialog > label { display:flex;width:100%;margin:8px 0; }
 html.design .dialog-head { align-items:center;gap:10px;margin:0 0 20px; }
@@ -614,6 +627,8 @@ html.design input:not([type=checkbox]):not([type=range]):not([type=hidden]),html
 html.design textarea { width:100%;min-height:100px;resize:vertical; }
 html.design #dish-dialog { width:min(960px,calc(100vw - 24px));background:var(--canvas);color:var(--ink); }
 html.design #dish-form { padding:20px; }
+html.design #dish-form .dialog-head > div { min-width:0;overflow-wrap:anywhere; }
+html.design #close-dish-dialog { margin-inline-end:-8px; }
 html.design #dish-form label { color:var(--ink);font-size:13px;line-height:1.5; }
 html.design #dish-form > label,html.design .recipe-servings-control { display:flex;flex-direction:column;align-items:stretch;gap:8px; }
 html.design #dish-form .form-row { display:grid;grid-template-columns:1fr;gap:16px;margin:18px 0; }
@@ -631,12 +646,130 @@ html.design .editor-disclosure { border-top:1px solid var(--line);padding:0;marg
 html.design .editor-disclosure > summary,html.design .recipe-preparation > summary,html.design .cook-ingredients-details > summary { display:flex;align-items:center;justify-content:space-between;min-height:54px;padding:12px 0;font-size:14px;font-weight:700;color:var(--ink);list-style:none; }
 html.design .editor-disclosure > summary::after,html.design .recipe-preparation > summary::after,html.design .cook-ingredients-details > summary::after { content:'⌄';color:var(--action);margin-left:12px; }
 html.design .editor-disclosure[open] > summary::after { content:'⌃'; }
-html.design .recipe-ingredient-row,html.design .recipe-step-row { display:flex;flex-wrap:wrap;gap:8px;background:transparent;border:0;padding:10px 0;margin:0;border-bottom:1px solid var(--line); }
+html.design .recipe-step-row { display:flex;flex-wrap:wrap;gap:8px;background:transparent;border:0;padding:10px 0;margin:0;border-bottom:1px solid var(--line); }
 html.design .recipe-ingredient-row > *,html.design .recipe-step-row > * { min-width:0; }
-html.design .recipe-ingredient-name { width:100%;flex:1 1 100%; }
-html.design .recipe-ingredient-row input[data-recipe-field=amount] { width:85px; }
-html.design .recipe-ingredient-row select { flex:1;width:95px; }
+html.design #dish-form .recipe-ingredient-row {
+  display:grid;
+  position:relative;
+  grid-template-columns:70px 88px minmax(0,1fr);
+  grid-template-areas:'name name name' 'amount unit toggle';
+  gap:8px;
+  padding:8px 10px 10px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--paper);
+}
+html.design #dish-form .recipe-ingredient-name { grid-area:name;padding-inline-end:52px; }
+html.design #dish-form .recipe-ingredient-name input[data-recipe-field=name] {
+  background:transparent;
+  border-color:transparent;
+  padding-inline:6px;
+  font-size:17px;
+  font-weight:700;
+}
+html.design #dish-form .recipe-ingredient-name input[data-recipe-field=name]:focus { border-color:var(--action); }
+html.design #dish-form .recipe-ingredient-row [data-recipe-field=amount] { grid-area:amount; }
+html.design #dish-form .recipe-ingredient-unit {
+  grid-area:unit;
+  position:relative;
+  display:flex;
+  align-items:center;
+  min-height:44px;
+  padding:0 24px 0 9px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--canvas);
+  color:var(--ink);
+  font-size:16px;
+  line-height:1.4;
+}
+html.design #dish-form .recipe-ingredient-unit-label {
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+html.design #dish-form .recipe-ingredient-unit::after {
+  content:'';
+  position:absolute;
+  inset-inline-end:10px;
+  top:calc(50% - 5px);
+  width:7px;
+  height:7px;
+  border:solid currentColor;
+  border-width:0 1.5px 1.5px 0;
+  transform:rotate(45deg);
+  pointer-events:none;
+}
+/* The native picker stays operable. The closed field uses ordinary text so iOS does not clip descenders. */
+html.design #dish-form .recipe-ingredient-unit select { position:absolute;inset:0;z-index:1;width:100%;height:100%;opacity:0;cursor:pointer; }
+html.design #dish-form .recipe-ingredient-unit:focus-within { outline:2px solid var(--action);outline-offset:2px; }
+html.design #dish-form .recipe-ingredient-note-toggle {
+  grid-area:toggle;
+  justify-self:start;
+  min-width:44px;
+  min-height:44px;
+  padding:0 4px;
+  border:0;
+  background:transparent;
+  color:var(--action);
+  font-size:13px;
+  cursor:pointer;
+}
+html.design #dish-form .recipe-ingredient-note-toggle[aria-expanded=true] { text-decoration:underline; }
+html.design #dish-form .recipe-ingredient-row [data-recipe-field=note] { grid-column:1/-1;grid-row:auto; }
+html.design #dish-form .recipe-ingredient-row input:is([data-recipe-field=amount],[data-recipe-field=note]) { background:var(--canvas); }
+html.design #dish-form .recipe-ingredient-row .recipe-row-remove {
+  position:absolute;
+  grid-area:auto;
+  inset-block-start:8px;
+  inset-inline-end:10px;
+  width:44px;
+  border-color:transparent;
+  background:transparent;
+  color:var(--muted);
+}
+html.design #dish-form .recipe-ingredient-row.is-quick-entry {
+  gap:6px;
+  padding-block:6px;
+}
+html.design #dish-form .is-quick-entry .recipe-row-remove { inset-block-start:6px; }
+html.design #dish-form .is-quick-entry .recipe-ingredient-suggestions {
+  position:absolute;
+  top:auto;
+  bottom:calc(100% + 4px);
+  margin:0;
+}
+html.design #recipe-add-ingredient { margin-top:4px; }
+@media(min-width:600px) {
+  html.design #dish-form .recipe-ingredient-row.is-quick-entry {
+    grid-template-columns:70px 88px minmax(0,1fr) auto;
+    grid-template-areas:'name name name name' 'amount unit note toggle';
+  }
+  html.design #dish-form .is-quick-entry [data-recipe-field=note] { grid-area:note; }
+}
+@media(min-width:600px) and (max-height:500px) {
+  html.design #dish-form .recipe-ingredient-row.is-quick-entry {
+    grid-template-columns:minmax(0,1fr) 70px 88px minmax(120px,1fr) auto 44px;
+    grid-template-areas:'name amount unit note toggle remove';
+  }
+  html.design #dish-form .is-quick-entry .recipe-ingredient-name { padding-inline-end:0; }
+  html.design #dish-form .is-quick-entry .recipe-row-remove { position:static;grid-area:remove; }
+}
 html.design .recipe-step-row textarea { flex:1;min-width:150px; }
+html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child { padding-block:4px; }
+html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child textarea {
+  min-height:44px;
+  height:80px;
+  padding:8px 10px;
+  resize:none;
+}
+html.design #recipe-add-step { margin-top:4px; }
+@media(min-width:600px) and (max-height:500px) {
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child { flex-wrap:nowrap;align-items:center; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child textarea { height:48px; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child .recipe-step-number { padding-top:0; }
+  html.design.dish-keyboard-open #dish-form .recipe-step-row:last-child .recipe-step-actions { display:flex;flex-shrink:0; }
+}
 html.design #dish-form .dialog-actions { position:static;display:flex;flex-wrap:wrap;background:var(--canvas);border-top:1px solid var(--line);padding:16px 0 0;margin:18px 0 0; }
 html.design #dish-form .dialog-actions button[type=submit] { flex:1; }
 html.design .recipe-row-pager,html.design .dish-wizard-progress,html.design .dish-wizard-section { display:none; }

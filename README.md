@@ -116,3 +116,9 @@ zurückgerollten synthetischen Daten geprüft. Sie ist dort seit dem 15. Novembe
 2026 als `20261115140525_household_cooking_portions` angewendet. Bei weiteren
 Instanzen wird sie nicht durch GitHub Pages ausgeführt. Prüfungen und Grenzen stehen in
 [Tests zu Haushaltsportionen](tests/COOKING-PORTIONS-TESTREPORT.md).
+
+Für Probegerichte im Wochenplan die Migration
+[`20261118120000_trial_dishes.sql`](supabase/migrations/20261118120000_trial_dishes.sql)
+vor der zugehörigen PWA-Version anwenden. Im verbundenen Supabase-Projekt ist
+sie als `20261118213658_trial_dishes` eingespielt. Ältere PWA-Versionen können
+synchronisierte Probegerichte bis zum App-Update in der Rezeptsammlung anzeigen.

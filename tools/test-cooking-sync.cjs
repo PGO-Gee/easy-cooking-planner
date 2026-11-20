@@ -23,7 +23,8 @@ function fn(file,name){const source=read(file),start=source.indexOf('create or r
  await db.exec(fn(recipeMigration,'wochentisch_private.valid_recipe'));
  for(const name of ['cloud_state_v2','validate_household_recipes','write_state_v2'])await db.exec(fn(baking,'wochentisch_private.'+name));
  await db.exec(read('supabase/migrations/20261115095535_household_cooking_portions.sql'));
+ await db.exec(read('supabase/migrations/20261118120000_trial_dishes.sql'));
  console.log('Migration installed in isolated PostgreSQL.');
  await db.exec(read('tests/sync-cooking-v3.sql'));
- console.log('v3 SQL transactions, retry, conflicts, legacy protection, validation and access checks passed.');
+ console.log('v3 SQL transactions, trial dishes, retry, conflicts, legacy protection, validation and access checks passed.');
  }finally{await db.close()}})().catch(error=>{console.error(error);process.exitCode=1});
