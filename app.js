@@ -140,15 +140,39 @@ let dialogScrollY=0;
 let lastVisualViewportHeight=0;
 let lastVisualViewportTop=0;
 let lastDishEditorField=null;
-function revealDishEditorField(dialog,field,{alignTop=false}={}){
+function revealDishEditorField(dialog,field){
   const viewport=window.visualViewport;
   if(!dialog.open)return;
   const bounds=dialog.getBoundingClientRect(),rect=field.getBoundingClientRect();
   const viewportTop=viewport?.offsetTop??0;
-  const top=Math.max(bounds.top+dialog.clientTop,viewportTop)+8;
-  const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewportTop+(viewport?.height??window.innerHeight))-8;
+  const entry=field.closest('.recipe-ingredient-row.is-quick-entry:last-child');
+  const viewportHeight=viewport?.height??window.innerHeight;
+  const inset=entry&&viewportHeight<190?2:8;
+  const top=Math.max(bounds.top+dialog.clientTop,viewportTop)+inset;
+  const bottom=Math.min(bounds.top+dialog.clientTop+dialog.clientHeight,viewportTop+viewportHeight)-inset;
+  if(entry){
+    const card=entry.getBoundingClientRect();
+    const addBottom=dialog.querySelector('#recipe-add-ingredient').getBoundingClientRect().bottom;
+    const suggestions=field.matches('[data-recipe-field=name]')&&entry.querySelector('.recipe-ingredient-suggestions:not([hidden])');
+    const fits=addBottom-card.top<=bottom-top;
+    if(fits){
+      // Leave room above the card for autocomplete without covering its fields.
+      if(suggestions||addBottom>bottom)dialog.scrollTop+=addBottom-bottom;
+      else if(card.top<top)dialog.scrollTop+=card.top-top;
+    }
+    if(suggestions){
+      const room=fits?Math.floor(field.getBoundingClientRect().top-top-6):0;
+      if(room>=44)suggestions.style.maxHeight=`${Math.min(room,144)}px`;
+      else{
+        suggestions.hidden=true;
+        field.setAttribute('aria-expanded','false');
+        field.removeAttribute('aria-activedescendant');
+      }
+    }
+    if(fits)return;
+  }
   // Scroll only the editor so revealing a lower field does not pan the iOS page.
-  if(alignTop||rect.top<top||rect.height>bottom-top)dialog.scrollTop+=rect.top-top;
+  if(rect.top<top||rect.height>bottom-top)dialog.scrollTop+=rect.top-top;
   else if(rect.bottom>bottom)dialog.scrollTop+=rect.bottom-bottom;
 }
 function syncVisualViewport(){
@@ -198,15 +222,56 @@ function unlockPageScroll(){
   document.body.style.removeProperty('top');
   window.scrollTo(0,dialogScrollY);
 }
+function setupNativeDialog(dialog,{restoreFocus=false,slide=false}={}){
+  const show=dialog.showModal.bind(dialog);
+  let opener=null,cancelReveal=null,motion=null;
+  const resetReveal=()=>{
+    cancelReveal?.();cancelReveal=null;
+    motion?.cancel();motion=null;
+    dialog.classList.remove('is-waiting-to-reveal');
+  };
+  dialog.showModal=()=>{
+    if(dialog.open)return;
+    resetReveal();
+    opener=document.activeElement;
+    if(!slide)dialog.classList.add('is-waiting-to-reveal');
+    lockPageScroll();
+    try{
+      syncVisualViewport();
+      show();
+    }catch(error){
+      resetReveal();
+      unlockPageScroll();
+      throw error;
+    }
+    if(slide){
+      motion=animateWeekDialogIn(dialog);
+      return;
+    }
+    // Let native focus and the iOS visual viewport settle before revealing the panel.
+    cancelReveal=afterDialogBoundsSettle(dialog,()=>{
+      cancelReveal=null;
+      if(dialog.open)motion=fadeDialogIn(dialog);
+      dialog.classList.remove('is-waiting-to-reveal');
+    });
+  };
+  dialog.addEventListener('close',()=>{
+    unlockPageScroll();
+    if(dialog.open)return;
+    resetReveal();
+    if(restoreFocus&&opener?.isConnected&&!document.querySelector('dialog[open]'))opener.focus({preventScroll:true});
+  });
+}
 document.querySelectorAll('dialog').forEach(dialog=>{
-  dialog.addEventListener('close',()=>{unlockPageScroll();if(dialog.id==='dish-dialog')document.documentElement.classList.remove('dish-keyboard-open')});
+  setupNativeDialog(dialog,{slide:dialog.id==='choose-dialog'});
+  dialog.addEventListener('close',()=>{if(dialog.id==='dish-dialog'&&!dialog.open)document.documentElement.classList.remove('dish-keyboard-open')});
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
     if(dialog.id==='pantry-dialog'||(dialog.id==='dish-dialog'&&event.target.matches('input,textarea')))return;
-    requestAnimationFrame(()=>event.target.scrollIntoView({block:'nearest',inline:'nearest'}));
+    requestAnimationFrame(()=>{
+      if(dialog.open&&document.activeElement===event.target)event.target.scrollIntoView({block:'nearest',inline:'nearest'});
+    });
   });
-  const showModal=dialog.showModal.bind(dialog);
-  dialog.showModal=()=>{lockPageScroll();showModal()};
 });
 function showAuthError(message){const error=$('#auth-error');error.textContent=message;error.hidden=!message}
 function updateSyncStatus(message,{reauthRequired=false,storageError=false}={}){const status=$('#sync-status');if(!status)return;const hasConflicts=unresolvedConflicts.length>0;$('#sync-status-message').textContent=message||(hasConflicts?`${unresolvedConflicts.length} Änderung${unresolvedConflicts.length===1?'':'en'} muss${unresolvedConflicts.length===1?'':'en'} geprüft werden.`:'');$('#sync-status-login').hidden=!reauthRequired;$('#sync-status-conflicts').hidden=!hasConflicts;status.hidden=!(message||hasConflicts);status.classList.toggle('is-storage-error',storageError)}
@@ -2281,7 +2346,7 @@ function renderRecipeIngredientRows(items=[]){
   else appendRecipeIngredientRow(container);
   updateRecipePagers();
 }
-function appendRecipeIngredientRow(container,item={name:'',amount:null,unit:'',note:''}){
+function appendRecipeIngredientRow(container,item={name:''},{showNote=Boolean(item.note)}={}){
   const row=document.createElement('div');row.className='recipe-ingredient-row has-ingredient-note';
   const nameWrap=document.createElement('div');nameWrap.className='recipe-ingredient-name';
   const listId=`recipe-ingredient-suggestions-${++recipeIngredientSuggestionId}`;
@@ -2290,7 +2355,11 @@ function appendRecipeIngredientRow(container,item={name:'',amount:null,unit:'',n
   let blurTimer;
   const closeSuggestions=()=>{clearTimeout(blurTimer);list.hidden=true;name.setAttribute('aria-expanded','false');name.removeAttribute('aria-activedescendant')};
   const showSuggestions=()=>{const query=ingredientKey(name.value),matches=query?availablePantryIngredients().filter(value=>ingredientKey(value).includes(query)).slice(0,8):[];renderIngredientOptions(list,matches,value=>{name.value=value;clearTimeout(blurTimer);name.focus({preventScroll:true});closeSuggestions()});[...list.children].forEach((option,index)=>option.id=`${listId}-${index}`);name.setAttribute('aria-expanded',String(matches.length>0));name.removeAttribute('aria-activedescendant')};
-  name.addEventListener('input',showSuggestions);name.addEventListener('focus',()=>{clearTimeout(blurTimer);showSuggestions()});name.addEventListener('blur',()=>{blurTimer=setTimeout(closeSuggestions,200)});
+  name.addEventListener('input',()=>{
+    showSuggestions();
+    if(!list.hidden&&row.classList.contains('is-quick-entry'))revealDishEditorField(recipeEditorDialog,name);
+  });
+  name.addEventListener('focus',()=>{clearTimeout(blurTimer);showSuggestions()});name.addEventListener('blur',()=>{blurTimer=setTimeout(closeSuggestions,200)});
   name.addEventListener('keydown',event=>{const options=[...list.children];if(event.key==='Escape'&&!list.hidden){event.preventDefault();event.stopPropagation();closeSuggestions()}else if(!list.hidden&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const current=options.findIndex(option=>option.id===name.getAttribute('aria-activedescendant'));const index=event.key==='ArrowDown'?Math.min(current+1,options.length-1):(current<0?options.length-1:Math.max(current-1,0));options.forEach((option,i)=>option.setAttribute('aria-selected',String(i===index)));name.setAttribute('aria-activedescendant',options[index].id);options[index].scrollIntoView({block:'nearest'})}else if(event.key==='Enter'){event.preventDefault();const active=options.find(option=>option.id===name.getAttribute('aria-activedescendant'));if(!list.hidden&&active)active.click();else closeSuggestions()}});
   nameWrap.append(name,list);
   const amount=recipeRowControl('input',{type:'text',inputmode:'decimal',maxlength:'40',placeholder:'Menge',value:item.amount??''});amount.dataset.recipeField='amount';amount.setAttribute('aria-label','Menge');
@@ -2308,7 +2377,7 @@ function appendRecipeIngredientRow(container,item={name:'',amount:null,unit:'',n
   const noteId=`recipe-ingredient-note-${recipeIngredientSuggestionId}`;
   const note=recipeRowControl('input',{id:noteId,type:'text',maxlength:'100',placeholder:'z. B. fein gehackt',value:item.note||'','aria-label':'Hinweis'});
   note.dataset.recipeField='note';
-  note.hidden=!item.note;
+  note.hidden=!showNote;
   const noteToggle=recipeRowControl('button',{type:'button',className:'recipe-ingredient-note-toggle',text:'Hinweis','aria-controls':noteId,'aria-expanded':String(!note.hidden)});
   noteToggle.addEventListener('click',()=>{
     note.hidden=!note.hidden;
@@ -3137,7 +3206,7 @@ function reopenShoppingIngredients(date,dish){
 }
 function selectedRecipeType(group){return group.querySelector('[aria-pressed="true"]')?.dataset.type||'meal'}
 function setRecipeTypeFilter(group,type){group.querySelectorAll('button[data-type]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.type===type)))}
-let chooseDishDay=null,chooseDishDateKey=null,chooseDishOpener=null,restPreviewSnapshot=null,chooseOpeningMotion=null;
+let chooseDishDay=null,chooseDishDateKey=null,chooseDishOpener=null,restPreviewSnapshot=null;
 const restConfirmPreferenceKey='wochentisch-skip-rest-confirmation';
 function skipRestConfirmation(){try{return localStorage.getItem(restConfirmPreferenceKey)==='true'}catch(error){return false}}
 function formatChooserDate(date){return date.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}
@@ -3248,12 +3317,7 @@ function chooseDish(day){
     const filter=()=>{const query=search.value.trim().toLocaleLowerCase('de-DE');let visible=0;for(const {dish,button} of entries){const haystack=[dish.name,dish.ingredient,...(dish.ingredients||[])].join(' ').toLocaleLowerCase('de-DE'),match=(dish.type==='baking'?'baking':'meal')===selectedRecipeType(filterType)&&haystack.includes(query);button.hidden=!match;if(match)visible++}empty.hidden=visible>0;requestAnimationFrame(revealChooserResults)};
     search.oninput=filter;filterType.onclick=event=>{const button=event.target.closest('button[data-type]');if(button){setRecipeTypeFilter(filterType,button.dataset.type);filter()}};filter();
   }
-  const dialog=$('#choose-dialog');
-  if(!dialog.open){
-    chooseOpeningMotion?.cancel();
-    dialog.showModal();
-    chooseOpeningMotion=animateWeekDialogIn(dialog);
-  }
+  $('#choose-dialog').showModal();
   $('#close-chooser').focus({preventScroll:true});
 }
 function setChooserSearchMode(active){
@@ -3264,7 +3328,7 @@ $('#choose-dish-search').addEventListener('focus',()=>{setChooserSearchMode(true
 $('#choose-search-done').addEventListener('click',()=>{setChooserSearchMode(false);$('#choose-dish-search').blur();$('#close-chooser').focus({preventScroll:true})});
 $('#choose-dish-search').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('#choose-search-done').click()}});
 $('#choose-dialog').addEventListener('close',()=>{
-  if(!Number.isInteger(chooseDishDay))return;
+  if($('#choose-dialog').open||!Number.isInteger(chooseDishDay))return;
   const index=rangeDates().findIndex(date=>keyFor(date)===chooseDishDateKey);
   const opener=chooseDishOpener;
   requestAnimationFrame(()=>{if(document.querySelector('dialog[open]'))return;const button=$(`#calendar .day-content[data-day="${index}"] .add-meal`);(button||opener)?.focus?.({preventScroll:true})});
@@ -3706,10 +3770,20 @@ function deleteDish(){
 $('#add-dish-btn').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#starter-add').addEventListener('click',()=>openRecipeCreation(selectedRecipeType($('#dishes-type'))));$('#search-dishes').addEventListener('input',renderDishes);$('#dishes-type').addEventListener('click',event=>{const button=event.target.closest('button[data-type]');if(!button)return;setRecipeTypeFilter($('#dishes-type'),button.dataset.type);renderDishes()});$('#close-dish-dialog').addEventListener('click',closeDishEditor);$('#cancel-dialog').addEventListener('click',closeDishEditor);$('#delete-dish').addEventListener('click',deleteDish);
 $('#recipe-add-ingredient').addEventListener('click',()=>{
   const container=$('#recipe-ingredient-rows');
-  const name=appendRecipeIngredientRow(container);
+  const previous=container.querySelector('.is-quick-entry');
+  if(previous){
+    previous.classList.remove('is-quick-entry');
+    const note=previous.querySelector('[data-recipe-field=note]');
+    if(!note.value.trim()){
+      note.hidden=true;
+      previous.querySelector('.recipe-ingredient-note-toggle').setAttribute('aria-expanded','false');
+    }
+  }
+  const name=appendRecipeIngredientRow(container,{name:''},{showNote:true});
+  container.lastElementChild.classList.add('is-quick-entry');
   recipeIngredientPage=container.children.length-1;
   updateRecipePagers();
-  revealDishEditorField(recipeEditorDialog,name,{alignTop:true});
+  revealDishEditorField(recipeEditorDialog,name);
   name.focus({preventScroll:true});
 });
 $('#recipe-add-step').addEventListener('click',()=>{const steps=[...$('#recipe-step-rows').querySelectorAll('[data-recipe-field="step"]')].map(input=>input.value);steps.push('');recipeStepPage=steps.length-1;renderRecipeStepRows(steps);$('#recipe-step-rows .recipe-step-row:last-child textarea').focus()});

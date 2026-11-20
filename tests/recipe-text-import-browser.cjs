@@ -197,20 +197,60 @@ async function checkImportedEditor(page) {
       await addIngredient.tap();
       assert.equal(await ingredientNames.count(), originalCount + 1, `${layout}, neue Zutatenzeile`);
       const newIngredient = ingredientNames.last();
+      const newRow = editor.locator('.recipe-ingredient-row').last();
+      const newAmount = newRow.getByRole('textbox', { name: 'Menge' });
+      const newUnit = newRow.getByRole('combobox', { name: 'Einheit' });
+      const newNote = newRow.getByRole('textbox', { name: 'Hinweis' });
+      const checkEntry = async () => {
+        for (const control of [newIngredient, newAmount, newUnit, newNote, addIngredient]) {
+          const state = await measure(control);
+          assert(state.visible, `${layout}, Schnell-Eingabe muss komplett sichtbar bleiben: ${control} ${JSON.stringify(state)}`);
+        }
+      };
+      const tapVisible = async control => {
+        const box = await control.boundingBox();
+        assert(box && (await measure(control)).visible, `${layout}, ${control} muss ohne Scrollen erreichbar sein`);
+        await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+      };
       if (keyboardHeight < height) {
         await page.evaluate(visibleHeight => {
           Object.defineProperty(visualViewport, 'height', { configurable: true, value: visibleHeight });
           Object.defineProperty(visualViewport, 'offsetTop', { configurable: true, value: 24 });
+          if (visibleHeight === 150) {
+            // Model the additional bottom safe-area space on an iPhone in landscape.
+            document.getElementById('dish-dialog').style.maxHeight = 'calc(var(--visual-viewport-height) - 16px - 21px)';
+          }
           visualViewport.dispatchEvent(new Event('resize'));
-        }, keyboardHeight);
+        }, width > height ? 150 : keyboardHeight);
       }
       const afterAdd = await measure(newIngredient);
       assert(afterAdd.focused && afterAdd.visible, `${layout}, neues Feld direkt nach dem Hinzufügen: ${JSON.stringify(afterAdd)}`);
       // Do not click or fill the new field directly. Playwright could scroll it into view for us.
-      await page.keyboard.insertText('Zitronenmelisse');
+      await checkEntry();
+      await page.keyboard.insertText('Reis');
       const afterTyping = await measure(newIngredient);
-      assert(afterTyping.focused && afterTyping.visible && afterTyping.value === 'Zitronenmelisse',
+      assert(afterTyping.focused && afterTyping.visible && afterTyping.value === 'Reis',
         `${layout}, Eingabe im neuen Feld: ${JSON.stringify(afterTyping)}`);
+      await checkEntry();
+      await tapVisible(newAmount);
+      await page.keyboard.insertText('25');
+      await newUnit.selectOption('g');
+      await tapVisible(newNote);
+      await page.keyboard.insertText('vorher waschen');
+      await checkEntry();
+      await tapVisible(addIngredient);
+      await page.keyboard.insertText('Zitronenmelisse');
+      assert.equal(await ingredientNames.count(), originalCount + 2);
+      const nextName = await measure(ingredientNames.last());
+      assert(nextName.focused && nextName.visible && nextName.value === 'Zitronenmelisse', `${layout}, zweite neue Zutat: ${JSON.stringify(nextName)}`);
+      await checkEntry();
+      assert.equal(await editor.locator('[data-recipe-field="amount"]').nth(originalCount).inputValue(), '25');
+      assert.equal(await units.nth(originalCount).inputValue(), 'g');
+      assert.equal(await notes.nth(originalCount).inputValue(), 'vorher waschen');
+      await tapVisible(addIngredient);
+      assert.equal(await ingredientNames.count(), originalCount + 3);
+      assert(await notes.nth(originalCount + 1).isHidden(), `${layout}, der leere Hinweis der vorherigen Zutat wird wieder eingeklappt`);
+      await checkEntry();
       assert(await notes.first().isVisible(), `${layout}, zuvor geöffneter Hinweis bleibt geöffnet`);
       assert(await notes.nth(1).isVisible(), `${layout}, leerer geöffneter Hinweis bleibt geöffnet`);
       assert.equal(await notes.first().inputValue(), 'vorher abspülen');
@@ -218,6 +258,7 @@ async function checkImportedEditor(page) {
       await page.evaluate(() => {
         delete visualViewport.height;
         delete visualViewport.offsetTop;
+        document.getElementById('dish-dialog').style.removeProperty('max-height');
         visualViewport.dispatchEvent(new Event('resize'));
       });
       await editor.evaluate(el => el.close());

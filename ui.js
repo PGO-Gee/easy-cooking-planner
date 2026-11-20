@@ -46,15 +46,35 @@ function animateWeekDialogIn(dialog){
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return null;
   return dialog.animate([{transform:weekDialogOffscreenTransform(dialog)},{transform:'translateY(0)'}],{duration:280,easing:'cubic-bezier(.22,1,.36,1)'});
 }
+function afterDialogBoundsSettle(element,reveal){
+  let frame,previousBounds;
+  const checkBounds=()=>{
+    syncVisualViewport();
+    const {top,left,width,height}=element.getBoundingClientRect();
+    const bounds=[top,left,width,height];
+    if(previousBounds&&bounds.every((value,index)=>value===previousBounds[index])){
+      reveal();
+      return;
+    }
+    previousBounds=bounds;
+    frame=requestAnimationFrame(checkBounds);
+  };
+  frame=requestAnimationFrame(checkBounds);
+  return ()=>cancelAnimationFrame(frame);
+}
+function fadeDialogIn(element){
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return null;
+  return element.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
+}
 function cookingEntryOverlay(dialog){
   // Keep this menu out of the native dialog top layer: iOS can reposition it
   // after showModal() has focused its contents on a scrolled page.
   const layer=document.createElement('div');layer.className='cooking-entry-overlay';layer.hidden=true;
   dialog.setAttribute('aria-modal','true');layer.append(dialog);document.body.append(layer);
-  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null,openingFrame=null;
+  let opener=null,inertSiblings=[],locked=false,backdropPressed=false,motion=null,cancelReveal=null;
   const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
   const stopMotion=()=>{
-    if(openingFrame!==null){cancelAnimationFrame(openingFrame);openingFrame=null}
+    cancelReveal?.();cancelReveal=null;
     if(motion){motion.onfinish=null;motion.cancel();motion=null}
   };
   const close=dialog.close.bind(dialog);
@@ -75,23 +95,16 @@ function cookingEntryOverlay(dialog){
       dialog.querySelector('.close-button').focus({preventScroll:true});
       // On iOS the scroll lock and focus can move the visual viewport after
       // the dialog is laid out. Keep it transparent until its bounds settle.
-      let previousBounds;
-      const reveal=()=>{
-        syncVisualViewport();
-        const {top,width,height}=layer.getBoundingClientRect();
-        if(!previousBounds||top!==previousBounds.top||width!==previousBounds.width||height!==previousBounds.height){
-          previousBounds={top,width,height};openingFrame=requestAnimationFrame(reveal);return;
-        }
-        openingFrame=null;
-        if(!reducedMotion.matches)motion=layer.animate([{opacity:0},{opacity:1}],{duration:150,easing:'ease-out',fill:'backwards'});
+      cancelReveal=afterDialogBoundsSettle(layer,()=>{
+        cancelReveal=null;
+        motion=fadeDialogIn(layer);
         layer.style.removeProperty('opacity');
-      };
-      openingFrame=requestAnimationFrame(reveal);
+      });
     }catch(error){dialog.removeAttribute('open');layer.hidden=true;layer.style.removeProperty('opacity');release();throw error}
   };
   dialog.close=(...args)=>{
     if(!dialog.open)return;
-    const opacity=openingFrame===null&&!reducedMotion.matches?Number(getComputedStyle(layer).opacity):0;
+    const opacity=!cancelReveal&&!reducedMotion.matches?Number(getComputedStyle(layer).opacity):0;
     stopMotion();
     // Close logically now so actions can open the recipe or chooser immediately.
     // The inert menu remains visible only for its exit animation.
@@ -131,8 +144,7 @@ function uiDialog(id,title){
   const head=document.createElement('div');head.className='dialog-head';const heading=document.createElement('h2');heading.id=`${id}-title`;heading.textContent=title;
   const close=uiButton('×',()=>dialog.close(),{className:'close-button'});close.setAttribute('aria-label','Schließen');head.append(heading,close);dialog.append(head);document.body.append(dialog);
   if(id==='cooking-entry-dialog')return cookingEntryOverlay(dialog);
-  let opener=null;const show=dialog.showModal.bind(dialog);dialog.showModal=()=>{if(dialog.open)return;opener=document.activeElement;lockPageScroll();try{syncVisualViewport();show()}catch(error){unlockPageScroll();throw error}};
-  dialog.addEventListener('close',()=>{unlockPageScroll();if(opener?.isConnected)opener.focus({preventScroll:true})});
+  setupNativeDialog(dialog,{restoreFocus:true});
   dialog.addEventListener('click',event=>{if(event.target===dialog){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)dialog.close()}});
   return dialog;
 }
