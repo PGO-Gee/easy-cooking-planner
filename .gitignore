@@ -17,3 +17,4 @@ KOCHASSISTENT-PLAN.md
 !/supabase/migrations/20261118120000_trial_dishes.sql
 plan.md
 /.ui-check/
+*.mp4
