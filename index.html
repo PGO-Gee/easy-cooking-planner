@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="styles.css?v=20261121-1" />
   <link rel="stylesheet" href="interaction.css?v=20261120-3" />
   <link rel="stylesheet" href="recipes-shopping.css?v=20261121-2" />
-  <link rel="stylesheet" href="auth.css?v=20261114-3" />
+  <link rel="stylesheet" href="auth.css?v=20261121-1" />
   <link rel="stylesheet" href="mobile.css?v=20261121-1" />
   <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261121-1" media="(prefers-color-scheme: dark)" />
 </head>
@@ -41,7 +41,10 @@
   </main>
   <main id="auth-gate" class="auth-gate" aria-labelledby="auth-title" hidden>
     <section class="auth-card">
-      <a class="brand auth-brand" href="#" aria-label="Wochentisch Startseite"><span class="brand-mark">w.</span><span>wochentisch</span></a>
+      <a class="brand auth-brand" href="#" aria-label="Wochentisch Startseite">
+        <img src="./icons/wochentisch.svg" width="36" height="36" alt="" />
+        <span>wochentisch</span>
+      </a>
       <div class="eyebrow">DEIN ESSENSPLAN</div>
       <h1 id="auth-title">Willkommen zurück</h1>
       <p class="subheading">Melde dich mit deinen Zugangsdaten an, um Wochentisch zu öffnen.</p>
@@ -195,8 +198,8 @@
   <script src="sync-api.js?v=3"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=3"></script>
-  <script src="ui.js?v=20261121-4"></script>
-  <script src="app.js?v=20261121-3"></script>
+  <script src="ui.js?v=20261121-5"></script>
+  <script src="app.js?v=20261121-4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

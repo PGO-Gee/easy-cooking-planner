@@ -110,8 +110,13 @@ test('recipe lists remain lazy while plan thumbnails and detail photos load eage
   assert.equal(context.recipePhoto(dish).loading,'eager');
   assert.equal(context.recipePhoto(dish).fetchPriority,'high');
   assert.equal(context.recipePhoto({name:'Own recipe'}),null);
+  const fallback={thumbnail:true,ownDishFallback:true};
+  assert.equal(context.recipePhoto({name:'Pasta'},fallback).src,'./images/own-dish-placeholder.jpg');
+  assert.equal(context.recipePhoto(dish,fallback).src,'./images/recipes/pasta-thumb.jpg?v=2');
+  assert.equal(context.recipePhoto({name:'Unknown',catalogSourceId:'catalog-id'},fallback),null);
+  assert.equal(context.recipePhoto({name:'Pasta',id:'catalog-id'},{...fallback,catalog:true}).src,'./images/recipes/pasta-thumb.jpg?v=2');
   const calendar=appSource.slice(appSource.indexOf('function renderCalendarContent('),appSource.indexOf('\nfunction renderCalendar(options)'));
-  assert.match(calendar,/recipePhoto\(dish,\{thumbnail:true,loading:'eager'\}\)/);
+  assert.match(calendar,/recipePhoto\(dish,\{thumbnail:true,loading:'eager',ownDishFallback:true\}\)/);
 });
 
 test('a migration storage failure preserves the old cache without blocking activation',async()=>{

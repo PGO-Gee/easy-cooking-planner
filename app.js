@@ -2219,7 +2219,7 @@ async function renderCalendarContent({shuffleAnimation=false,droppedMeal=null}={
       meal.querySelector('.meal-time').textContent=`◷ ${dish.time||25} min`;
       meal.querySelector('.meal-ingredient').textContent=dish.ingredient||'Lieblingsgericht';
       meal.querySelector('.meal-icon').textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';meal.querySelector('.meal-name').textContent=dish.name;meal.querySelector('.meal-name').title=dish.name;meal.querySelector('.meal-nutrition').textContent=nutritionText(dish.nutrition);meal.querySelector('.meal-nutrition').hidden=!dish.nutrition;
-      const photo=recipePhoto(dish,{thumbnail:true,loading:'eager'});
+      const photo=recipePhoto(dish,{thumbnail:true,loading:'eager',ownDishFallback:true});
       if(photo){
         const icon=meal.querySelector('.meal-icon'),title=meal.querySelector('.meal-title');
         icon.classList.add('hidden');
@@ -2312,7 +2312,7 @@ function renderDishesContent(){
     row.innerHTML='<div class="dish-icon"></div><div class="dish-copy"><b></b><small><span class="dish-time"></span> <span style="padding:0 5px;color:#d0d5cc">·</span> <span class="dish-ingredient"></span></small><small class="dish-nutrition"></small><small class="dish-ingredients-preview"></small></div><span class="dish-tag"></span><span class="row-edit" aria-hidden="true">···</span>';
     const icon=row.querySelector('.dish-icon');
     icon.textContent=dish.emoji||emojiMap[dish.ingredient]||'🍽️';
-    const thumbnail=typeof galleryPhoto==='function'?galleryPhoto(dish,icon,rows.childNodes.length):recipeThumbnail(dish,icon);
+    const thumbnail=typeof galleryPhoto==='function'?galleryPhoto(dish,icon,rows.childNodes.length):recipeThumbnail(dish,icon,{ownDishFallback:true});
     if(thumbnail!==icon)icon.replaceWith(thumbnail);
     row.querySelector('.dish-copy b').textContent=dish.name;
     row.querySelector('.dish-time').textContent=`◷ ${dish.time||25} Min.`;
@@ -3435,24 +3435,24 @@ function prepareRecipePhoto(photo){
     photo.decode().then(()=>{clearTimeout(timeout);resolve(true)},()=>{clearTimeout(timeout);resolve(false)});
   });
 }
-function recipePhoto(dish,{thumbnail=false,catalog=false,loading=thumbnail?'lazy':'eager'}={}){
+function recipePhoto(dish,{thumbnail=false,catalog=false,loading=thumbnail?'lazy':'eager',ownDishFallback=false}={}){
   const sourceId=catalog?dish.id:dish.catalogSourceId;
-  if(!sourceId)return null;
-  const file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
-  if(!file)return null;
+  const file=sourceId&&catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
+  const usePlaceholder=ownDishFallback&&!catalog&&!sourceId;
+  if(!file&&!usePlaceholder)return null;
   const photo=document.createElement('img');
   photo.className=thumbnail?'recipe-list-photo':'recipe-detail-photo';
   photo.alt='';
-  photo.width=thumbnail?168:960;
-  photo.height=thumbnail?126:720;
+  photo.width=usePlaceholder?720:thumbnail?168:960;
+  photo.height=usePlaceholder?480:thumbnail?126:720;
   photo.decoding=loading==='eager'?'sync':'async';
   photo.loading=loading;
   if(!thumbnail)photo.fetchPriority='high';
-  photo.src=`./images/recipes/${file}${thumbnail?'-thumb':''}.jpg?v=2`;
+  photo.src=usePlaceholder?'./images/own-dish-placeholder.jpg':`./images/recipes/${file}${thumbnail?'-thumb':''}.jpg?v=2`;
   return photo;
 }
-function recipeThumbnail(dish,fallback,{catalog=false}={}){
-  const photo=recipePhoto(dish,{thumbnail:true,catalog});
+function recipeThumbnail(dish,fallback,{catalog=false,loading,ownDishFallback=false}={}){
+  const photo=recipePhoto(dish,{thumbnail:true,catalog,loading,ownDishFallback});
   if(!photo)return fallback;
   photo.addEventListener('error',()=>fallback?photo.replaceWith(fallback):photo.remove(),{once:true});
   return photo;
