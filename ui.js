@@ -34,8 +34,13 @@ const uiIcons={
   plus:'<path d="M12 5v14M5 12h14"/>',
   back:'<path d="m14 6-6 6 6 6"/>',
   edit:'<path d="m15 4 5 5M4 20l5-1L21 7l-5-5L4 14z"/>',
+  fileText:'<path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6m-6 4h6"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m3 16 4-4 3 3 5-5 6 6"/>',
   rest:'<path d="M4 9a8 8 0 1 1 0 7M4 3v6h6"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
+  eye:'<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6Z"/><circle cx="12" cy="12" r="2.5"/>',
+  eyeOff:'<path d="M3 3l18 18M10 6.2c.6-.1 1.3-.2 2-.2 6.5 0 10 6 10 6a14 14 0 0 1-2.5 3M6 8a16 16 0 0 0-4 4s3.5 6 10 6c1.5 0 2.8-.3 4-.8"/>',
+  trash:'<path d="M3 6h18M9 6V4h6v2M6 6l1 14h10l1-14M10 10v6m4-6v6"/>',
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
 };
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
@@ -424,6 +429,9 @@ function initializeDesign(){
   plan.panel.addEventListener('click',event=>{if(event.target.closest('button')&&!event.target.closest('.week-switch'))plan.details.open=false});
   const layout=document.createElement('div');layout.className='week-layout';$('#calendar').before(layout);const preview=document.createElement('section');preview.id='week-preview';preview.setAttribute('aria-label','Ausgewählter Tag');layout.append($('#calendar'),preview);
   $('#dishes-view h1').firstChild.textContent='Gerichte';$('#dishes-type').before($('#search-dishes').closest('.search-box'));$('#dishes-view').append($('#catalog-btn'));$('#catalog-btn').textContent='Standardkatalog entdecken';$('#add-dish-btn').replaceChildren(uiIcon('plus'),document.createTextNode('Hinzufügen'));
+  $('#recipe-import-manual').prepend(uiIcon('edit'));
+  $('#recipe-import-text-choice').prepend(uiIcon('fileText'));
+  $('#recipe-import-screenshot-choice').prepend(uiIcon('image'));
   $('.main-ingredient-hint').textContent='Zum Beispiel Vegetarisch oder Suppe.';
   const shopMenu=uiMenu('Liste','shopping-menu');$('#shopping-view .page-heading').append(shopMenu.details);
   const shopMenuSummary=shopMenu.details.querySelector('summary');
@@ -432,15 +440,20 @@ function initializeDesign(){
   });
   try{shoppingHideChecked=localStorage.getItem(shoppingHideCheckedKey)==='true'}catch{}
   const checkedActionLabel=()=>shoppingHideChecked?'Abgehakte einblenden':'Abgehakte ausblenden';
+  const checkedActionIcon=()=>shoppingHideChecked?'eye':'eyeOff';
   const checkedAction=uiButton(checkedActionLabel(),()=>{
     shoppingHideChecked=!shoppingHideChecked;
     safeLocalStorageSet(shoppingHideCheckedKey,String(shoppingHideChecked));
-    checkedAction.textContent=checkedActionLabel();
+    shopMenu.details.open=false;
+    checkedAction.replaceChildren(uiIcon(checkedActionIcon()),document.createTextNode(checkedActionLabel()));
     updateShoppingSummaryCount();
     shopMenuSummary.focus({preventScroll:true});
-  });
+  },{icon:checkedActionIcon()});
   checkedAction.setAttribute('aria-controls','shopping-open');
-  shopMenu.panel.append(checkedAction,$('#shopping-view .shopping-screen-tools'),$('#shopping-history-open'),$('#shopping-clear'));
+  const historyAction=$('#shopping-history-open'),clearAction=$('#shopping-clear');
+  historyAction.prepend(uiIcon('clock'));
+  clearAction.prepend(uiIcon('trash'));
+  shopMenu.panel.append(checkedAction,$('#shopping-view .shopping-screen-tools'),historyAction,clearAction);
   $('#shopping-view .page-heading').after($('#shopping-add-form'),$('#shopping-overview'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');$('#shopping-view .shopping-section > h2').firstChild.textContent='Einkaufsliste ';
   shopMenu.panel.addEventListener('click',event=>{if(event.target.closest('button'))shopMenu.details.open=false});$('#shopping-meal-filter').addEventListener('change',()=>shopMenu.details.open=false);
   document.addEventListener('pointerdown',event=>{
