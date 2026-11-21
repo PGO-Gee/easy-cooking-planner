@@ -138,7 +138,7 @@ function shoppingAmountLabel(amount,unit){
   const suffix=shoppingAmountUnit(amount,unit);
   return suffix?`${number} ${suffix}`:number;
 }
-function shoppingRecipeQuantity(item,filtered){
+function shoppingRecipeQuantity(item){
   const model=window.WochentischCookingPlan,fields=document.createElement('div');
   fields.className='shopping-recipe-quantity';
   const labels=[],controls=[];
@@ -150,9 +150,8 @@ function shoppingRecipeQuantity(item,filtered){
     const weeksWithAmount=[...item.byWeek].filter(([,amounts])=>amounts.has(unit));
     for(const [week,amounts] of weeksWithAmount){
       const key=model.overrideKey(week,item.name,unit),amount=amounts.get(unit);
-      const override=filtered?undefined:state.quantityOverrides?.[key];
+      const override=state.quantityOverrides?.[key];
       displayed+=override??amount;
-      if(filtered)continue;
       const label=document.createElement('label'),input=document.createElement('input');
       label.textContent=weeksWithAmount.length>1?`Menge für die Woche ab ${week.split('-').reverse().join('.')}`:'Menge';
       input.type='number';
@@ -180,11 +179,6 @@ function shoppingRecipeQuantity(item,filtered){
     }
     labels.push(shoppingAmountLabel(displayed,unit));
     fields.append(group);
-  }
-  if(filtered&&labels.length){
-    const hint=document.createElement('p');
-    hint.textContent='Mengen lassen sich in der Gesamtübersicht bearbeiten.';
-    fields.append(hint);
   }
   if(item.unknown?.size){
     const unknown=document.createElement('p');

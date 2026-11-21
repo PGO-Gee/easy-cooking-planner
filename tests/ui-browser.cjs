@@ -115,13 +115,18 @@ try{
   const shoppingMenu=page.locator('#shopping-menu summary');
   const setCheckedVisibility=async label=>{
     await shoppingMenu.click();
+    assert.equal(await page.locator('#shopping-menu select').count(),0);
     await page.getByRole('button',{name:label,exact:true}).click();
     assert.equal(await page.locator('#shopping-menu').evaluate(el=>el.open),false);
     assert.equal(await shoppingMenu.evaluate(el=>el===document.activeElement),true);
   };
   await setCheckedVisibility('Abgehakte ausblenden');
   assert(await first.isHidden());
-  await page.evaluate(()=>{$('#shopping-meal-filter').value='__manual__';renderShoppingList()});
+  assert(await page.locator('#shopping-open .shopping-tile:visible').count()>0);
+  await page.evaluate(()=>{
+    rangeDates().forEach(date=>replaceDayPlan(date,{meals:[],pins:[],isRest:false}));
+    renderShoppingList();
+  });
   assert(await page.locator('#shopping-all-checked').isVisible());
   assert.equal(await page.locator('#shopping-open-count').textContent(),'0 offen · 1 erledigt');
   assert.equal(await page.locator('#shopping-open .shopping-category-title:visible').count(),0);

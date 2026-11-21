@@ -106,7 +106,6 @@ werden zu 500 g. Restetage erzeugen keinen weiteren Einkaufsbedarf. g/kg und
 ml/l werden zusammengefasst; andere Einheiten bleiben separat. Angaben ohne
 berechenbare Menge bleiben sichtbar. Die Mengenanzeige lässt sich aufklappen,
 pro Einkaufswoche korrigieren und auf den berechneten Bedarf zurücksetzen.
-Rezeptfilter zeigen den anteiligen Bedarf; Korrekturen erfolgen in der Gesamtübersicht.
 
 **Vor Veröffentlichung des Clients** die Migration
 `supabase/migrations/20261115095535_household_cooking_portions.sql` anwenden.

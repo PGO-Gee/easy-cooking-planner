@@ -186,7 +186,7 @@ Der Resteabend ist eine geplante Entscheidung und erhält einen eigenen Aufbau:
 
 ### Einkaufszettel
 
-- Artikel ergänzen steht direkt unter dem Header. Der Mahlzeitfilter liegt im Menü **Liste**; ein aktiver Filter wird sichtbar und zurücksetzbar angezeigt.
+- Artikel ergänzen steht direkt unter dem Header. Im Menü **Liste** lassen sich abgehakte Artikel aus- und einblenden.
 - Die Zeilen zeigen ausschließlich Checkbox, Artikelname und Menge. Keine Emojis und keine dauerhaft sichtbaren Gerichtsnamen.
 - Abgehakte Artikel bleiben an ihrer Position und werden durchgestrichen. Ein separater Bereich „Schon eingekauft“ entfällt.
 - Langes Drücken auf einen Artikel öffnet ein kleines Pop-up mit den zugeordneten geplanten Gerichten. Mehrere Zuordnungen erscheinen als Liste; manuell ergänzte Artikel erhalten einen entsprechenden Hinweis.
