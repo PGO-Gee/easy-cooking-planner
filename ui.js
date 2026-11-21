@@ -361,6 +361,29 @@ function enhanceShoppingList(){
   $('#shopping-done-section').hidden=true;
   $('#shopping-overview').textContent=$('#shopping-meal-filter').value?'Filter zurücksetzen':'';
 }
+const shoppingHideCheckedKey='wochentisch-shopping-hide-checked';
+let shoppingHideChecked=false;
+function updateShoppingCheckedVisibility(list,remaining,checked){
+  const focusedRow=document.activeElement?.closest('.shopping-tile-shell');
+  const children=[...list.children];
+  let heading;
+  for(const child of children){
+    if(child.tagName==='H3'){
+      heading=child;
+      heading.hidden=shoppingHideChecked;
+      continue;
+    }
+    child.hidden=shoppingHideChecked&&Boolean(child.querySelector('.shopping-tile.is-checked'));
+    if(heading&&!child.hidden)heading.hidden=false;
+  }
+  $('#shopping-all-checked').hidden=!shoppingHideChecked||remaining>0||checked===0;
+  if(focusedRow?.hidden){
+    const index=children.indexOf(focusedRow);
+    const nearest=children.slice(index+1).concat(children.slice(0,index).reverse())
+      .find(child=>child.matches('.shopping-tile-shell:not([hidden])'));
+    (nearest?.querySelector('.shopping-tile')||$('#shopping-menu summary')).focus();
+  }
+}
 function configureRecipeForm(){
   const form=$('#dish-form');form.classList.add('recipe-form');
   const timeLabel=document.createElement('label');timeLabel.className='recipe-minutes-label';timeLabel.textContent='Zeit in Minuten';const minutes=document.createElement('input');minutes.id='dish-minutes';minutes.type='number';minutes.min='1';minutes.max='1440';minutes.required=true;minutes.inputMode='numeric';timeLabel.append(minutes);
@@ -402,7 +425,23 @@ function initializeDesign(){
   const layout=document.createElement('div');layout.className='week-layout';$('#calendar').before(layout);const preview=document.createElement('section');preview.id='week-preview';preview.setAttribute('aria-label','Ausgewählter Tag');layout.append($('#calendar'),preview);
   $('#dishes-view h1').firstChild.textContent='Gerichte';$('#dishes-type').before($('#search-dishes').closest('.search-box'));$('#dishes-view').append($('#catalog-btn'));$('#catalog-btn').textContent='Standardkatalog entdecken';$('#add-dish-btn').replaceChildren(uiIcon('plus'),document.createTextNode('Hinzufügen'));
   $('.main-ingredient-hint').textContent='Zum Beispiel Vegetarisch oder Suppe.';
-  const shopMenu=uiMenu('Liste','shopping-menu');$('#shopping-view .page-heading').append(shopMenu.details);const tools=$('#shopping-view .shopping-screen-tools');shopMenu.panel.append(tools,$('#shopping-history-open'),$('#shopping-clear'));$('#shopping-view .page-heading').after($('#shopping-add-form'),$('#shopping-overview'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');$('#shopping-view .shopping-section > h2').firstChild.textContent='Einkaufsliste ';
+  const shopMenu=uiMenu('Liste','shopping-menu');$('#shopping-view .page-heading').append(shopMenu.details);
+  const shopMenuSummary=shopMenu.details.querySelector('summary');
+  shopMenuSummary.addEventListener('click',()=>{
+    if(!shopMenu.details.open)shopMenuSummary.focus({preventScroll:true});
+  });
+  try{shoppingHideChecked=localStorage.getItem(shoppingHideCheckedKey)==='true'}catch{}
+  const checkedActionLabel=()=>shoppingHideChecked?'Abgehakte einblenden':'Abgehakte ausblenden';
+  const checkedAction=uiButton(checkedActionLabel(),()=>{
+    shoppingHideChecked=!shoppingHideChecked;
+    safeLocalStorageSet(shoppingHideCheckedKey,String(shoppingHideChecked));
+    checkedAction.textContent=checkedActionLabel();
+    updateShoppingSummaryCount();
+    shopMenuSummary.focus({preventScroll:true});
+  });
+  checkedAction.setAttribute('aria-controls','shopping-open');
+  shopMenu.panel.append(checkedAction,$('#shopping-view .shopping-screen-tools'),$('#shopping-history-open'),$('#shopping-clear'));
+  $('#shopping-view .page-heading').after($('#shopping-add-form'),$('#shopping-overview'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');$('#shopping-view .shopping-section > h2').firstChild.textContent='Einkaufsliste ';
   shopMenu.panel.addEventListener('click',event=>{if(event.target.closest('button'))shopMenu.details.open=false});$('#shopping-meal-filter').addEventListener('change',()=>shopMenu.details.open=false);
   document.addEventListener('pointerdown',event=>{
     const open=document.querySelector('.shopping-swipe-row.is-swipe-open');

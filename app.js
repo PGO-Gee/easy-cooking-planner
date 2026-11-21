@@ -2971,7 +2971,9 @@ function shoppingFilterLabel(name,selected,weekKeys,manualItems){
 }
 function updateShoppingSummaryCount(){
   const open=$('#shopping-open'),checked=open.querySelectorAll('.shopping-tile.is-checked').length;
-  $('#shopping-open-count').textContent=`${open.querySelectorAll('.shopping-tile').length-checked} offen · ${checked} erledigt`;
+  const remaining=open.querySelectorAll('.shopping-tile').length-checked;
+  $('#shopping-open-count').textContent=`${remaining} offen · ${checked} erledigt`;
+  if(typeof updateShoppingCheckedVisibility==='function')updateShoppingCheckedVisibility(open,remaining,checked);
 }
 function renderShoppingListContent(){
   const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish));

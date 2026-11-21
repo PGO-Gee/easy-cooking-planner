@@ -111,6 +111,33 @@ try{
   console.log('Viewport matrix complete');
   await page.setViewportSize({width:390,height:844});await fixture(page);await page.evaluate(()=>{const week=keyFor(mondayFor(rangeStart()));state.manualShoppingItems[week]=['Küchenrolle'];openShoppingList()});
   const first=page.locator('#shopping-open .shopping-tile[data-ingredient="küchenrolle"]'),name=await first.getAttribute('data-ingredient');const before=await page.locator('#shopping-open .shopping-tile').evaluateAll(els=>els.map(el=>el.dataset.ingredient));await page.evaluate(key=>{state.shoppingQuantities[key]=3;renderShoppingList()},name);await first.click();await page.waitForTimeout(250);assert.deepEqual(await page.locator('#shopping-open .shopping-tile').evaluateAll(els=>els.map(el=>el.dataset.ingredient)),before);assert.equal(await first.locator('.shopping-inline-amount').textContent(),'3\u00a0Stk.');assert.equal(await first.getAttribute('aria-pressed'),'true');await first.press('Enter');await page.locator('#shopping-association').waitFor({state:'visible'});await page.keyboard.press('Escape');
+
+  const shoppingMenu=page.locator('#shopping-menu summary');
+  const setCheckedVisibility=async label=>{
+    await shoppingMenu.click();
+    await page.getByRole('button',{name:label,exact:true}).click();
+    assert.equal(await page.locator('#shopping-menu').evaluate(el=>el.open),false);
+    assert.equal(await shoppingMenu.evaluate(el=>el===document.activeElement),true);
+  };
+  await setCheckedVisibility('Abgehakte ausblenden');
+  assert(await first.isHidden());
+  await page.evaluate(()=>{$('#shopping-meal-filter').value='__manual__';renderShoppingList()});
+  assert(await page.locator('#shopping-all-checked').isVisible());
+  assert.equal(await page.locator('#shopping-open-count').textContent(),'0 offen · 1 erledigt');
+  assert.equal(await page.locator('#shopping-open .shopping-category-title:visible').count(),0);
+  await setCheckedVisibility('Abgehakte einblenden');
+  assert(await first.isVisible());
+  assert.equal(await first.getAttribute('aria-pressed'),'true');
+  assert.equal(await first.locator('.shopping-inline-amount').textContent(),'3\u00a0Stk.');
+  await first.press('Space');
+  await setCheckedVisibility('Abgehakte ausblenden');
+  await first.press('Space');
+  assert(await first.isHidden());
+  assert.equal(await shoppingMenu.evaluate(el=>el===document.activeElement),true);
+  await page.locator('#toast .toast-action').click();
+  assert(await first.isVisible());
+  await setCheckedVisibility('Abgehakte einblenden');
+
   await page.setViewportSize({width:1440,height:900});await fixture(page);await page.locator('.day-card[data-day-index="1"] .meal-card').first().click();await page.waitForFunction(()=>uiSelectedDay===1);await page.locator('#cooking-entry-dialog').getByRole('button',{name:'Rezept ansehen',exact:true}).click();await page.locator('#recipe-detail-dialog').waitFor({state:'visible'});await page.keyboard.press('Escape');assert(await page.locator('#week-view').isVisible());
   await page.evaluate(()=>openRecipe('ui-0',{from:'dishes'}));await page.locator('#sidebar .nav-item[data-view=cooking]').click();assert(await page.locator('.prepare-hero').isVisible());
   await page.setViewportSize({width:390,height:340});await page.evaluate(()=>openDish('ui-0'));await page.locator('#editor-ingredients > summary').click();assert(await page.locator('#recipe-servings').isVisible());await page.keyboard.press('Escape');
