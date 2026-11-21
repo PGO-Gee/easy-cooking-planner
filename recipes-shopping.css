@@ -595,10 +595,9 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
   #recipe-import-input .dialog-actions { width: auto; margin: 12px -16px -16px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
 }
 
-/* Screenshot entry stays focused on image selection; source is reviewed in the wizard. */
-#recipe-import-input.screenshot-mode > label,
+#recipe-import-input.screenshot-mode > textarea { width: 100%; box-sizing: border-box; font-size: 16px; }
+.screenshot-import .handwriting-help > summary { min-height: 44px; padding-block: 10px; box-sizing: border-box; }
 #recipe-import-input.screenshot-mode > #recipe-import-hint,
-#recipe-import-input.screenshot-mode > #recipe-import-text,
 #recipe-import-input.screenshot-mode .screenshot-original,
 #recipe-import-input.screenshot-mode .screenshot-import > summary,
 .screenshot-cache { display: none; }

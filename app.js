@@ -2597,7 +2597,7 @@ let trialImportTarget=null;
 const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze')});
 function updateRecipeImportAction(){
   const screenshotMode=recipeImportInput.classList.contains('screenshot-mode');
-  $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim()||(screenshotMode&&!fullRecipeOCR.hasRecognized());
+  $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim();
   $('#recipe-import-back').disabled=screenshotMode&&fullRecipeOCR.isBusy();
 }
 recipeImportText.addEventListener('input',updateRecipeImportAction);
@@ -2674,7 +2674,7 @@ $('#recipe-import-back').addEventListener('click',()=>{
   $('#recipe-import-text-choice').focus();
 });
 $('#recipe-import-analyze').addEventListener('click',()=>{
-  if(recipeImportInput.classList.contains('screenshot-mode')&&fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Screenshots werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;
+  if(recipeImportInput.classList.contains('screenshot-mode')&&fullRecipeOCR.hasPending()&&!confirm('Noch nicht erkannte Bilder werden nicht übernommen. Mit dem vorhandenen Text fortfahren?'))return;
   const source=recipeImportText.value,result=window.WochentischRecipeImport.parse(source),message=recipeImportMessage(result);
   const target=trialImportTarget;
   const trialTitleOnly=target&&!result.error&&!result.ingredients.length&&!result.steps.length;

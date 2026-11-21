@@ -10,14 +10,16 @@ function png(width=100,height=100){const bytes=new Uint8Array(24),view=new DataV
 const file=()=>({name:'rezept.png',size:24,type:'image/png',arrayBuffer:async()=>png().buffer});
 test('validates supported files and rejects oversize or unsupported input',()=>{
   for(const type of ['image/png','image/jpeg','image/webp'])assert.doesNotThrow(()=>ocr.validateFile({size:123,type}));
-  assert.throws(()=>ocr.validateFile({size:ocr.MAX_BYTES+1,type:'image/png'}),/10 MB/);
+  assert.throws(()=>ocr.validateFile({size:ocr.MAX_BYTES+1,type:'image/png'}),/25 MB/);
   assert.throws(()=>ocr.validateFile({size:5,type:'image/heic'}),/PNG/);
   assert.throws(()=>ocr.dimensions(new Uint8Array([1,2,3])),/Bildformat/);
 });
-test('checks PNG pixel limits before image decoding without reducing or cropping',()=>{
+test('checks PNG pixel limits before image decoding before allocating a working canvas',()=>{
   assert.deepEqual(ocr.dimensions(png(2000,4000)),[2000,4000]);
   assert.doesNotThrow(()=>ocr.validateDimensions(2000,4000));
-  assert.throws(()=>ocr.validateDimensions(...ocr.dimensions(png(2001,4000))),/8 Megapixel/);
+  assert.doesNotThrow(()=>ocr.validateDimensions(8064,6048));
+  assert.doesNotThrow(()=>ocr.validateFile({size:20*1024*1024,type:"image/jpeg"}));
+  assert.throws(()=>ocr.validateDimensions(...ocr.dimensions(png(10000,5001))),/50 Megapixel/);
   assert.throws(()=>ocr.validateDimensions(0,100),/gültige Größe/);
 });
 test('reads JPEG and WebP dimensions',()=>{

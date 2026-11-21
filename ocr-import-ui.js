@@ -4,10 +4,13 @@
   function attach({before,text,parseButton}){
     const panel=document.createElement('details');panel.className='screenshot-import';
     const id=`screenshot-files-${++nextId}`;
-    panel.innerHTML=`<summary>Screenshots hinzufügen</summary>
-      <p>Füge bis zu 5 Screenshots eines deutschen Rezepts hinzu und starte die Texterkennung.</p>
+    panel.innerHTML=`<summary>Fotos oder Screenshots hinzufügen</summary>
+      <p>Für gedruckte Rezepte bis zu 5 Bilder auswählen (PNG, JPEG oder WebP, je 25 MB).</p>
       <label class="screenshot-file-label" for="${id}">Bilder auswählen</label>
       <input id="${id}" type="file" accept="image/png,image/jpeg,image/webp" multiple>
+      <details class="handwriting-help"><summary>Handschrift vom iPhone übernehmen</summary>
+        <p>Öffne das Rezeptfoto in der Fotos-App. Tippe auf das Live-Text-Symbol oder halte ein erkanntes Wort gedrückt. Wähle den Rezepttext aus, kopiere ihn und füge ihn unten ins Textfeld ein. Prüfe besonders Mengen und Einheiten.</p>
+      </details>
       <ol class="screenshot-list"></ol>
       <div class="screenshot-actions"><button type="button" class="primary-button screenshot-start">Text erkennen</button><button type="button" class="secondary-button screenshot-cancel" hidden>Erkennung abbrechen</button></div>
       <p class="screenshot-status" role="status" aria-live="polite"></p>
@@ -19,18 +22,18 @@
     // File inputs emit a bubbling cancel event when the native picker closes.
     // It must not reach the enclosing dialog's Escape handler.
     input.addEventListener('cancel',event=>event.stopPropagation());
-    let entries=[],controller=null,generation=0,busy=false,recognized=false;
+    let entries=[],controller=null,generation=0,busy=false;
     function error(message){errorBox.textContent=message;errorBox.hidden=!message}
     function setBusy(value){busy=value;input.disabled=value;start.disabled=value||!entries.some(entry=>!entry.done);cancel.hidden=!value;text.disabled=value;parseButton.disabled=value;panel.setAttribute('aria-busy',String(value));render();panel.dispatchEvent(new Event('ocr-state-change',{bubbles:true}))}
     function render(){
       list.replaceChildren();
       entries.forEach((entry,index)=>{
         const item=document.createElement('li'),img=document.createElement('img'),name=document.createElement('p'),actions=document.createElement('div');
-        img.src=entry.thumbnail;img.alt=`Vorschau Screenshot ${index+1}`;img.width=90;img.height=120;
+        img.src=entry.thumbnail;img.alt=`Vorschau Bild ${index+1}`;img.width=90;img.height=120;
         name.textContent=`${index+1}. ${entry.file.name}${entry.done?' – Text hinzugefügt':''}${entry.error?' – '+entry.error:''}`;
         actions.className='screenshot-actions';
         [['Nach oben',-1],['Nach unten',1],['Entfernen',0]].forEach(([label,offset])=>{
-          const button=document.createElement('button');button.type='button';button.className='secondary-button';button.textContent=label;button.setAttribute('aria-label',`${label}: Screenshot ${index+1}`);
+          const button=document.createElement('button');button.type='button';button.className='secondary-button';button.textContent=label;button.setAttribute('aria-label',`${label}: Bild ${index+1}`);
           button.disabled=busy||(offset===-1&&index===0)||(offset===1&&index===entries.length-1);
           button.addEventListener('click',()=>{
             if(offset){[entries[index],entries[index+offset]]=[entries[index+offset],entries[index]]}else entries.splice(index,1);
@@ -50,7 +53,7 @@
     input.addEventListener('change',async()=>{
       const files=[...input.files];input.value='';if(!files.length)return;
       error('');
-      if(entries.length+files.length>WochentischOCR.MAX_FILES){error('Maximal 5 Screenshots je Durchgang. Bitte zuerst Bilder entfernen.');return}
+      if(entries.length+files.length>WochentischOCR.MAX_FILES){error('Maximal 5 Bilder je Durchgang. Bitte zuerst Bilder entfernen.');return}
       controller=new AbortController();const token=++generation;setBusy(true);status.textContent='Bilder prüfen …';
       const errors=[];
       try{
@@ -61,7 +64,7 @@
           }catch(e){if(e.name==='AbortError')return;errors.push(`${file.name}: ${e.message}`)}
         }
         if(token!==generation)return;
-        error(errors.join(' '));status.textContent=`${entries.length} Screenshots ausgewählt. Reihenfolge prüfen und „Text erkennen“ wählen.`;
+        error(errors.join(' '));status.textContent=`${entries.length} ${entries.length===1?'Bild':'Bilder'} ausgewählt. Reihenfolge prüfen und „Text erkennen“ wählen.`;
       }finally{if(token===generation){controller=null;setBusy(false)}}
     });
     start.addEventListener('click',async()=>{
@@ -74,16 +77,16 @@
           onResult:result=>{
             if(token!==generation)return;
             const entry=selected[result.index];entry.error=result.error||'';
-            if(result.text){text.value+=(text.value.trim()?'\n\n':'')+result.text;entry.rawText=result.rawText;entry.done=true;recognized=true;completed++;text.dispatchEvent(new Event('input',{bubbles:true}))}
+            if(result.text){text.value+=(text.value.trim()?'\n\n':'')+result.text;entry.rawText=result.rawText;entry.done=true;completed++;text.dispatchEvent(new Event('input',{bubbles:true}))}
             render();
           }
         });
         if(token!==generation)return;
         const failed=results.filter(result=>result.error);
-        status.textContent=completed?`Text aus ${completed} ${completed===1?'Screenshot':'Screenshots'} erkannt – bitte prüfen. Noch keine Rezeptfelder übernommen.`:'Kein Text übernommen. Bitte Lesbarkeit prüfen oder Text einfügen.';
-        if(completed&&panel.closest('.screenshot-mode'))status.textContent=`Text aus ${completed} ${completed===1?'Screenshot':'Screenshots'} erkannt. Weiter mit „Rezept erkennen“.`;
-        error(failed.map(result=>`Screenshot ${result.index+1}: ${result.error}`).join(' '));
-      }catch(e){if(token!==generation)return;error(e.message);status.textContent=completed?`Text aus ${completed} Screenshots bleibt erhalten. Übrige Bilder bitte erneut versuchen.`:'Erkennung nicht abgeschlossen. Text kann weiterhin eingefügt werden.'}
+        status.textContent=completed?`Text aus ${completed} ${completed===1?'Bild':'Bildern'} erkannt – bitte prüfen. Noch keine Rezeptfelder übernommen.`:'Kein Text übernommen. Bitte Lesbarkeit prüfen oder Text einfügen.';
+        if(completed&&panel.closest('.screenshot-mode'))status.textContent=`Text aus ${completed} ${completed===1?'Bild':'Bildern'} erkannt. Prüfe den Text unten und wähle „Rezept erkennen“.`;
+        error(failed.map(result=>`Bild ${result.index+1}: ${result.error}`).join(' '));
+      }catch(e){if(token!==generation)return;error(e.message);status.textContent=completed?`Text aus ${completed} Bildern bleibt erhalten. Übrige Bilder bitte erneut versuchen.`:'Erkennung nicht abgeschlossen. Text kann weiterhin eingefügt werden.'}
       finally{
         if(token===generation){controller=null;setBusy(false);refreshCache(token);status.tabIndex=-1;status.focus({preventScroll:true});status.scrollIntoView({block:'nearest'})}
       }
@@ -91,9 +94,9 @@
     cancel.addEventListener('click',()=>{
       generation++;controller?.abort();controller=null;setBusy(false);status.textContent='Erkennung abgebrochen. Bereits erkannter Text bleibt erhalten.';error('');start.focus();
     });
-    function reset(){generation++;controller?.abort();controller=null;entries=[];recognized=false;input.value='';status.textContent='';cacheStatus.textContent='';error('');panel.open=false;setBusy(false)}
+    function reset(){generation++;controller?.abort();controller=null;entries=[];panel.querySelector('.handwriting-help').open=false;input.value='';status.textContent='';cacheStatus.textContent='';error('');panel.open=false;setBusy(false)}
     setBusy(false);
-    return {panel,reset,hasDraft:()=>entries.length>0||busy,hasPending:()=>busy||entries.some(entry=>!entry.done),hasRecognized:()=>recognized,isBusy:()=>busy};
+    return {panel,reset,hasDraft:()=>entries.length>0||busy,hasPending:()=>busy||entries.some(entry=>!entry.done),isBusy:()=>busy};
   }
   window.WochentischOCRUI={attach};
 })();

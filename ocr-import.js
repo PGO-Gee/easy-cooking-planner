@@ -2,11 +2,11 @@
   'use strict';
   const assets=root.WochentischOCRAssets||(typeof require==='function'?require('./ocr-assets.js'):null);
   const base=typeof document!=='undefined'?new URL('.',document.currentScript.src):null;
-  const MAX_FILES=5,MAX_BYTES=10*1024*1024,MAX_PIXELS=8000000;
+  const MAX_FILES=5,MAX_BYTES=25*1024*1024,MAX_PIXELS=50000000;
   const abortError=()=>new DOMException('Abgebrochen','AbortError');
   const checkAbort=signal=>{if(signal?.aborted)throw abortError()};
   function validateFile(file){
-    if(file.size>MAX_BYTES)throw Error('Das Bild ist größer als 10 MB. Bitte vorher zuschneiden.');
+    if(file.size>MAX_BYTES)throw Error('Das Bild ist größer als 25 MB. Bitte vorher zuschneiden.');
     if(!['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('Bitte PNG, JPEG oder WebP auswählen.');
   }
   // Read dimensions before decoding, so a small compressed file cannot allocate
@@ -36,11 +36,11 @@
         i+=length;
       }
     }
-    throw Error('Das Bildformat konnte nicht gelesen werden. Bitte einen neuen Screenshot auswählen.');
+    throw Error('Das Bildformat konnte nicht gelesen werden. Bitte ein anderes Bild auswählen.');
   }
   function validateDimensions(width,height){
     if(!(width>0&&height>0))throw Error('Das Bild hat keine gültige Größe.');
-    if(width*height>MAX_PIXELS)throw Error('Das Bild hat mehr als 8 Megapixel. Bitte in kleinere Screenshots aufteilen oder zuschneiden.');
+    if(width*height>MAX_PIXELS)throw Error('Das Bild hat mehr als 50 Megapixel. Bitte vorher zuschneiden.');
   }
   async function decode(file,signal){
     validateFile(file);checkAbort(signal);
@@ -67,8 +67,12 @@
   async function imageBytes(file,signal){
     const img=await decode(file,signal),canvas=document.createElement('canvas');
     try{
-      canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;
-      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0);
+      // Bound the working canvas independently of the original camera resolution.
+      const scale=Math.min(Math.sqrt(8000000/(img.naturalWidth*img.naturalHeight)),
+        4096/Math.max(img.naturalWidth,img.naturalHeight),1);
+      canvas.width=Math.max(1,Math.floor(img.naturalWidth*scale));
+      canvas.height=Math.max(1,Math.floor(img.naturalHeight*scale));
+      const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
       const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
       if(!blob)throw Error('Das Bild konnte nicht vorbereitet werden.');
       checkAbort(signal);return await blob.arrayBuffer();
@@ -103,7 +107,7 @@
   let active=false;
   async function recognize(files,{signal,onProgress=()=>{},onResult=()=>{}}={}){
     if(active)throw Error('Es läuft bereits eine Texterkennung. Bitte diese zuerst abbrechen.');
-    if(!files.length||files.length>MAX_FILES)throw Error('Bitte ein bis fünf Screenshots auswählen.');
+    if(!files.length||files.length>MAX_FILES)throw Error('Bitte ein bis fünf Bilder auswählen.');
     files.forEach(validateFile);active=true;
     let worker;
     try{
@@ -113,13 +117,13 @@
       const send=(type,payload={},transfer=[])=>new Promise((resolve,reject)=>{
         const cleanup=()=>{clearTimeout(timeout);signal?.removeEventListener('abort',abort);worker.onmessage=null;worker.onerror=null};
         const abort=()=>{cleanup();worker.terminate();reject(abortError())};
-        const timeout=setTimeout(()=>{cleanup();failed=true;worker.terminate();reject(Error('Die Texterkennung dauert zu lange. Bitte einen kleineren Screenshot versuchen.'))},120000);
+        const timeout=setTimeout(()=>{cleanup();failed=true;worker.terminate();reject(Error('Die Texterkennung dauert zu lange. Bitte ein kleineres Bild versuchen.'))},120000);
         signal?.addEventListener('abort',abort,{once:true});
         worker.onerror=()=>{cleanup();failed=true;reject(Error('Die lokale Texterkennung konnte nicht gestartet werden. Bitte Text einfügen oder einen aktuellen Browser verwenden.'))};
         worker.onmessage=({data})=>{
           if(data.type==='progress'){
             const percent=Math.round((data.progress.progress||0)*100);
-            onProgress(current?`Screenshot ${current} von ${files.length}: ${percent} %`:'Lokale Texterkennung starten …');return;
+            onProgress(current?`Bild ${current} von ${files.length}: ${percent} %`:'Lokale Texterkennung starten …');return;
           }
           cleanup();if(data.type==='error'){failed=true;reject(Error('Das Bild konnte nicht erkannt werden. Bitte Lesbarkeit prüfen oder Text einfügen.'))}else resolve(data);
         };
@@ -128,7 +132,7 @@
       await send('init');
       const results=[];
       for(let i=0;i<files.length;i++){
-        checkAbort(signal);current=i+1;onProgress(`Screenshot ${current} von ${files.length} vorbereiten …`);
+        checkAbort(signal);current=i+1;onProgress(`Bild ${current} von ${files.length} vorbereiten …`);
         let result;
         try{
           const bytes=await imageBytes(files[i],signal);checkAbort(signal);
