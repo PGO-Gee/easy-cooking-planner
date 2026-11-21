@@ -802,6 +802,12 @@ html.design .recipe-date { font-size:12px;color:var(--action);margin:0; }
 html.design .preview-meta { font-size:13px;color:var(--muted);margin:0 0 20px; }
 html.design .preview-other { display:flex;flex-direction:column;gap:8px;margin-top:16px; }
 html.design .recipe-placeholder { display:grid;place-items:center;min-height:130px;background:var(--line); }
+html.design .recipe-type-graphic { background:var(--selection);color:var(--action); }
+html.design .recipe-type-graphic .ui-icon,html.design .recipe-type-graphic svg { width:26px;height:26px; }
+html.design #dish-list .dish-icon.recipe-type-graphic { height:72px;background:var(--selection);color:var(--action); }
+html.design .dish-icon.recipe-type-graphic::after { content:none; }
+html.design #calendar .focus-meal > .recipe-type-graphic { max-height:64px; }
+html.design #week-preview > .recipe-type-graphic { min-height:64px; }
 html.design .prepare-hero { border-radius:18px;overflow:hidden;background:var(--paper);margin-bottom:24px; }
 html.design .prepare-hero .recipe-detail-photo { border-radius:0; }
 html.design .prepare-hero h2 { font-size:20px; }

@@ -16,9 +16,8 @@ function updateAccountIdentity(user){
   const heading=document.getElementById('account-name');if(heading)heading.textContent=name||'Dein Konto';
 }
 function galleryPhoto(dish,fallback,index){
-  const loading=index<4?'eager':'lazy';
-  if(!dish.catalogSourceId)return recipeThumbnail(dish,fallback,{loading,ownDishFallback:true});
-  const photo=recipePhoto(dish,{thumbnail:true,loading});if(!photo)return fallback;
+  if(!dish.catalogSourceId)return recipeTypeGraphic(dish,'dish-icon');
+  const photo=recipePhoto(dish,{thumbnail:true,loading:index<4?'eager':'lazy'});if(!photo)return fallback;
   const original=photo.src,file=catalogRecipePhotoFiles.get(catalogDishNameKey(dish.name));
   photo.src=`./images/recipes/${file}-card.webp?v=1`;photo.width=384;photo.height=288;photo.decoding='async';
   if(index<2)photo.fetchPriority='high';
@@ -29,6 +28,7 @@ const uiIcons={
   week:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18M8 15h2m4 0h2"/>',
   dishes:'<path d="M12 5v16M3 3l9 2 9-2v16l-9 2-9-2z"/>',
   cooking:'<path d="M5 10h14v5a6 6 0 0 1-6 6h-2a6 6 0 0 1-6-6zM2 11h3m14 0h3M8 3v3m4-4v4m4-3v3"/>',
+  baking:'<path d="M5 11a4 4 0 0 1 1-8h12a4 4 0 0 1 1 8v8a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2zM9 10l2-2m2 5 2-2"/>',
   shopping:'<path d="M3 9h18l-2 12H5zM8 9l4-7 4 7M9 13v4m6-4v4"/>',
   sliders:'<path d="M3 6h5m4 0h9M3 12h11m4 0h3M3 18h3m4 0h11M8 3v6m6 0v6M6 15v6"/>',
   profile:'<circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/>',
@@ -46,7 +46,10 @@ const uiIcons={
   more:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>'
 };
 function uiIcon(name){const span=document.createElement('span');span.className='ui-icon';span.setAttribute('aria-hidden','true');span.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${uiIcons[name]||uiIcons.more}</svg>`;return span}
-function uiPlaceholder(className='recipe-placeholder'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon('dishes'));return placeholder}
+function uiPlaceholder(className='recipe-placeholder',icon='dishes'){const placeholder=document.createElement('div');placeholder.className=className;placeholder.setAttribute('aria-hidden','true');placeholder.append(uiIcon(icon));return placeholder}
+function recipeTypeGraphic(dish,className){
+  return uiPlaceholder(`${className} recipe-type-graphic`,dish.type==='baking'?'baking':'cooking');
+}
 function uiButton(label,action,{icon='',className='secondary-button'}={}){const button=document.createElement('button');button.type='button';button.className=className;if(icon)button.append(uiIcon(icon));button.append(document.createTextNode(label));button.addEventListener('click',action);return button}
 function afterDialogBoundsSettle(element,reveal){
   let frame,previousBounds;
@@ -175,7 +178,7 @@ function enhanceWeekView(days){
       meal.classList.toggle('focus-meal',focus?.day===index&&focus.meal===mealIndex);
       if(meal.classList.contains('focus-meal')){const date=document.createElement('p');date.className='meal-date';date.textContent=formatChooserDate(days[index].date);meal.querySelector('.meal-title').before(date)}
       const picture=meal.querySelector('.recipe-list-photo');if(picture&&meal.classList.contains('focus-meal')){const full=recipePhoto(dish);if(full)picture.src=full.src}
-      if(!picture)meal.prepend(uiPlaceholder('meal-image-placeholder'));
+      if(!picture)meal.prepend(dish.catalogSourceId?uiPlaceholder('meal-image-placeholder'):recipeTypeGraphic(dish,'meal-image-placeholder'));
       meal.querySelector('.meal-ingredient').textContent=`${dish.isTrial?'Probegericht · ':''}${plannedEntryLabel(days[index].date,mealIndex)}`;
       const mealLabel=`${dish.name} öffnen${dish.isTrial?', Probegericht':''}`;
       meal.setAttribute('aria-label',mealLabel);
@@ -198,11 +201,11 @@ function renderWeekPreview(){
   preview.replaceChildren();const dishes=entry.day.map(id=>state.dishes.find(d=>d.id===id)).filter(Boolean);uiSelectedMeal=Math.min(uiSelectedMeal,Math.max(0,dishes.length-1));const dish=dishes[uiSelectedMeal];
   if(!dish){const body=document.createElement('div');body.className='week-preview-body empty-preview';const date=document.createElement('p');date.textContent=formatChooserDate(entry.date);const h=document.createElement('h2');h.textContent=entry.isRest?'Reste':'Nicht geplant';const copy=document.createElement('p'),linked=window.WochentischCookingPlan.restsAt(state,keyFor(entry.date));copy.textContent=entry.isRest?'':'Wähle ein Gericht aus deiner Sammlung.';if(linked.length)body.append(uiButton('Restetag ansehen',()=>openLinkedRest(entry.date),{className:'primary-button'}));body.append(date,h,copy,uiButton('Gericht auswählen',()=>chooseDish(uiSelectedDay),{className:'primary-button',icon:'plus'}));preview.append(body);preview.classList.toggle('rest-preview',entry.isRest);return}
   preview.classList.remove('rest-preview');
-  const photo=recipePhoto(dish,{ownDishFallback:true});
+  const photo=recipePhoto(dish);
   if(photo){
     photo.addEventListener('error',()=>photo.replaceWith(uiPlaceholder()),{once:true});
     preview.append(photo);
-  }else preview.append(uiPlaceholder());
+  }else preview.append(dish.catalogSourceId?uiPlaceholder():recipeTypeGraphic(dish,'recipe-placeholder'));
   const body=document.createElement('div');body.className='week-preview-body';const date=document.createElement('p');date.className='recipe-date';date.textContent=formatChooserDate(entry.date);
   const title=document.createElement('h2');title.textContent=dish.name;const meta=document.createElement('p');meta.className='preview-meta';meta.textContent=`${dish.isTrial?'Probegericht · ':''}${dish.time||30} Min. · ${plannedEntryLabel(entry.date,uiSelectedMeal)}`;
   body.append(date,title,meta);const heading=document.createElement('h3');heading.textContent='Zutaten';body.append(heading);appendRecipeIngredients(body,dish,window.WochentischCookingPlan.total(window.WochentischCookingPlan.entryAt(state,keyFor(entry.date),uiSelectedMeal)));
