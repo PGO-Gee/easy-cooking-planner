@@ -272,6 +272,28 @@
     return cookingAction.test(line)&&!/\b(?:zum|zur)\s+\S+[.!]?$/i.test(line);
   }
 
+  function readWrappedIngredientList(text,lines,start){
+    const separators=/(?<!\d),|,(?!\d)|[;|•]|\s+und\s+/i;
+    let tail=text.split(separators).at(-1).trim();
+    const parts=[text];
+    let index=start;
+    while(index+1<lines.length){
+      const quantity=readQuantity(tail);
+      if(!quantity||quantity.amount===null||quantity.rest)break;
+
+      const next=formattedLine(lines[index+1].original);
+      if(!/^\p{L}/u.test(next)||readQuantity(next)||ingredientHeading.test(next)||
+          stepHeading.test(next)||footer.test(next)||timeLabel.test(next)||
+          servingCount(next)!==null||isInstruction(next))break;
+      if(!quantity.unit&&!readUnit(next).unit)break;
+
+      tail=(tail+' '+next).split(separators).at(-1).trim();
+      parts.push(next);
+      index++;
+    }
+    return {text:parts.join(' '),end:index};
+  }
+
   function parseRecipe(text,initialMode=''){
     const source=String(text??'');
     if(!source.trim())return {error:'Bitte füge zuerst einen Rezepttext ein.'};
@@ -307,6 +329,7 @@
     }
 
     for(const [i,{raw,original}] of lines.entries()){
+      if(used.has(i))continue;
       if(!original){if(mode==='steps')flushStep();continue}
       const line=formattedLine(original);
       if(!line)continue;
@@ -316,8 +339,10 @@
         beginIngredients();
         group='';table=null;
         const count=servingCount(header.details);
-        const items=header.inline?parseIngredientList(header.inline,group,true,true):[];
+        const wrapped=header.inline?readWrappedIngredientList(header.inline,lines,i):null;
+        const items=wrapped?parseIngredientList(wrapped.text,group,true,true):[];
         ingredients.push(...items);
+        if(items.length)for(let row=i+1;row<=wrapped.end;row++)used.add(row);
         if((!header.inline||items.length)&&!header.details)used.add(i);
         if(count)servingEntries.push({index:i,value:count,markUsed:!header.inline||items.length>0});
         continue;

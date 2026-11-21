@@ -53,8 +53,8 @@ Die Website besteht aus statischen Dateien und benötigt keinen Build-Schritt:
 ## Lokaler Screenshot-Import
 
 Beim Anlegen sowie in den Importbereichen für Zutaten, Zubereitung und Nährwerte
-können bis zu fünf Screenshots ausgewählt werden. Unterstützt werden PNG, JPEG
-und WebP mit höchstens 10 MB und acht Megapixeln je Datei. Der erkannte Text wird
+können bis zu fünf Fotos oder Screenshots ausgewählt werden. Unterstützt werden PNG, JPEG
+und WebP mit höchstens 25 MB und 50 Megapixeln je Datei. Für die Erkennung werden große Bilder lokal auf maximal acht Megapixel verkleinert. Für Handschrift kann auf unterstützten iPhones der per Live Text aus Fotos kopierte Text direkt im Fotoimport eingefügt werden. Mengen und Einheiten bitte prüfen. Der erkannte Text wird
 vor dem vorhandenen Rezeptparser zur Korrektur angezeigt. Bilder und Quelltext
 werden weder hochgeladen noch mit dem Rezept gespeichert.
 
@@ -106,7 +106,6 @@ werden zu 500 g. Restetage erzeugen keinen weiteren Einkaufsbedarf. g/kg und
 ml/l werden zusammengefasst; andere Einheiten bleiben separat. Angaben ohne
 berechenbare Menge bleiben sichtbar. Die Mengenanzeige lässt sich aufklappen,
 pro Einkaufswoche korrigieren und auf den berechneten Bedarf zurücksetzen.
-Rezeptfilter zeigen den anteiligen Bedarf; Korrekturen erfolgen in der Gesamtübersicht.
 
 **Vor Veröffentlichung des Clients** die Migration
 `supabase/migrations/20261115095535_household_cooking_portions.sql` anwenden.

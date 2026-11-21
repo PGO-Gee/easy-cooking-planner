@@ -110,6 +110,10 @@ test('recipe lists remain lazy while plan thumbnails and detail photos load eage
   assert.equal(context.recipePhoto(dish).loading,'eager');
   assert.equal(context.recipePhoto(dish).fetchPriority,'high');
   assert.equal(context.recipePhoto({name:'Own recipe'}),null);
+  assert.equal(context.recipePhoto({name:'Pasta'},{thumbnail:true}),null);
+  assert.equal(context.recipePhoto(dish,{thumbnail:true}).src,'./images/recipes/pasta-thumb.jpg?v=2');
+  assert.equal(context.recipePhoto({name:'Unknown',catalogSourceId:'catalog-id'},{thumbnail:true}),null);
+  assert.equal(context.recipePhoto({name:'Pasta',id:'catalog-id'},{thumbnail:true,catalog:true}).src,'./images/recipes/pasta-thumb.jpg?v=2');
   const calendar=appSource.slice(appSource.indexOf('function renderCalendarContent('),appSource.indexOf('\nfunction renderCalendar(options)'));
   assert.match(calendar,/recipePhoto\(dish,\{thumbnail:true,loading:'eager'\}\)/);
 });

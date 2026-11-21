@@ -118,7 +118,8 @@ Zutaten: vier Stück Eier, 200 g Mehl, 500 g Milch, 50 g Zucker, 75 g Öl, eine 
 Zubereitung: alle Zutaten für mischen und mit dem Mixer kurz verrühren.\
 Zweitens Öl in die Pfanne Pfanne geben"`;
   const plain=source.slice(1,-1).replace(/\\\n/g,'\n');
-  for(const text of [source,plain]){
+  const wrapped=plain.replace('500 g','500\ng').replace('Prise Salz','Prise\nSalz');
+  for(const text of [source,plain,wrapped]){
     const result=parse(text);
     assert.equal(result.name,'Blini');
     assert.equal(result.servings,null);
@@ -132,6 +133,21 @@ Zweitens Öl in die Pfanne Pfanne geben"`;
     assert.deepEqual(result.unassigned,[]);
     assert.deepEqual(result.errors,[]);
   }
+});
+
+test('joins a wrapped ingredient with a decimal amount and preserves following metadata',()=>{
+  const result=parse('Zutaten: 2 Eier, 1,5\nEL\nÖl\nDauer 20 min\nZubereitung: Alles verrühren.');
+  assert.deepEqual(result.ingredients.map(({name,amount,unit})=>[name,amount,unit]),[
+    ['Eier',2,''],['Öl',1.5,'EL']
+  ]);
+  assert.equal(result.time,20);
+  assert.deepEqual(result.unassigned,[]);
+
+  const incomplete='Zutaten: 2 Eier, 1 Prise';
+  const withSteps=parse(incomplete+'\nZubereitung: Alles verrühren.');
+  assert.deepEqual(withSteps.ingredients,[]);
+  assert.deepEqual(withSteps.unassigned,[incomplete]);
+  assert.deepEqual(withSteps.steps,['Alles verrühren.']);
 });
 
 test('ingredient section lists keep decimal commas, preparation notes and parenthetical commas',()=>{

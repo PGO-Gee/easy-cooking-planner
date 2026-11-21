@@ -326,21 +326,6 @@
     color: var(--ink);
   }
 
-  .shopping-filter-label {
-    color: #b3beb2;
-  }
-
-  .shopping-meal-filter {
-    border-color: #3a463c;
-    background: #151c17;
-    color: var(--ink);
-    color-scheme: dark;
-  }
-
-  .shopping-overview {
-    color: #a8c6a8;
-  }
-
   .shopping-list {
     border-color: #303a32;
     background: #151c17;
@@ -371,19 +356,10 @@
     color: #a0aca0;
   }
 
-  .shopping-screen-top .secondary-button,
-  .shopping-meal-filter {
+  .shopping-screen-top .secondary-button {
     border-color: #3a463c;
     background: #202a22;
     color: #c3cec2;
-  }
-
-  .shopping-filter-label {
-    color: #b3beb2;
-  }
-
-  .shopping-overview {
-    color: #a8c6a8;
   }
 
   .shopping-tile {
@@ -560,7 +536,6 @@ body {
 .dish-row { border-bottom-color: #303a32; }
 .dish-icon,
 .shopping-tile-icon { background: #ffffff12; }
-.shopping-screen-tools .shopping-meal-filter { background: #151c17; }
 dialog {
   border-color: rgb(255 255 255 / 10%);
   background: rgb(27 35 29 / 95%);
@@ -695,7 +670,6 @@ body {
 #dish-form select,
 .password-sign-in input,
 .household-join-form input,
-.shopping-meal-filter,
 .shopping-add-form input,
 .search-box input {
   border-color: #3b4b5e;
@@ -709,8 +683,7 @@ body {
 #dish-form select:focus,
 .password-sign-in input:focus,
 .household-join-form input:focus,
-.shopping-add-form input:focus,
-.shopping-meal-filter:focus {
+.shopping-add-form input:focus {
   border-color: #7898c1;
   box-shadow: 0 0 0 3px rgb(120 152 193 / 22%);
 }
@@ -748,8 +721,6 @@ body {
 .pantry-suggestion:last-child { border-bottom: 0; }
 .dish-ingredients-editor #dish-ingredient-chips { background: #151e29; }
 
-.shopping-overview { color: #b6cce8; }
-.shopping-filter-label { color: #bdc9d6; }
 .shopping-list { border-color: #303d4c; background: #151e29; }
 .shopping-list li { border-bottom-color: #303d4c; }
 .shopping-list label { color: #dce5ef; }
@@ -879,7 +850,6 @@ h1,
 #dish-form .form-row label,
 #pantry-dialog .pantry-label,
 .household-dialog-content label,
-.shopping-filter-label,
 .form-row label,
 .dialog-head+input+label,
 .password-sign-in label,
@@ -892,7 +862,6 @@ h1,
 }
 .text-button,
 .starter-tip button,
-.shopping-overview,
 .auth-privacy-notice a,
 .household-code-result output { color: var(--text-accent); }
 .dish-nutrition,
@@ -1214,8 +1183,7 @@ button:disabled,
 }
 .secondary-button:hover,
 .today-button:hover { border-color: #718caf; background: #2d3f56; color: #e0ebf8; }
-.shopping-screen-top .secondary-button,
-.shopping-screen-tools .shopping-meal-filter {
+.shopping-screen-top .secondary-button {
   border-color: #3b4b5e;
   background: #202c3a;
   color: #d4deea;
