@@ -459,12 +459,26 @@ function initializeDesign(){
     shopMenuSummary.focus({preventScroll:true});
   },{icon:checkedActionIcon()});
   checkedAction.setAttribute('aria-controls','shopping-open');
+  const shoppingHeading=$('#shopping-view .shopping-section > h2');
+  const manualAction=uiButton('Nur manuelle Artikel',()=>{
+    shoppingManualOnly=!shoppingManualOnly;
+    manualAction.setAttribute('aria-pressed',String(shoppingManualOnly));
+    shoppingHeading.firstChild.textContent=shoppingManualOnly?'Manuelle Artikel ':'Einkaufsliste ';
+    renderShoppingList();
+  },{icon:'edit'});
+  manualAction.setAttribute('aria-controls','shopping-open');
+  manualAction.setAttribute('aria-pressed','false');
   const historyAction=$('#shopping-history-open'),clearAction=$('#shopping-clear');
   historyAction.prepend(uiIcon('clock'));
   clearAction.prepend(uiIcon('trash'));
-  shopMenu.panel.append(checkedAction,historyAction,clearAction);
-  $('#shopping-view .page-heading').after($('#shopping-add-form'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');$('#shopping-view .shopping-section > h2').firstChild.textContent='Einkaufsliste ';
-  shopMenu.panel.addEventListener('click',event=>{if(event.target.closest('button'))shopMenu.details.open=false});
+  shopMenu.panel.append(checkedAction,manualAction,historyAction,clearAction);
+  $('#shopping-view .page-heading').after($('#shopping-add-form'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');shoppingHeading.firstChild.textContent='Einkaufsliste ';
+  shopMenu.panel.addEventListener('click',event=>{
+    const action=event.target.closest('button');
+    if(!action)return;
+    shopMenu.details.open=false;
+    if(action===manualAction||action===clearAction)shopMenuSummary.focus({preventScroll:true});
+  });
   document.addEventListener('pointerdown',event=>{
     const open=document.querySelector('.shopping-swipe-row.is-swipe-open');
     if(open&&!open.contains(event.target))closeShoppingSwipe(open);

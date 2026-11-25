@@ -143,6 +143,34 @@ try{
   assert(await first.isVisible());
   await setCheckedVisibility('Abgehakte einblenden');
 
+  await page.evaluate(()=>{
+    const dates=rangeDates(),week=keyFor(mondayFor(dates[0]));
+    state.dishes.push({id:'shopping-filter-test',name:'Einkaufsfilter',ingredients:['Milch','Reis']});
+    dates.forEach((date,index)=>replaceDayPlan(date,{meals:index===0?['shopping-filter-test']:[],pins:[],isRest:false}));
+    state.manualShoppingItems[week]=['Milch','Küchenrolle','Spülmittel'];
+    state.shoppingChecks[week]={[manualItemKey('Spülmittel')]:true};
+    renderShoppingList();
+  });
+  await setCheckedVisibility('Nur manuelle Artikel');
+  assert(await page.getByRole('heading',{name:/Manuelle Artikel/}).isVisible());
+  const visibleItems=()=>page.locator('#shopping-open .shopping-tile:visible').evaluateAll(tiles=>tiles.map(tile=>tile.dataset.name).sort());
+  assert.deepEqual(await visibleItems(),['Küchenrolle','Milch','Spülmittel']);
+  await setCheckedVisibility('Abgehakte ausblenden');
+  assert.deepEqual(await visibleItems(),['Küchenrolle','Milch']);
+  await setCheckedVisibility('Einkaufsliste leeren');
+  assert(await page.locator('#shopping-all-checked').isVisible());
+  assert.deepEqual(await visibleItems(),[]);
+  await setCheckedVisibility('Nur manuelle Artikel');
+  assert.deepEqual(await visibleItems(),['Milch','Reis']);
+  await page.locator('#toast .toast-action').click();
+  assert.deepEqual(await visibleItems(),['Küchenrolle','Milch','Reis']);
+  await setCheckedVisibility('Einkaufsliste leeren');
+  assert(await page.locator('#shopping-all-checked').isVisible());
+  await setCheckedVisibility('Abgehakte einblenden');
+  assert.deepEqual(await visibleItems(),['Spülmittel']);
+  await setCheckedVisibility('Einkaufsliste leeren');
+  assert(await page.locator('#shopping-empty').isVisible());
+
   await page.setViewportSize({width:1440,height:900});await fixture(page);await page.locator('.day-card[data-day-index="1"] .meal-card').first().click();await page.waitForFunction(()=>uiSelectedDay===1);await page.locator('#cooking-entry-dialog').getByRole('button',{name:'Rezept ansehen',exact:true}).click();await page.locator('#recipe-detail-dialog').waitFor({state:'visible'});await page.keyboard.press('Escape');assert(await page.locator('#week-view').isVisible());
   await page.evaluate(()=>openRecipe('ui-0',{from:'dishes'}));await page.locator('#sidebar .nav-item[data-view=cooking]').click();assert(await page.locator('.prepare-hero').isVisible());
   await page.setViewportSize({width:390,height:340});await page.evaluate(()=>openDish('ui-0'));await page.locator('#editor-ingredients > summary').click();assert(await page.locator('#recipe-servings').isVisible());await page.keyboard.press('Escape');

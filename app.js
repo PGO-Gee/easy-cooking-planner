@@ -13,7 +13,8 @@ const supabaseScriptUrl='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.11
 const supabaseScriptIntegrity='sha384-TcHRA3zBbn+Lexh5n+Oil4guNPOS3rjNDpGRAN46u/s/mB2IZ50ceC6TYDU2yvgK';
 let authClient=null;
 let authClientReadyPromise=null;
-let state=emptyState(); let weekOffset=0; let toastTimer;let pantryDraft=[];let dishIngredientDraft=[];let mealDragState=null;let mealActionPointerState=null;let suppressedMealActionClick=null;let pendingShoppingClearUndo=null;let shoppingDoneExpanded=false;
+let state=emptyState(); let weekOffset=0; let toastTimer;let pantryDraft=[];let dishIngredientDraft=[];let mealDragState=null;let mealActionPointerState=null;let suppressedMealActionClick=null;let shoppingDoneExpanded=false;
+let shoppingManualOnly=false;
 let unresolvedConflicts=[];
 let pendingCatalogImports=[];
 let offlineStoreReady=false;
@@ -2941,29 +2942,47 @@ function updateShoppingSummaryCount(){
   $('#shopping-open-count').textContent=`${remaining} offen · ${checked} erledigt`;
   if(typeof updateShoppingCheckedVisibility==='function')updateShoppingCheckedVisibility(open,remaining,checked);
 }
-function renderShoppingListContent(){
-  const start=rangeStart(),days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish));
-  document.querySelectorAll('.shopping-tile').forEach(tile=>tile._disposeAssociation?.());
+function shoppingListItems(){
+  const days=planDaysInRange(),weekKeys=[...new Set(days.map(item=>item.weekKey))],selected=days.flatMap(({date,weekKey,day})=>day.map((id,position)=>({dish:state.dishes.find(d=>d.id===id),weekKey,entry:window.WochentischCookingPlan.entryAt(state,keyFor(date),position)})).filter(item=>item.dish));
   state.shoppingChecks??={};state.hiddenShoppingItems??={};state.manualShoppingItems??={};
-  const manualItems=[...new Set(weekKeys.flatMap(weekKey=>state.manualShoppingItems[weekKey]||[]))];
-  $('#shopping-period').textContent=formatRange(start);
   const counts=plannedShoppingItems(selected,state.hiddenShoppingItems);
-  manualItems.forEach(rawName=>{const name=normalizeManualItem(rawName),key=manualItemKey(name),relatedDishes=new Set(selected.filter(({dish})=>(dish.ingredients||[]).some(raw=>manualItemKey(raw)===key)).map(({dish})=>dish.name));if(!counts.has(key))counts.set(key,{name,dishes:relatedDishes,manual:true,weekKeys:new Set()});const item=counts.get(key);item.manual=true;item.manualName??=name;weekKeys.filter(weekKey=>(state.manualShoppingItems[weekKey]||[]).some(itemName=>manualItemKey(itemName)===key)).forEach(weekKey=>item.weekKeys.add(weekKey))});
-  for(const [key,item] of counts){const relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;if(relevantWeeks.every(weekKey=>state.hiddenShoppingItems[weekKey]?.includes(key)))counts.delete(key)}
   const plannedWeeksByItem=new Map();
   for(const {dish,weekKey} of selected)for(const ingredient of dish.ingredients||[]){
     const key=manualItemKey(ingredient);
     if(!plannedWeeksByItem.has(key))plannedWeeksByItem.set(key,new Set());
     plannedWeeksByItem.get(key).add(weekKey);
   }
-  const editableItemKeys=new Set([...plannedWeeksByItem.keys(),...manualItems.map(manualItemKey)]);
+  const editableItemKeys=new Set(plannedWeeksByItem.keys());
+  for(const weekKey of weekKeys)for(const rawName of state.manualShoppingItems[weekKey]||[]){
+    const name=normalizeManualItem(rawName),key=manualItemKey(name);
+    if(!key)continue;
+    editableItemKeys.add(key);
+    if(state.hiddenShoppingItems[weekKey]?.includes(key))continue;
+    if(!counts.has(key))counts.set(key,{name,dishes:new Set(),weekKeys:new Set()});
+    const item=counts.get(key);
+    item.manual=true;
+    item.manualName??=name;
+    item.manualWeeks??=new Set();
+    item.manualWeeks.add(weekKey);
+    item.weekKeys.add(weekKey);
+  }
+  if(shoppingManualOnly)for(const [key,item] of counts)if(!item.manual)counts.delete(key);
+  return {counts,weekKeys,selected,plannedWeeksByItem,editableItemKeys};
+}
+function shoppingListItemChecked(key,item){
+  return [...item.weekKeys].every(week=>shoppingItemChecked(week,key));
+}
+function renderShoppingListContent(){
+  const {counts,weekKeys,selected,plannedWeeksByItem,editableItemKeys}=shoppingListItems();
+  document.querySelectorAll('.shopping-tile').forEach(tile=>tile._disposeAssociation?.());
+  $('#shopping-period').textContent=formatRange(rangeStart());
   let editorIndex=0;
   const hasHiddenShoppingItems=selected.some(({dish,weekKey})=>(dish.ingredients||[]).some(name=>state.hiddenShoppingItems[weekKey]?.includes(manualItemKey(name))))||weekKeys.some(weekKey=>cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).length>0);
-  const open=$('#shopping-open'),done=$('#shopping-done'),empty=$('#shopping-empty');open.replaceChildren();done.replaceChildren();empty.classList.toggle('hidden',counts.size>0);empty.textContent=hasHiddenShoppingItems?'Die Einkaufsliste ist leer. Du kannst oben neue Artikel hinzufügen.':selected.length?'Für die geplanten Gerichte sind keine Zutaten eingetragen.':'Für diese 7 Tage sind keine Gerichte geplant. Du kannst oben eigene Artikel hinzufügen.';
+  const open=$('#shopping-open'),done=$('#shopping-done'),empty=$('#shopping-empty');open.replaceChildren();done.replaceChildren();empty.classList.toggle('hidden',counts.size>0);empty.textContent=shoppingManualOnly?'Keine manuell hinzugefügten Artikel.':hasHiddenShoppingItems?'Die Einkaufsliste ist leer. Du kannst oben neue Artikel hinzufügen.':selected.length?'Für die geplanten Gerichte sind keine Zutaten eingetragen.':'Für diese 7 Tage sind keine Gerichte geplant. Du kannst oben eigene Artikel hinzufügen.';
   const {shoppingCategory,shoppingCategories}=window.WochentischIngredients,grouped=new Map();
   for(const item of counts.values()){const category=shoppingCategory(item.name);if(!grouped.has(category))grouped.set(category,[]);grouped.get(category).push(item)}
-  for(const category of shoppingCategories){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>{const key=manualItemKey(item.name),relevantWeeks=item.weekKeys.size?[...item.weekKeys]:weekKeys;return relevantWeeks.filter(week=>!state.hiddenShoppingItems[week]?.includes(key)).every(week=>shoppingItemChecked(week,key))===(container===done)});if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
-    for(const item of categoryItems.sort((a,b)=>a.name.localeCompare(b.name,'de'))){const {name,dishes,manual,weekKeys:itemWeekKeys}=item,key=manualItemKey(name),checkKey=key,checked=container===done,relevantWeeks=itemWeekKeys.size?[...itemWeekKeys]:weekKeys,shell=document.createElement('div'),tile=document.createElement('button');shell.className='shopping-tile-shell';tile.type='button';tile.className=`shopping-tile${checked?' is-checked':''}`;tile.setAttribute('aria-pressed',String(checked));tile.dataset.ingredient=key;tile.dataset.name=name;tile.innerHTML=`<span class="shopping-tile-icon" aria-hidden="true">${ingredientIcon(name)}</span><span class="shopping-tile-copy"><strong><span class="shopping-strike"></span></strong><small></small></span>${checked?'<span class="shopping-tile-status" aria-label="Eingekauft">✓</span>':''}`;tile.querySelector('.shopping-strike').textContent=name;tile.querySelector('small').textContent=dishes.size?[...dishes].join(', ')+(manual?' · Manuelle Eingabe':''):'Keinem Gericht zugeordnet';
+  for(const category of shoppingCategories){const items=grouped.get(category);if(!items?.length)continue;for(const container of [open,done]){const categoryItems=items.filter(item=>shoppingListItemChecked(manualItemKey(item.name),item)===(container===done));if(!categoryItems.length)continue;const heading=document.createElement('h3');heading.className='shopping-category-title';heading.textContent=category;container.append(heading);
+    for(const item of categoryItems.sort((a,b)=>a.name.localeCompare(b.name,'de'))){const {name,dishes,manual,weekKeys:itemWeekKeys}=item,key=manualItemKey(name),checkKey=key,checked=container===done,relevantWeeks=[...itemWeekKeys],shell=document.createElement('div'),tile=document.createElement('button');shell.className='shopping-tile-shell';tile.type='button';tile.className=`shopping-tile${checked?' is-checked':''}`;tile.setAttribute('aria-pressed',String(checked));tile.dataset.ingredient=key;tile.dataset.name=name;tile.innerHTML=`<span class="shopping-tile-icon" aria-hidden="true">${ingredientIcon(name)}</span><span class="shopping-tile-copy"><strong><span class="shopping-strike"></span></strong><small></small></span>${checked?'<span class="shopping-tile-status" aria-label="Eingekauft">✓</span>':''}`;tile.querySelector('.shopping-strike').textContent=name;tile.querySelector('small').textContent=[dishes.size?[...dishes].join(', '):'',manual?'Manuelle Eingabe':''].filter(Boolean).join(' · ')||'Keinem Gericht zugeordnet';
       const mealHint=document.createElement('div');mealHint.className='shopping-tile-meal-hint';mealHint.setAttribute('role','status');const mealLabels=[...dishes].map(dishName=>{const meal=selected.find(({dish})=>dish.name===dishName)?.dish;return `${meal?.emoji||emojiMap[meal?.ingredient]||'🍽️'} ${dishName}`});const hintLabels=mealLabels.length?mealLabels:manual?['Keinem Gericht zugeordnet']:[];mealHint.textContent=hintLabels.join(', ');
       const plannedWeeks=plannedWeeksByItem.get(key)||new Set();
       const remove=event=>removeShoppingItem(name,key,weekKeys,plannedWeeks,event.detail===0);
@@ -3148,40 +3167,50 @@ async function openShoppingHistory(){
 }
 $('#shopping-history-open').addEventListener('click',openShoppingHistory);
 function clearShoppingList(){
-  pendingShoppingCheckUndo=null;
-  const dates=rangeDates(),hiddenByWeek={},manualKeysByWeek={};
-  dates.forEach(date=>{
-    const weekKey=keyFor(mondayFor(date)),day=state.plans[weekKey]?.[dayIndex(date)]||[];
-    hiddenByWeek[weekKey]??=new Set();manualKeysByWeek[weekKey]??=new Set();
-    day.forEach(id=>{const dish=state.dishes.find(item=>item.id===id);(dish?.ingredients||[]).forEach(name=>{const key=manualItemKey(name);if(key)hiddenByWeek[weekKey].add(key)})});
-    (state.manualShoppingItems?.[weekKey]||[]).forEach(name=>{const key=manualItemKey(name);if(key){hiddenByWeek[weekKey].add(key);manualKeysByWeek[weekKey].add(key)}});
-  });
-  const hasVisibleEntries=Object.entries(hiddenByWeek).some(([weekKey,keys])=>[...keys].some(key=>!state.hiddenShoppingItems?.[weekKey]?.includes(key)));
-  if(!hasVisibleEntries){pendingShoppingClearUndo=null;showToast('Die Einkaufsliste ist bereits leer.');return}
-  const previous={shoppingChecks:structuredClone(state.shoppingChecks||{}),hiddenShoppingItems:structuredClone(state.hiddenShoppingItems||{}),manualShoppingItems:structuredClone(state.manualShoppingItems||{})};
-  Object.entries(hiddenByWeek).forEach(([weekKey,keys])=>{
-    state.hiddenShoppingItems??={};state.hiddenShoppingItems[weekKey]=cleanHiddenShoppingItems([...(state.hiddenShoppingItems[weekKey]||[]),...keys]);
-    const checks=state.shoppingChecks[weekKey]||{};
-    keys.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
-    if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
-    const remaining=(state.manualShoppingItems[weekKey]||[]).filter(name=>!manualKeysByWeek[weekKey]?.has(manualItemKey(name)));
-    if(remaining.length)state.manualShoppingItems[weekKey]=remaining;else delete state.manualShoppingItems[weekKey];
-  });
+  const {counts,plannedWeeksByItem}=shoppingListItems();
+  const hideChecked=typeof shoppingHideChecked!=='undefined'&&shoppingHideChecked;
+  const filtered=shoppingManualOnly||hideChecked;
+  const removed=[];
+  for(const [key,item] of counts){
+    if(hideChecked&&shoppingListItemChecked(key,item))continue;
+    const weeks=shoppingManualOnly?item.manualWeeks:item.weekKeys;
+    for(const week of weeks){
+      const manualItems=state.manualShoppingItems[week]||[];
+      const manual=manualItems.find(name=>manualItemKey(name)===key);
+      const hideItem=!shoppingManualOnly||!plannedWeeksByItem.get(key)?.has(week);
+      const checked=shoppingItemChecked(week,key);
+      removed.push({week,key,manual,hideItem,checked});
+      if(manual){
+        const remaining=manualItems.filter(name=>manualItemKey(name)!==key);
+        if(remaining.length)state.manualShoppingItems[week]=remaining;
+        else delete state.manualShoppingItems[week];
+      }
+      if(hideItem){
+        state.hiddenShoppingItems[week]=cleanHiddenShoppingItems([...(state.hiddenShoppingItems[week]||[]),key]);
+        const checks=state.shoppingChecks[week]||{};
+        delete checks[key];
+        delete checks[`manual:${key}`];
+        if(!Object.keys(checks).length)delete state.shoppingChecks[week];
+      }
+    }
+  }
+  if(!removed.length){showToast(filtered?'Es gibt keine sichtbaren Artikel.':'Die Einkaufsliste ist bereits leer.');return}
+  if(removed.some(({key,hideItem})=>hideItem&&pendingShoppingCheckUndo?.key===key))pendingShoppingCheckUndo=null;
   save();renderShoppingList();
-  const undoState={reopenedByWeek:{},expiresAt:Date.now()+6500};
-  pendingShoppingClearUndo=undoState;
-  setTimeout(()=>{if(pendingShoppingClearUndo===undoState)pendingShoppingClearUndo=null},6500);
-  showToast('Einkaufsliste geleert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{
-    state.shoppingChecks=previous.shoppingChecks;state.hiddenShoppingItems=previous.hiddenShoppingItems;state.manualShoppingItems=previous.manualShoppingItems;
-    Object.entries(undoState.reopenedByWeek).forEach(([weekKey,keys])=>{
-      const reopened=new Set(keys),hidden=cleanHiddenShoppingItems(state.hiddenShoppingItems[weekKey]).filter(key=>!reopened.has(key));
-      if(hidden.length)state.hiddenShoppingItems[weekKey]=hidden;else delete state.hiddenShoppingItems[weekKey];
-      const checks=state.shoppingChecks[weekKey]||{};
-      reopened.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
-      if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
-    });
-    if(pendingShoppingClearUndo===undoState)pendingShoppingClearUndo=null;
-    save();renderShoppingList();showToast('Einkaufsliste wiederhergestellt.');
+  showToast(filtered?'Sichtbare Artikel entfernt.':'Einkaufsliste geleert.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{
+    for(const {week,key,manual,hideItem,checked} of removed){
+      if(manual){
+        const items=state.manualShoppingItems[week]??=[];
+        if(!items.some(name=>manualItemKey(name)===key))items.push(manual);
+      }
+      const hidden=state.hiddenShoppingItems[week];
+      if(!hideItem||!hidden?.includes(key))continue;
+      const remaining=hidden.filter(name=>name!==key);
+      if(remaining.length)state.hiddenShoppingItems[week]=remaining;
+      else delete state.hiddenShoppingItems[week];
+      if(checked)(state.shoppingChecks[week]??=Object.create(null))[key]=true;
+    }
+    save();renderShoppingList();showToast('Artikel wiederhergestellt.');
   }});
 }
 function reopenShoppingIngredients(date,dish){
@@ -3195,12 +3224,6 @@ function reopenShoppingIngredients(date,dish){
   const checks=state.shoppingChecks[weekKey]||{};
   keys.forEach(key=>{delete checks[key];delete checks[`manual:${key}`]});
   if(Object.keys(checks).length)state.shoppingChecks[weekKey]=checks;else delete state.shoppingChecks[weekKey];
-  if(pendingShoppingClearUndo){
-    if(Date.now()<=pendingShoppingClearUndo.expiresAt){
-      pendingShoppingClearUndo.reopenedByWeek[weekKey]??=[];
-      pendingShoppingClearUndo.reopenedByWeek[weekKey]=[...new Set([...pendingShoppingClearUndo.reopenedByWeek[weekKey],...keys])];
-    }else pendingShoppingClearUndo=null;
-  }
 }
 function selectedRecipeType(group){return group.querySelector('[aria-pressed="true"]')?.dataset.type||'meal'}
 function setRecipeTypeFilter(group,type){group.querySelectorAll('button[data-type]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.type===type)))}

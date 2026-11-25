@@ -512,6 +512,7 @@ html.design .ui-menu > summary { display:flex;align-items:center;justify-content
 html.design summary::-webkit-details-marker { display:none; }
 html.design .ui-menu-panel { position:absolute;z-index:45;right:0;top:calc(100% + 8px);width:min(300px,calc(100vw - 32px));max-height:calc(var(--visual-viewport-height,100dvh) - 120px);overflow:auto;display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:16px;background:var(--paper);box-shadow:0 8px 26px #101f3520; }
 html.design .ui-menu-panel button { justify-content:flex-start; }
+html.design #shopping-menu button[aria-pressed="true"] { background:var(--action);color:var(--on-action); }
 @keyframes panel-fade-in {
   from { opacity:0; }
   to { opacity:1; }
