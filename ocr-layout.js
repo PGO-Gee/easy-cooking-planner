@@ -1,12 +1,16 @@
 /* Keep visual paragraph boundaries and isolated icon noise separate from text.
    Never repair digits or units; the untouched recognition stays available. */
 (function(root){
-  function prepare(data){
-    const rawText=String(data.text||''),lines=[];
+  function readLines(data){
+    const lines=[];
     for(const block of data.blocks||[])for(const paragraph of block.paragraphs||[]){
       for(const line of paragraph.lines||[])lines.push({...line,paragraphEnd:false});
-      if(lines.length)lines[lines.length-1].paragraphEnd=true;
+      if(paragraph.lines?.length)lines[lines.length-1].paragraphEnd=true;
     }
+    return lines;
+  }
+  function prepare(data){
+    const rawText=String(data.text||''),lines=readLines(data);
     if(!lines.length)return {text:rawText,rawText};
     const heading=/^(?:zutaten|einkaufsliste|zubereitung|anleitung|zubereitungsschritte|nährwerte|(?:mein\s+)?tipp|hinweis|aufbewahrung)\b/i;
     for(const line of lines){
@@ -39,5 +43,5 @@
     }
     return {text:output.trim(),rawText};
   }
-  root.WochentischOCRLayout={prepare};if(typeof module==='object')module.exports={prepare};
+  root.WochentischOCRLayout={prepare,readLines};if(typeof module==='object')module.exports={prepare,readLines};
 })(typeof self!=='undefined'?self:globalThis);

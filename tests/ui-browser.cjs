@@ -84,16 +84,24 @@ try{
       const plannerFocusReturned=document.activeElement===plan.querySelector('summary');
       state.manualShoppingItems[keyFor(mondayFor(rangeStart()))]=['Küchenrolle'];
       openShoppingList();list.querySelector('summary').click();
-      const listPanel=sample(list.querySelector('.ui-menu-panel'));list.open=false;
+      const listPanel=sample(list.querySelector('.ui-menu-panel'));
+      $('#shopping-clear').click();
+      const clearDialog=$('#shopping-clear-dialog'),clearPanel=sample(clearDialog);
+      const clearOptionsFit=[...clearDialog.querySelectorAll('label:not([hidden]), button')].every(control=>{
+        const bounds=control.getBoundingClientRect();
+        return bounds.height>=44&&sample(control).fits;
+      });
+      await new Promise(resolve=>{clearDialog.addEventListener('close',resolve,{once:true});clearDialog.close()});
       $('.shopping-edit-button[data-ingredient="küchenrolle"]').click();
       const editor=sample($('.shopping-row-editor:not([hidden])'));
       await openRecipe('ui-0',{from:'dishes'});
-      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned};
+      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned,clearPanel,clearOptionsFit};
     });
     const condition=`${width}×${height} ${theme} ${reducedMotion}`;
     for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'||name==='plannerPanel'?0:150,fits:true},`${name} ${condition}`);
     assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,open:true,opacity:'1',backdropOpacity:'1',focused:true,draft:'Kartoffeln entfernen'},condition);
     assert.equal(panels.plannerFocusReturned,true,condition);
+    assert.equal(panels.clearPanel.fits&&panels.clearOptionsFit,true,`clear dialog ${condition}`);
   }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme()});await fixture(page);
@@ -157,19 +165,48 @@ try{
   assert.deepEqual(await visibleItems(),['Küchenrolle','Milch','Spülmittel']);
   await setCheckedVisibility('Abgehakte ausblenden');
   assert.deepEqual(await visibleItems(),['Küchenrolle','Milch']);
-  await setCheckedVisibility('Einkaufsliste leeren');
+  const clearDialog=page.getByRole('dialog',{name:'Liste leeren'});
+  const openClear=async()=>{
+    await shoppingMenu.click();
+    await page.getByRole('button',{name:'Einkaufsliste leeren',exact:true}).click();
+    assert(await clearDialog.isVisible());
+    assert.equal(await page.locator('#shopping-menu').evaluate(el=>el.open),false);
+  };
+  const clearSubmit=clearDialog.getByRole('button',{name:'Artikel entfernen'});
+  const applyClear=async()=>{
+    await clearSubmit.click();
+    await page.waitForFunction(()=>document.activeElement===$('#shopping-menu summary')&&!document.body.classList.contains('has-open-dialog'));
+  };
+  await openClear();
+  assert(await clearDialog.getByRole('radio',{name:'Nur manuelle Artikel'}).isChecked());
+  assert(!await clearDialog.getByRole('checkbox',{name:'Abgehakte Artikel einbeziehen'}).isChecked());
+  await clearDialog.getByRole('button',{name:'Abbrechen'}).click();
+  assert.deepEqual(await visibleItems(),['Küchenrolle','Milch']);
+  await openClear();
+  await applyClear();
   assert(await page.locator('#shopping-all-checked').isVisible());
   assert.deepEqual(await visibleItems(),[]);
   await setCheckedVisibility('Nur manuelle Artikel');
   assert.deepEqual(await visibleItems(),['Milch','Reis']);
   await page.locator('#toast .toast-action').click();
   assert.deepEqual(await visibleItems(),['Küchenrolle','Milch','Reis']);
-  await setCheckedVisibility('Einkaufsliste leeren');
-  assert(await page.locator('#shopping-all-checked').isVisible());
-  await setCheckedVisibility('Abgehakte einblenden');
-  assert.deepEqual(await visibleItems(),['Spülmittel']);
-  await setCheckedVisibility('Einkaufsliste leeren');
+  await openClear();
+  assert(await clearSubmit.isDisabled());
+  await clearDialog.getByRole('radio',{name:'Nur Artikel aus dem Wochenplan'}).check();
+  await applyClear();
+  assert.deepEqual(await visibleItems(),['Küchenrolle','Milch']);
+  const milk=page.locator('#shopping-open .shopping-tile[data-ingredient="milch"]');
+  assert.equal(await milk.locator('small').textContent(),'Manuelle Eingabe');
+  await milk.press('Space');
+  assert(await milk.isHidden());
+  await page.locator('#toast .toast-action').click();
+  assert(await milk.isVisible());
+  await openClear();
+  await clearDialog.getByRole('radio',{name:'Alle Artikel'}).check();
+  await clearDialog.getByRole('checkbox',{name:'Abgehakte Artikel einbeziehen'}).check();
+  await applyClear();
   assert(await page.locator('#shopping-empty').isVisible());
+  await setCheckedVisibility('Abgehakte einblenden');
 
   await page.setViewportSize({width:1440,height:900});await fixture(page);await page.locator('.day-card[data-day-index="1"] .meal-card').first().click();await page.waitForFunction(()=>uiSelectedDay===1);await page.locator('#cooking-entry-dialog').getByRole('button',{name:'Rezept ansehen',exact:true}).click();await page.locator('#recipe-detail-dialog').waitFor({state:'visible'});await page.keyboard.press('Escape');assert(await page.locator('#week-view').isVisible());
   await page.evaluate(()=>openRecipe('ui-0',{from:'dishes'}));await page.locator('#sidebar .nav-item[data-view=cooking]').click();assert(await page.locator('.prepare-hero').isVisible());

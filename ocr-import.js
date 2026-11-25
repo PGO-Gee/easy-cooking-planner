@@ -75,8 +75,67 @@
       const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
       const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
       if(!blob)throw Error('Das Bild konnte nicht vorbereitet werden.');
-      checkAbort(signal);return await blob.arrayBuffer();
+      checkAbort(signal);return {image:await blob.arrayBuffer(),width:canvas.width,height:canvas.height};
     }finally{img.src='';canvas.width=canvas.height=0}
+  }
+  const compact=value=>value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'');
+  function sameRecipe(a,b){
+    const left=compact(a),right=compact(b);
+    return Math.min(left.length,right.length)>=12&&(left.startsWith(right)||right.startsWith(left));
+  }
+  function overlap(before,after,matches){
+    let count=Math.min(before.length,after.length);
+    while(count&&!before.slice(-count).every((item,i)=>matches(item,after[i])))count--;
+    return count;
+  }
+  function combine(results){
+    const parts=[];
+    let pages=[];
+    function flush(){
+      if(!pages.length)return;
+      const meta={},ingredients=[],steps=[];
+      for(const page of pages){
+        Object.assign(meta,page.meta);
+        const shared=overlap(ingredients,page.ingredients,(a,b)=>compact(a.name)===compact(b.name)&&
+          a.amount===b.amount&&a.unit.toLowerCase()===b.unit.toLowerCase());
+        for(let i=0;i<shared;i++){
+          const index=ingredients.length-shared+i;
+          if(page.ingredients[i].note.length>ingredients[index].note.length)ingredients[index]=page.ingredients[i];
+        }
+        ingredients.push(...page.ingredients.slice(shared));
+        const next=page.steps.slice();
+        const previous=steps.at(-1);
+        if(previous&&next[0]&&next[0].number===null){
+          const left=previous.text.split(' '),right=next.shift().text.split(' ');
+          const words=overlap(left,right,(a,b)=>a.toLowerCase()===b.toLowerCase());
+          previous.text=[...left,...right.slice(words)].join(' ');
+        }
+        const repeated=overlap(steps,next,(a,b)=>a.number!==null&&a.number===b.number&&sameRecipe(a.text,b.text));
+        for(let i=0;i<repeated;i++){
+          const index=steps.length-repeated+i;
+          if(next[i].text.length>steps[index].text.length)steps[index]={...next[i]};
+        }
+        steps.push(...next.slice(repeated).map(step=>({...step})));
+      }
+      const lines=[];
+      if(meta.title)lines.push(`Rezept: ${meta.title}`);
+      if(meta.servings)lines.push(`${meta.servings} Portionen`);
+      if(meta.time)lines.push(`Gesamtzeit: ${meta.time} Min.`);
+      if(ingredients.length){
+        lines.push('Zutaten','| Zutat | Menge | Einheit | Hinweis |');
+        for(const {name,amount,unit,note} of ingredients)
+          lines.push(`| ${[name,amount,unit,note].map(value=>value.replace(/[|\t]/g,' ')).join(' | ')} |`);
+      }
+      if(steps.length)lines.push('Zubereitung',...steps.map(({number,text})=>number?`${number}. ${text}`:text));
+      parts.push(lines.join('\n'));pages=[];
+    }
+    for(const result of results){
+      if(!result.page){flush();parts.push(result.text);continue}
+      if(pages.length&&!sameRecipe(pages.at(-1).label,result.page.label))flush();
+      pages.push(result.page);
+    }
+    flush();
+    return parts.filter(Boolean).join('\n\n');
   }
   const cacheName=()=>`wochentisch-ocr-${assets.version}:${base.href}`;
   async function offlineReady(){
@@ -135,9 +194,10 @@
         checkAbort(signal);current=i+1;onProgress(`Bild ${current} von ${files.length} vorbereiten …`);
         let result;
         try{
-          const bytes=await imageBytes(files[i],signal);checkAbort(signal);
-          const data=await send('recognize',{image:bytes},[bytes]);
-          result=data.text.trim()?{index:i,text:data.text.trim(),rawText:data.rawText||data.text}:{index:i,error:'Kein lesbarer Text erkannt.'};
+          const input=await imageBytes(files[i],signal);checkAbort(signal);
+          const data=await send('recognize',input,[input.image]);
+          const text=data.page?combine([data]):data.text.trim();
+          result=text?{index:i,text,rawText:data.rawText||data.text,page:data.page}:{index:i,error:'Kein lesbarer Text erkannt.'};
         }catch(error){if(signal?.aborted)throw error;result={index:i,error:error.message}}
         results.push(result);onResult(result);
         if(failed)throw Error('Die Erkennung wurde unterbrochen. Nicht erkannte Bilder bitte erneut versuchen; bereits erkannter Text bleibt erhalten.');
@@ -145,6 +205,6 @@
       return results;
     }finally{worker?.terminate();active=false}
   }
-  const api={MAX_FILES,MAX_BYTES,MAX_PIXELS,validateFile,dimensions,validateDimensions,preview,recognize,offlineReady};
+  const api={MAX_FILES,MAX_BYTES,MAX_PIXELS,validateFile,dimensions,validateDimensions,preview,recognize,combine,offlineReady};
   root.WochentischOCR=api;if(typeof module==='object')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -620,6 +620,14 @@ html.design .ui-dialog { width:min(520px,calc(100vw - 24px));padding:20px; }
 html.design .ui-dialog > button,html.design .ui-dialog > label { display:flex;width:100%;margin:8px 0; }
 html.design .dialog-head { align-items:center;gap:10px;margin:0 0 20px; }
 html.design .dialog-head h2 { color:var(--ink);font:700 22px/1.4 var(--sans);margin:0; }
+html.design #shopping-clear-dialog { width:min(420px,calc(100vw - 24px)); }
+html.design .shopping-clear-options { display:grid;gap:4px;min-width:0;margin:0;padding:0;border:0; }
+html.design .shopping-clear-options legend { margin-bottom:8px;padding:0; }
+html.design .shopping-clear-options label,html.design .shopping-clear-checked { display:flex;align-items:center;gap:12px;min-height:44px;padding:8px 10px;border-radius:10px;font-size:14px;line-height:1.4;cursor:pointer; }
+html.design .shopping-clear-options label { background:var(--paper); }
+html.design .shopping-clear-options label:has(:checked) { background:var(--selection); }
+html.design #shopping-clear-dialog input { flex:none;width:18px;height:18px;min-height:0;margin:0;padding:0;accent-color:var(--action); }
+html.design .shopping-clear-actions { display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:16px; }
 html.design .profile-actions-menu { position:static;display:flex;flex-direction:column;min-width:0;width:100%;border:0;background:transparent;box-shadow:none;padding:0; }
 html.design .profile-action { justify-content:flex-start;background:transparent;color:var(--ink); }
 html.design input:not([type=checkbox]):not([type=range]):not([type=hidden]),html.design select,html.design textarea,html.design #dish-form input:not([type=hidden]):not([type=range]),html.design #dish-form select { font:400 16px/1.5 var(--sans);min-height:44px;border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);padding:10px;max-width:100%; }

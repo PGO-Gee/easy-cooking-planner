@@ -419,6 +419,45 @@ function renderRecipeForm(){
   $('.recipe-editor-section').hidden=false;$('#recipe-editor-heading').hidden=true;$('#dish-form .form-row').hidden=false;$('#cancel-dialog').hidden=false;$('#delete-dish').hidden=!$('#dish-id').value||recipeEditorMode==='catalog'||Boolean(trialEditor);form.querySelector('[type="submit"]').hidden=false;
   updateDishTypeFields();
 }
+function createShoppingClearDialog(){
+  const dialog=uiDialog('shopping-clear-dialog','Liste leeren');
+  dialog.insertAdjacentHTML('beforeend',`<form>
+    <fieldset class="shopping-clear-options">
+      <legend>Welche Artikel möchtest du entfernen?</legend>
+      <label><input type="radio" name="source" value="manual" required> Nur manuelle Artikel</label>
+      <label><input type="radio" name="source" value="planned"> Nur Artikel aus dem Wochenplan</label>
+      <label><input type="radio" name="source" value="all"> Alle Artikel</label>
+    </fieldset>
+    <label class="shopping-clear-checked"><input type="checkbox" name="includeChecked"> Abgehakte Artikel einbeziehen</label>
+    <div class="shopping-clear-actions">
+      <button type="button" class="secondary-button">Abbrechen</button>
+      <button type="submit" class="primary-button">Artikel entfernen</button>
+    </div>
+  </form>`);
+  const form=dialog.querySelector('form'),includeChecked=form.elements.includeChecked;
+  const submit=form.querySelector('[type="submit"]');
+  const updateSubmit=()=>{submit.disabled=!form.elements.source.value};
+  let scope,householdId;
+  form.addEventListener('change',updateSubmit);
+  form.querySelector('[type="button"]').addEventListener('click',()=>dialog.close());
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    const source=form.elements.source.value;
+    if(!source)return;
+    dialog.close();
+    if(scope===authScope&&householdId===currentHouseholdId)clearShoppingList(source,includeChecked.checked);
+  });
+  return ()=>{
+    scope=authScope;
+    householdId=currentHouseholdId;
+    form.reset();
+    if(shoppingManualOnly)form.elements.source.value='manual';
+    includeChecked.checked=!shoppingHideChecked;
+    includeChecked.closest('label').hidden=!shoppingHideChecked;
+    updateSubmit();
+    dialog.showModal();
+  };
+}
 function initializeDesign(){
   // Keep touch/mouse focus quiet while retaining visible keyboard navigation.
   document.addEventListener('pointerdown',()=>{document.documentElement.dataset.inputModality='pointer'},true);
@@ -469,8 +508,11 @@ function initializeDesign(){
   manualAction.setAttribute('aria-controls','shopping-open');
   manualAction.setAttribute('aria-pressed','false');
   const historyAction=$('#shopping-history-open'),clearAction=$('#shopping-clear');
+  const openClearDialog=createShoppingClearDialog();
   historyAction.prepend(uiIcon('clock'));
   clearAction.prepend(uiIcon('trash'));
+  clearAction.setAttribute('aria-haspopup','dialog');
+  clearAction.setAttribute('aria-controls','shopping-clear-dialog');
   shopMenu.panel.append(checkedAction,manualAction,historyAction,clearAction);
   $('#shopping-view .page-heading').after($('#shopping-add-form'));$('#shopping-add-form button[type="submit"]').replaceChildren(uiIcon('plus'));$('#shopping-add-form button[type="submit"]').setAttribute('aria-label','Artikel hinzufügen');shoppingHeading.firstChild.textContent='Einkaufsliste ';
   shopMenu.panel.addEventListener('click',event=>{
@@ -478,6 +520,7 @@ function initializeDesign(){
     if(!action)return;
     shopMenu.details.open=false;
     if(action===manualAction||action===clearAction)shopMenuSummary.focus({preventScroll:true});
+    if(action===clearAction)openClearDialog();
   });
   document.addEventListener('pointerdown',event=>{
     const open=document.querySelector('.shopping-swipe-row.is-swipe-open');
@@ -497,6 +540,6 @@ function initializeDesign(){
   configureRecipeForm();
   document.addEventListener('click',event=>document.querySelectorAll('.ui-menu[open]').forEach(menu=>{if(!menu.contains(event.target))menu.open=false}));
   document.addEventListener('keydown',event=>{if(event.key==='Escape')document.querySelectorAll('.ui-menu[open]').forEach(menu=>{menu.open=false;menu.querySelector('summary').focus()})});
-  let baseline=window.innerHeight;const keyboard=()=>{const editable=document.activeElement?.matches('input:not([type=checkbox]):not([type=range]),textarea,select');const height=window.visualViewport?.height||window.innerHeight;if(!editable)baseline=window.innerHeight;document.documentElement.classList.toggle('keyboard-open',Boolean(editable&&baseline-height>150))};window.visualViewport?.addEventListener('resize',keyboard);document.addEventListener('focusin',keyboard);document.addEventListener('focusout',()=>requestAnimationFrame(keyboard));
+  let baseline=window.innerHeight;const keyboard=()=>{const editable=document.activeElement?.matches('input:not([type=checkbox]):not([type=radio]):not([type=range]),textarea,select');const height=window.visualViewport?.height||window.innerHeight;if(!editable)baseline=window.innerHeight;document.documentElement.classList.toggle('keyboard-open',Boolean(editable&&baseline-height>150))};window.visualViewport?.addEventListener('resize',keyboard);document.addEventListener('focusin',keyboard);document.addEventListener('focusout',()=>requestAnimationFrame(keyboard));
   compactNavigationQuery.addEventListener('change',()=>{const dialog=$('#recipe-detail-dialog');if(dialog?.open&&!uiDesktop())dialog.close();renderCalendar();syncDesignNavigation()});syncDesignNavigation();
 }

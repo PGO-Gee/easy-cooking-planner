@@ -2,6 +2,7 @@
    terminating this worker also terminates its single child OCR worker. */
 importScripts('./ocr-assets.js');
 importScripts('./ocr-layout.js');
+importScripts('./ocr-cookidoo.js');
 importScripts('./vendor/ocr-7.0.0/tesseract.min.js');
 let engine;
 self.onmessage=async ({data})=>{
@@ -17,8 +18,12 @@ self.onmessage=async ({data})=>{
       await engine.setParameters({tessedit_pageseg_mode:'3'});
       self.postMessage({type:'ready'});
     }else if(data.type==='recognize'){
-      const result=await engine.recognize(new Uint8Array(data.image),{}, {text:true,blocks:true});
-      self.postMessage({type:'result',...WochentischOCRLayout.prepare(result.data)});
+      const image=new Uint8Array(data.image);
+      const result=await engine.recognize(image,{}, {text:true,blocks:true});
+      let page;
+      try{page=await WochentischOCRCookidoo.recognize(engine,image,result.data,data.width,data.height)}
+      catch{/* The original OCR still works when the browser cannot prepare the additional crops. */}
+      self.postMessage({type:'result',...WochentischOCRLayout.prepare(result.data),page});
     }
   }catch(error){self.postMessage({type:'error',message:String(error?.message||error)})}
 };
