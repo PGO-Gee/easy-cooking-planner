@@ -30,10 +30,10 @@
   <link rel="preload" href="./fonts/comic-relief/ComicRelief-Bold.ttf" as="font" type="font/ttf" crossorigin />
   <link rel="stylesheet" href="styles.css?v=20261125-2" />
   <link rel="stylesheet" href="interaction.css?v=20261120-3" />
-  <link rel="stylesheet" href="recipes-shopping.css?v=20261121-2" />
+  <link rel="stylesheet" href="recipes-shopping.css?v=20261125-2" />
   <link rel="stylesheet" href="auth.css?v=20261121-1" />
   <link rel="stylesheet" href="mobile.css?v=20261121-1" />
-  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261121-1" media="(prefers-color-scheme: dark)" />
+  <link id="theme-stylesheet" rel="stylesheet" href="dark-theme.css?v=20261125-1" media="(prefers-color-scheme: dark)" />
 </head>
 <body>
   <main id="startup-gate" role="status" aria-live="polite">
@@ -156,8 +156,8 @@
   <dialog id="shopping-history-dialog" aria-labelledby="shopping-history-title">
     <section class="shopping-history-content">
       <div class="dialog-head">
-        <h2 id="shopping-history-title">Verlauf</h2>
-        <form method="dialog"><button class="close-button" aria-label="Schließen" autofocus>×</button></form>
+        <h2 id="shopping-history-title" tabindex="-1" autofocus>Verlauf</h2>
+        <form method="dialog"><button class="close-button" aria-label="Schließen">×</button></form>
       </div>
       <p id="shopping-history-status" role="status"></p>
       <ul id="shopping-history-list" role="list"></ul>
@@ -188,9 +188,9 @@
   <script src="local-store.js?v=20261106-1"></script>
   <script src="ingredient-catalog.js?v=20261117-3"></script>
   <script src="ocr-assets.js?v=20261108-9"></script>
-  <script src="ocr-import.js?v=20261125-1"></script>
-  <script src="ocr-import-ui.js?v=20261125-1"></script>
-  <script src="recipe-import.js?v=20261121-1"></script>
+  <script src="ocr-import.js?v=20261125-2"></script>
+  <script src="ocr-import-ui.js?v=20261125-3"></script>
+  <script src="recipe-import.js?v=20261125-1"></script>
   <script src="recipe-model.js?v=20261117-4"></script>
   <script src="cooking-plan.js?v=20261118-3"></script>
   <script src="planning-ui.js?v=20261121-1"></script>
@@ -198,8 +198,8 @@
   <script src="sync-api.js?v=3"></script>
   <script src="sync-write-barrier.js?v=1"></script>
   <script src="sync-coordinator.js?v=3"></script>
-  <script src="ui.js?v=20261125-2"></script>
-  <script src="app.js?v=20261125-2"></script>
+  <script src="ui.js?v=20261125-3"></script>
+  <script src="app.js?v=20261125-4"></script>
   <script>
     if ('serviceWorker' in navigator) {
       let reloadAfterUpdate = false;

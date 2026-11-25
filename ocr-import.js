@@ -79,9 +79,9 @@
     }finally{img.src='';canvas.width=canvas.height=0}
   }
   const compact=value=>value.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,'');
-  function sameRecipe(a,b){
+  function sameTextPrefix(a,b){
     const left=compact(a),right=compact(b);
-    return Math.min(left.length,right.length)>=12&&(left.startsWith(right)||right.startsWith(left));
+    return Boolean(left&&left===right)||(Math.min(left.length,right.length)>=12&&(left.startsWith(right)||right.startsWith(left)));
   }
   function overlap(before,after,matches){
     let count=Math.min(before.length,after.length);
@@ -97,10 +97,11 @@
       for(const page of pages){
         Object.assign(meta,page.meta);
         const shared=overlap(ingredients,page.ingredients,(a,b)=>compact(a.name)===compact(b.name)&&
-          a.amount===b.amount&&a.unit.toLowerCase()===b.unit.toLowerCase());
+          (!a.amount||!b.amount||(a.amount===b.amount&&a.unit.toLowerCase()===b.unit.toLowerCase())));
         for(let i=0;i<shared;i++){
           const index=ingredients.length-shared+i;
-          if(page.ingredients[i].note.length>ingredients[index].note.length)ingredients[index]=page.ingredients[i];
+          const old=ingredients[index],next=page.ingredients[i];
+          if((next.amount&&!old.amount)||(next.amount===old.amount&&next.note.length>old.note.length))ingredients[index]=next;
         }
         ingredients.push(...page.ingredients.slice(shared));
         const next=page.steps.slice();
@@ -110,7 +111,7 @@
           const words=overlap(left,right,(a,b)=>a.toLowerCase()===b.toLowerCase());
           previous.text=[...left,...right.slice(words)].join(' ');
         }
-        const repeated=overlap(steps,next,(a,b)=>a.number!==null&&a.number===b.number&&sameRecipe(a.text,b.text));
+        const repeated=overlap(steps,next,(a,b)=>a.number!==null&&a.number===b.number&&sameTextPrefix(a.text,b.text));
         for(let i=0;i<repeated;i++){
           const index=steps.length-repeated+i;
           if(next[i].text.length>steps[index].text.length)steps[index]={...next[i]};
@@ -130,8 +131,8 @@
       parts.push(lines.join('\n'));pages=[];
     }
     for(const result of results){
-      if(!result.page){flush();parts.push(result.text);continue}
-      if(pages.length&&!sameRecipe(pages.at(-1).label,result.page.label))flush();
+      if(!result?.page){flush();if(result?.text)parts.push(result.text);continue}
+      if(pages.length&&!sameTextPrefix(pages.at(-1).label,result.page.label))flush();
       pages.push(result.page);
     }
     flush();

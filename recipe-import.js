@@ -294,13 +294,24 @@
     return {text:parts.join(' '),end:index};
   }
 
-  function parseRecipe(text,initialMode=''){
+  function isInterfaceText(line){
+    const text=line.trim().replace(/^[^\p{L}\d]+/u,'').replace(/[\s:…]+$/u,'');
+    return /^(?:heute kochen|jetzt kochen|rezept speichern|rezept teilen|zum rezept springen|rezept drucken|weitere rezepte|ähnliche rezepte|alle kommentare (?:ansehen|anzeigen)|video abspielen|anzeige|werbung|gesponsert|anzeige ausblenden|cookies (?:akzeptieren|ablehnen)|folge mir(?: auf [\w.]+)?)$/iu.test(text)||
+      /^(?:(?:anzeige|werbung)\s*:\s*\S|gesponsert von\s+\S)/iu.test(text)||
+      /^(?:\d{1,2}:\d{2}\s+\d{1,3}%|\d+(?:[.,]\d+)?\s*(?:k\s*)?(?:likes?|aufrufe|kommentare|bewertungen))$/iu.test(text)||
+      /^\s*[★☆⭐]{3,}\s*[1-5](?:[.,]\d+)?(?:\s*\([\d.,]+\s*k?\))?\s*$/iu.test(line)||
+      /^(?:für\s*dich\s+)?entdecken\s+meine\s*rezepte\s+meine\s*woche(?:\s+einkaufen)?$/iu.test(text);
+  }
+
+  function parseRecipe(text,initialMode='',review){
     const source=String(text??'');
     if(!source.trim())return {error:'Bitte füge zuerst einen Rezepttext ein.'};
     if(source.length>MAX_SOURCE)return {error:'Der Text ist zu lang. Bitte kürze ihn auf höchstens 50.000 Zeichen.'};
     const normalized=source.replace(/\r\n?|[\u2028\u2029]/g,'\n');
     const rawLines=normalized.split('\n');
+    const ignoredRows=new Set(rawLines.flatMap((line,row)=>isInterfaceText(line)?[row]:[]));
     const lines=normalized.replace(/^(\s*)["„“]([\s\S]*)["“”](\s*)$/,'$1$2$3').split('\n').flatMap((line,row)=>{
+      if(ignoredRows.has(row))return [];
       if(row<rawLines.length-1)line=line.replace(/\\[ \t]*$/,'');
       return splitRecipeLine(line.replace(/：/g,':')).map(raw=>({row,raw,original:raw.trim()}));
     });
@@ -423,6 +434,13 @@
     const time=applyMetadata(durationEntries,used,primaryTimes.length?primaryTimes:durationEntries);
     const unassignedRows=new Set(lines.filter((line,index)=>line.original&&!used.has(index)).map(line=>line.row));
     const unassigned=rawLines.filter((_,row)=>unassignedRows.has(row));
+    if(review){
+      const usedRows=new Set([...used].map(index=>lines[index].row));
+      rawLines.forEach((_,row)=>{
+        if(ignoredRows.has(row))review.set(row,'App- oder Webseitentext');
+        else if(unassignedRows.has(row))review.set(row,usedRows.has(row)?'Teilweise zugeordnet':'Nicht zugeordnet');
+      });
+    }
     const errors=[];
     if(steps.length>100)errors.push('Es wurden mehr als 100 Zubereitungsschritte erkannt.');
     if(steps.some(step=>step.length>1200))errors.push('Ein Zubereitungsschritt ist länger als 1.200 Zeichen.');
@@ -430,6 +448,11 @@
     return {name,servings,time,ingredients,steps,unassigned,errors};
   }
   function parse(text){return parseRecipe(text)}
+  function reviewLines(text){
+    const review=new Map();
+    parseRecipe(text,'',review);
+    return review;
+  }
   function parseSection(source,section){
     const text=String(source??'');if(!text.trim())return {error:'Bitte füge zuerst einen Text ein.'};
     if(text.length>MAX_SOURCE)return {error:'Der Text ist zu lang. Bitte kürze ihn auf höchstens 50.000 Zeichen.'};
@@ -474,5 +497,5 @@
     }
     return {error:'Dieser Bereich kann nicht importiert werden.'};
   }
-  return Object.freeze({parse,parseSection,mergeSection,MAX_SOURCE});
+  return Object.freeze({parse,parseSection,mergeSection,reviewLines,MAX_SOURCE});
 });

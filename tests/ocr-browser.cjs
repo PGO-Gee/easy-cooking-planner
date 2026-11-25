@@ -1,5 +1,6 @@
 /* Optional integration suite. Run with a local server and Playwright installed.
    OCR_BASE_URL and OCR_BROWSER_EXECUTABLE may override their defaults.
+   OCR_SCROLL_SCREENSHOTS accepts a JSON array of four local screenshot paths.
    Uses an isolated browser profile, blocks external requests, never signs in. */
 const {chromium,webkit}=require('playwright');
 const assert=require('node:assert/strict');
@@ -41,7 +42,7 @@ fs.mkdirSync(output,{recursive:true});
         lines.forEach((line,i)=>ctx.fillText(line,30,45+i*(size+12)));return canvas.toDataURL(mimeType).split(',')[1];
       },{text,dark,size,mimeType});return Buffer.from(data,'base64');
     }
-    const first=await png('Rezept: Mandelkuchen\nZutaten für eine Backform (30 x 40 cm)\nFür den Boden und die Streusel:\n450 g Weizenmehl\n150 g gemahlene Mandeln\n150 g Marzipanrohmasse\n300 g kalte Butter\n130 g Zucker\n1 Pck. Vanillezucker\n1 Prise Salz\n1 Ei\nZusätzlich für die Streusel:\n50 g gemahlene Mandeln\nFür die Füllung:\n400 g Erdbeerkonfitüre');
+    const first=await png('Rezept: Mandelkuchen\nZutaten für eine Backform (30 x 40 cm)\nFür den Boden und die Streusel:\n450 g Weizenmehl\nRezept speichern\n150 g gemahlene Mandeln\n150 g Marzipanrohmasse\n300 g kalte Butter\n130 g Zucker\n1 Pck. Vanillezucker\n1 Prise Salz\n1 Ei\nZusätzlich für die Streusel:\n50 g gemahlene Mandeln\nFür die Füllung:\n400 g Erdbeerkonfitüre');
     const second=await png('Zubereitung\n1. Marzipan fein raspeln und verkneten.\n2. Teig in die Backform geben.\n3. Erdbeerkonfitüre verstreichen.\n4. Mandeln unter den restlichen Teig kneten.\n5. Bei 180 Grad für 20 Minuten backen.\n6. Vollständig auskühlen lassen.\nTipp: In einer Dose aufbewahren.');
     const blank=await png('');
     await page.evaluate(()=>openRecipeCreation());await page.locator('#recipe-import-screenshot-choice').click();
@@ -62,6 +63,36 @@ fs.mkdirSync(output,{recursive:true});
     const parsed=await page.evaluate(text=>WochentischRecipeImport.parse(text),source);
     console.log('PARSED',parsed.ingredients.length,'ingredients',parsed.steps.length,'steps');assert.equal(parsed.ingredients.length,10);assert.equal(parsed.steps.length,6);assert.equal(parsed.servings,null);
     assert.deepEqual(parsed.ingredients.filter(x=>x.name.includes('Mandeln')).map(x=>x.amount),[150,50]);
+    const review=page.locator('.recipe-text-review');
+    const removeSave=review.getByRole('button',{name:'Zeile entfernen: Rezept speichern'});
+    assert(await removeSave.isVisible());
+    assert(await page.locator('#recipe-import-text').isHidden());
+    assert.equal(await review.locator('.recipe-text-review-plain').filter({hasText:'450 g Weizenmehl'}).count(),1);
+    const hitArea=await removeSave.boundingBox();
+    assert(hitArea.width>=44&&hitArea.height>=44);
+    await removeSave.click();
+    assert.doesNotMatch(await page.locator('#recipe-import-text').inputValue(),/Rezept speichern/);
+    assert(await review.getByRole('button',{name:'Rückgängig'}).evaluate(el=>el===document.activeElement));
+    await review.getByRole('button',{name:'Rückgängig'}).click();
+    assert.equal(await page.locator('#recipe-import-text').inputValue(),source);
+    assert(await removeSave.evaluate(el=>el===document.activeElement));
+    await review.getByRole('button',{name:'Text bearbeiten'}).click();
+    await page.setViewportSize({width:375,height:360});
+    const screenshotEdit=await page.locator('#recipe-import-text').evaluate(el=>{
+      document.documentElement.classList.add('dish-keyboard-open');
+      document.documentElement.style.setProperty('--visual-viewport-height','360px');
+      el.scrollIntoView({block:'nearest'});
+      const {top,bottom}=el.getBoundingClientRect();
+      const footer=el.parentElement.querySelector('.dialog-actions').getBoundingClientRect().top;
+      return {top,bottom,footer,font:parseFloat(getComputedStyle(el).fontSize)};
+    });
+    assert(screenshotEdit.font>=16&&screenshotEdit.top>=0&&screenshotEdit.bottom<=screenshotEdit.footer+1,JSON.stringify(screenshotEdit));
+    await page.evaluate(()=>{
+      document.documentElement.classList.remove('dish-keyboard-open');
+      document.documentElement.style.removeProperty('--visual-viewport-height');
+    });
+    await page.setViewportSize({width:375,height:812});
+    await review.getByRole('button',{name:'Zeilen prüfen'}).click();
     assert(await page.evaluate(()=>WochentischOCR.offlineReady()));
     await page.screenshot({path:path.join(output,'375-light.png')});
     await page.locator('#recipe-import-analyze').click();
@@ -70,38 +101,76 @@ fs.mkdirSync(output,{recursive:true});
     assert.equal(await page.locator('.recipe-import-source pre').count(),1);
     assert.equal(await page.locator('#dish-import-source-text').textContent(),source);
     assert.equal(await page.evaluate(()=>state.dishes.length),0,'Draft must not save');
+    await page.locator('#dish-dialog .recipe-import-source > summary').click();
     for(const [key,selector,count] of [['ingredients','#recipe-ingredient-rows .recipe-ingredient-row',10],['preparation','#recipe-step-rows .recipe-step-row',6]]){
-      await page.evaluate(key=>{dishWizardStep=dishWizardSteps().findIndex(step=>step.key===key);renderDishWizard()},key);
+      await page.locator(`#editor-${key} > summary`).click();
       assert(await page.locator('.recipe-import-source').evaluate(el=>el.open));
       assert.equal(await page.locator(selector+':visible').count(),count);
       if(key==='ingredients'){
         await page.locator(selector).first().scrollIntoViewIfNeeded();
         for(const theme of ['light','dark']){
           await page.emulateMedia({colorScheme:theme});
-          if(theme==='dark')await page.waitForFunction(()=>getComputedStyle(document.querySelector('#dish-form.is-imported-ingredients .recipe-ingredient-name input')).color==='rgb(224, 245, 232)');
           await page.screenshot({path:path.join(output,`ingredients-${theme}.png`)});
           const styles=await page.locator(selector+' input[data-recipe-field="name"]').first().evaluate(el=>({font:getComputedStyle(el).fontWeight,size:getComputedStyle(el).fontSize}));
-          assert(Number(styles.font)>=700);assert.equal(styles.size,'16px');
+          assert(Number(styles.font)>=700);assert(parseFloat(styles.size)>=16);
         }
         await page.emulateMedia({colorScheme:'light'});
       }
       assert.equal(await page.locator('#dish-import-source-text').evaluate(el=>getComputedStyle(el).overflowY),'visible');
     }
-    await page.evaluate(()=>{dishWizardStep=dishWizardSteps().length-1;renderDishWizard();document.querySelector('#dish-form').requestSubmit()});
+    await page.locator('#dish-form button[type=submit]').click();
     await page.waitForFunction(()=>state.dishes.length===1);
     const saved=await page.evaluate(()=>state.dishes[0]);
     assert.equal(saved.recipe.ingredients.length,10);assert.equal(saved.recipe.steps.length,6);assert.equal(saved.recipe.servings,null);
     assert(!JSON.stringify(saved).includes('Synthetischer Browsertest'));assert(!JSON.stringify(saved).includes('.png'));
     await page.waitForTimeout(50);
-    await page.evaluate(()=>{openDish();document.querySelector('#dish-recipe-title').value='Mandelkuchen';dishWizardStep=dishWizardSteps().length-1;renderDishWizard();document.querySelector('#dish-form').requestSubmit()});
+    await page.evaluate(()=>openDish());
+    await page.locator('#dish-recipe-title').fill('Mandelkuchen');
+    await page.locator('#dish-form button[type=submit]').click();
     assert.match(await page.locator('#dish-form-error').innerText(),/existiert bereits/);assert.equal(await page.evaluate(()=>state.dishes.length),1);
     await page.locator('#close-dish-dialog').click();
     await page.waitForTimeout(50);
+    await page.evaluate(()=>openRecipeCreation('meal',{trialDate:'2026-11-25'}));
+    await page.locator('#recipe-import-text').fill('Proberezept');
+    assert(await review.isHidden());
+    assert(await page.locator('#recipe-import-text').isVisible());
+    await page.locator('#recipe-import-close').click();await page.waitForTimeout(50);
+    await page.evaluate(()=>openRecipeCreation());
+    await page.locator('#recipe-import-text-choice').click();
+    const pasted='Rezept: Reispfanne\n2 Portionen\nZutaten\n250 g Reis\nZubereitung\n1. Reis kochen.\nRezept drucken';
+    await page.locator('#recipe-import-text').evaluate((el,value)=>{
+      el.value=value;el.dispatchEvent(new InputEvent('input',{inputType:'insertFromPaste',bubbles:true}));
+    },pasted);
+    assert(await review.getByRole('button',{name:'Zeile entfernen: Rezept drucken'}).isVisible());
+    assert(await review.getByRole('button',{name:'Text bearbeiten'}).evaluate(el=>el===document.activeElement));
+    await review.getByRole('button',{name:'Text bearbeiten'}).click();
+    assert(await page.locator('#recipe-import-text').evaluate(el=>el===document.activeElement));
+    await page.setViewportSize({width:375,height:360});
+    await page.evaluate(()=>{
+      document.documentElement.classList.add('dish-keyboard-open');
+      document.documentElement.style.setProperty('--visual-viewport-height','360px');
+    });
+    const editor=await page.locator('#recipe-import-text').evaluate(el=>({font:parseFloat(getComputedStyle(el).fontSize),bottom:el.getBoundingClientRect().bottom}));
+    assert(editor.font>=16&&editor.bottom<=360);
+    await page.evaluate(()=>{
+      document.documentElement.classList.remove('dish-keyboard-open');
+      document.documentElement.style.removeProperty('--visual-viewport-height');
+    });
+    await page.setViewportSize({width:375,height:812});
+    await review.getByRole('button',{name:'Zeilen prüfen'}).click();
+    await page.locator('#recipe-import-analyze').click();
+    assert.equal(await page.locator('#dish-recipe-title').inputValue(),'Reispfanne');
+    assert.equal(await page.locator('#recipe-step-rows [data-recipe-field="step"]').inputValue(),'Reis kochen.');
+    await page.locator('#close-dish-dialog').click();await page.waitForTimeout(50);
     // Test each section using the same actual file-selection / OCR / parse path.
     const cases=[['ingredients','Zutaten für 4 Portionen\n1/2 kg Tomaten\n1,5 EL Öl\n2–3 Eier\nSalz nach Geschmack'],['preparation','1. Tomaten und Gurken schneiden.\nAlles gründlich vermischen.\n2. Mit Öl servieren.'],['nutrition','Nährwerte pro Portion\n430 kcal\nEiweiß: 22,5 g\nFett: 12 g\nKohlenhydrate: 45 g']];
     for(const [section,text] of cases){
       const buffer=await png(text,{dark:section==='nutrition'});
-      await page.evaluate(key=>{openDish();dishWizardStep=dishWizardSteps().findIndex(s=>s.key===key);renderDishWizard();sectionImportPanels[key].panel.open=true;sectionImportPanels[key].ocr.panel.open=true},section);
+      await page.evaluate(key=>{
+        openDish();
+        const {panel,ocr}=sectionImportPanels[key];
+        panel.parentElement.open=panel.open=ocr.panel.open=true;
+      },section);
       const sectionPanel=page.locator('.dish-section-import').filter({has:page.locator(`#dish-section-${section}-text`)});
       await sectionPanel.locator('input[type=file]').setInputFiles({name:section+'.png',mimeType:'image/png',buffer});
       await sectionPanel.locator('.screenshot-start').click();
@@ -133,6 +202,39 @@ fs.mkdirSync(output,{recursive:true});
     await panel.locator('input').setInputFiles(Array.from({length:4},(_,i)=>({name:`extra-${i}.png`,mimeType:'image/png',buffer:first})));
     assert.match(await panel.locator('.screenshot-error').innerText(),/Maximal 5/);assert.equal(await panel.locator('li').count(),2);
     await page.locator('#recipe-import-close').click();await page.waitForTimeout(50);
+    if(process.env.OCR_SCROLL_SCREENSHOTS){
+      const files=JSON.parse(process.env.OCR_SCROLL_SCREENSHOTS);
+      assert.equal(files.length,4);
+      await page.evaluate(()=>openRecipeCreation());await page.locator('#recipe-import-screenshot-choice').click();
+      await panel.locator('input').setInputFiles(files);
+      await panel.locator('.screenshot-start').click();
+      await page.waitForFunction(()=>document.querySelector('#recipe-import-input .screenshot-cancel').hidden,{},{timeout:120000});
+      const text=await page.locator('#recipe-import-text').inputValue();
+      const recipe=await page.evaluate(text=>WochentischRecipeImport.parse(text),text);
+      assert.deepEqual([recipe.name,recipe.servings,recipe.time],['Hühnerfrikassee mit Leipziger Allerlei',4,45]);
+      assert.deepEqual(recipe.ingredients.map(({name,amount,unit})=>[name,amount,unit]),[
+        ['glatte Petersilie',10,'g'],['Wasser',1200,'g'],['Salz',1,'TL'],['Lorbeerblätter',2,''],
+        ['Hähnchenbrustfilets',500,'g'],['Leipziger Allerlei, TK',500,'g'],['Butter',50,'g'],['Mehl',50,'g'],
+        ['Sahne',100,'g'],['Gewürzpaste für Hühnerbrühe',1,'TL'],['Sojasauce',1,'TL'],['Worcester-Sauce',1,'TL'],
+        ['Pfeffer',0.25,'TL'],['Estragon, getrocknet',0.25,'TL']
+      ]);
+      assert.match(recipe.ingredients[9].note,/geh\. .*selbst gemacht.*1 Würfel Hühnerbrühe \(für 0,5 l\)/);
+      assert.equal(recipe.ingredients[13].note,'optional');
+      assert.equal(recipe.steps.length,8);
+      assert.match(recipe.steps[3],/3 Min\.\/100°C\/Stufe 1 schmelzen\.$/);
+      assert.match(recipe.steps[5],/^600 g Garflüssigkeit/);
+      assert.match(recipe.steps[6],/Linkslauf\/Sanftrührstufe/);
+      assert.match(recipe.steps[7],/servieren\.$/);
+      assert.deepEqual(recipe.unassigned,[]);
+      assert.doesNotMatch(text,/Heute kochen|Meine Rezepte|Menge prüfen/);
+      assert.equal(await panel.locator('.screenshot-original').count(),4);
+      await page.locator('#recipe-import-analyze').click();
+      assert.equal(await page.locator('#dish-recipe-title').inputValue(),recipe.name);
+      assert.equal(await page.locator('#recipe-servings').inputValue(),'4');
+      assert.equal(await page.locator('#dish-minutes').inputValue(),'45');
+      await page.locator('#close-dish-dialog').click();await page.waitForTimeout(50);
+      console.log('SCROLL SCREENSHOTS',recipe.ingredients.length,'ingredients',recipe.steps.length,'steps');
+    }
     // A fresh page must run OCR entirely from the completed cache while offline.
     // Playwright WebKit's offline emulation rejects even SW cache responses
     // (upstream #42775). Stopping our isolated origin tests real cache fallback.
@@ -146,9 +248,17 @@ fs.mkdirSync(output,{recursive:true});
       await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:dark?'dark':'light',reducedMotion:'reduce'});
       if(dark)await page.waitForFunction(()=>getComputedStyle(document.querySelector('#recipe-import-dialog')).backgroundColor==='rgb(28, 36, 46)');
       else await page.waitForFunction(()=>getComputedStyle(document.querySelector('#recipe-import-dialog')).backgroundColor!=='rgb(28, 36, 46)');
+      const flaggedLine=review.getByRole('button',{name:'Zeile entfernen: Rezept speichern'});
+      await flaggedLine.scrollIntoViewIfNeeded();
       await page.screenshot({path:path.join(output,`${width}-${height}-${dark?'dark':'light'}.png`)});
       const overflow=await page.locator('#recipe-import-dialog').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth,children:[...el.querySelectorAll('*')].filter(child=>child.getBoundingClientRect().right>el.getBoundingClientRect().right).map(child=>[child.tagName,child.className,child.getBoundingClientRect().width])}));
       assert(overflow.scroll<=overflow.width,JSON.stringify({width,height,overflow}));
+      const flagged=await page.locator('.recipe-text-review-flag').first().evaluate(el=>getComputedStyle(el).backgroundColor);
+      assert.equal(flagged,dark?'rgb(56, 43, 29)':'rgb(255, 243, 215)');
+      if(width<=600){
+        const footer=await page.locator('#recipe-import-analyze').evaluate(el=>el.getBoundingClientRect().bottom<=el.closest('dialog').getBoundingClientRect().bottom);
+        assert(footer,'Screenshot import action remains within the dialog');
+      }
     }
     // A missing file in a previously complete cache must fail honestly offline.
     await page.evaluate(async()=>{

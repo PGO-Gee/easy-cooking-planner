@@ -103,3 +103,29 @@ test('an isolated indentation never splits a continuation line',()=>{
   const input=layout([line('Zubereitung'),line('Gemüse schneiden.'),line('Mit Öl servieren.',60)]);
   assert.equal(require('../recipe-import.js').parse(prepare(input).text).steps.length,1);
 });
+
+test('Cookidoo scroll overlaps retain the complete step and the readable amount',()=>{
+  const ingredient=(name,amount,unit='',note='')=>({name,amount,unit,note});
+  const step=(number,text)=>({number,text});
+  const first={page:{label:'Kartoffeln mit grüner Sauce',meta:{title:'Kartoffeln mit grüner Sauce',servings:4,time:45},
+    ingredients:[ingredient('Öl','1','TL'),ingredient('Öl','2','TL'),ingredient('Pfeffer','','','Menge prüfen: YaTL')],
+    steps:[step(1,'Kartoffeln und Salz in den Mixtopf geben, 3 Min./')]}};
+  const second={page:{label:'Kartoffeln mit grüner Sau',meta:{},
+    ingredients:[ingredient('Pfeffer','1/4','TL'),ingredient('Brühe','1','','selbst gemacht')],
+    steps:[step(1,'Kartoffeln und Salz in den Mixtopf geben, 3 Min./100°C/Stufe 1 garen.'),step(2,'Alles servieren.')]}};
+  const recipe=require('../recipe-import.js').parse(ocr.combine([first,second]));
+  assert.deepEqual(recipe.ingredients.map(({name,amount})=>[name,amount]),[['Öl',1],['Öl',2],['Pfeffer',0.25],['Brühe',1]]);
+  assert.deepEqual(recipe.steps,['Kartoffeln und Salz in den Mixtopf geben, 3 Min./100°C/Stufe 1 garen.','Alles servieren.']);
+  assert.equal(recipe.servings,4);
+  assert.equal(recipe.time,45);
+  assert.deepEqual(recipe.unassigned,[]);
+});
+
+test('stitching keeps different amounts and respects gaps between screenshots',()=>{
+  const first={page:{label:'Suppe',meta:{},ingredients:[{name:'Salz',amount:'1',unit:'TL',note:''}],steps:[]}};
+  const second={page:{label:'Suppe',meta:{},ingredients:[{name:'Salz',amount:'2',unit:'TL',note:''}],steps:[]}};
+  const parse=require('../recipe-import.js').parse;
+  assert.deepEqual(parse(ocr.combine([first,second])).ingredients.map(item=>item.amount),[1,2]);
+  assert.deepEqual(parse(ocr.combine([first,null,first])).ingredients.map(item=>item.amount),[1,1]);
+  assert.equal(ocr.combine([{text:'250 g Reis'},{text:'250 g Reis'}]),'250 g Reis\n\n250 g Reis');
+});

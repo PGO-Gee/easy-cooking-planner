@@ -92,16 +92,21 @@ try{
         return bounds.height>=44&&sample(control).fits;
       });
       await new Promise(resolve=>{clearDialog.addEventListener('close',resolve,{once:true});clearDialog.close()});
+      list.querySelector('summary').click();$('#shopping-history-open').click();
+      const history=$('#shopping-history-dialog'),historyPanel=sample(history);
+      const historyTitleFocused=document.activeElement===$('#shopping-history-title');
+      await new Promise(resolve=>{history.addEventListener('close',resolve,{once:true});history.close()});
       $('.shopping-edit-button[data-ingredient="küchenrolle"]').click();
       const editor=sample($('.shopping-row-editor:not([hidden])'));
       await openRecipe('ui-0',{from:'dishes'});
-      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned,clearPanel,clearOptionsFit};
+      return {panels:{planPanel,plannerPanel,listPanel,editor,recipe:sample($('#cooking-content'))},plannerOpening,plannerFocusReturned,clearPanel,clearOptionsFit,historyPanel,historyTitleFocused};
     });
     const condition=`${width}×${height} ${theme} ${reducedMotion}`;
     for(const [name,panel] of Object.entries(panels.panels))assert.deepEqual(panel,{duration:reducedMotion==='reduce'||name==='plannerPanel'?0:150,fits:true},`${name} ${condition}`);
     assert.deepEqual(panels.plannerOpening,{menuOpenWhenFocused:false,open:true,opacity:'1',backdropOpacity:'1',focused:true,draft:'Kartoffeln entfernen'},condition);
     assert.equal(panels.plannerFocusReturned,true,condition);
     assert.equal(panels.clearPanel.fits&&panels.clearOptionsFit,true,`clear dialog ${condition}`);
+    assert.equal(panels.historyPanel.fits&&panels.historyTitleFocused,true,`history dialog ${condition}`);
   }
   for(const [width,height] of [[320,568],[390,844],[393,852],[430,932],[844,390],[852,393],[1024,768],[1280,800],[1440,900]])for(const theme of ['light','dark']){
     await page.setViewportSize({width,height});await page.emulateMedia({colorScheme:theme,reducedMotion:'reduce'});await page.evaluate(()=>{themeOverride=null;applyTheme()});await fixture(page);
@@ -207,6 +212,49 @@ try{
   await applyClear();
   assert(await page.locator('#shopping-empty').isVisible());
   await setCheckedVisibility('Abgehakte einblenden');
+
+  await page.evaluate(async()=>{
+    await initializeOfflineData();
+    const week=keyFor(mondayFor(rangeStart()));
+    state.manualShoppingItems[week]=['Milch'];
+    renderShoppingList();
+    window.__historyPreviousClient=authClient;
+    currentHouseholdId='isolated-shopping-history';
+    authClient={rpc:async function(name,args){
+      if(name==='record_shopping_clear'){
+        window.__recordedShoppingClear=args;
+        return {error:null};
+      }
+      if(name==='read_shopping_history_v2')return {error:null,data:[
+        {actor_id:'anna',actor_name:'Anna',added_at:new Date(Date.now()-60000).toISOString(),clear_scope:'all',include_checked:true},
+        {actor_id:'anna',actor_name:'Anna',added_at:new Date(Date.now()-120000).toISOString(),items:['Eier']}
+      ]};
+      throw new Error('Unexpected history request '+name);
+    }};
+  });
+  await openClear();
+  await clearDialog.getByRole('radio',{name:'Nur manuelle Artikel'}).check();
+  await applyClear();
+  await shoppingMenu.click();
+  await page.getByRole('button',{name:'Verlauf',exact:true}).click();
+  const history=page.getByRole('dialog',{name:'Verlauf'}),historyClose=history.getByRole('button',{name:'Schließen'});
+  await history.getByText('Du hast manuelle Artikel von der Liste entfernt').waitFor();
+  assert(await history.getByText('Anna hat alle Artikel von der Liste entfernt').isVisible());
+  assert(await history.getByText('Anna hat 1 Artikel hinzugefügt').isVisible());
+  assert.equal(await historyClose.evaluate(button=>button.matches(':focus')),false);
+  await page.keyboard.press('Tab');
+  assert.equal(await historyClose.evaluate(button=>button.matches(':focus-visible')),true);
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(()=>document.activeElement===$('#shopping-menu summary')&&!document.body.classList.contains('has-open-dialog'));
+  const recorded=await page.evaluate(async()=>{
+    await syncShoppingClearHistory(authScope,currentHouseholdId);
+    const pending=await pendingShoppingClearHistory(currentHouseholdId);
+    authClient=window.__historyPreviousClient;currentHouseholdId='';
+    return {event:window.__recordedShoppingClear,pending};
+  });
+  assert.equal(recorded.event.p_scope,'manual');
+  assert.equal(recorded.event.p_include_checked,true);
+  assert.deepEqual(recorded.pending,[]);
 
   await page.setViewportSize({width:1440,height:900});await fixture(page);await page.locator('.day-card[data-day-index="1"] .meal-card').first().click();await page.waitForFunction(()=>uiSelectedDay===1);await page.locator('#cooking-entry-dialog').getByRole('button',{name:'Rezept ansehen',exact:true}).click();await page.locator('#recipe-detail-dialog').waitFor({state:'visible'});await page.keyboard.press('Escape');assert(await page.locator('#week-view').isVisible());
   await page.evaluate(()=>openRecipe('ui-0',{from:'dishes'}));await page.locator('#sidebar .nav-item[data-view=cooking]').click();assert(await page.locator('.prepare-hero').isVisible());

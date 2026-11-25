@@ -338,6 +338,29 @@ test('synthetic: social-media footer is not appended to cooking steps',()=>{
   assert.deepEqual(r.steps,['Karotten kochen.']);assert(r.unassigned.some(line=>line.includes('#lecker')));assert(r.unassigned.some(line=>line.includes('example.test')));assert(r.unassigned.includes('@kochprofil'));
 });
 
+test('review identifies interface text by source row and skips it during import',()=>{
+  const {reviewLines}=require('../recipe-import.js');
+  const text=['Rezept: Suppe','Zutaten','200 g Karotten','Rezept speichern','Salz nach Geschmack',
+    'Zubereitung','1. Karotten kochen.','12 Kommentare','Mit Petersilie servieren.',
+    'Tipp: Im Kühlschrank aufbewahren.'].join('\r\n');
+  const recipe=parse(text);
+  assert.deepEqual(recipe.ingredients.map(item=>item.name),['Karotten','Salz']);
+  assert.deepEqual(recipe.steps,['Karotten kochen. Mit Petersilie servieren.']);
+  assert.deepEqual(recipe.unassigned,['Tipp: Im Kühlschrank aufbewahren.']);
+  assert.deepEqual([...reviewLines(text)],[
+    [3,'App- oder Webseitentext'],[7,'App- oder Webseitentext'],[9,'Nicht zugeordnet']
+  ]);
+});
+
+test('review keeps exact source positions for equal lines and flags partial assignments',()=>{
+  const {reviewLines}=require('../recipe-import.js');
+  const text='Rezept: Suppe\nZutaten\n1 Ei\nWerbung\nZubereitung\n1. Verrühren. Tipp: Warm essen.\nWerbung';
+  assert.deepEqual([...reviewLines(text)],[
+    [3,'App- oder Webseitentext'],[5,'Teilweise zugeordnet'],[6,'App- oder Webseitentext']
+  ]);
+  assert.deepEqual([...reviewLines('Rezept: Reis\nZutaten\n150 g Reis\nZubereitung\n1. Den Reis kochen.')],[]);
+});
+
 test('synthetic: text with ingredient heading and explicit portions keeps correct quantities',()=>{
   const r=parse('Nudelsalat\r\nZutaten für 4 Portionen:\r\n- 250g Nudeln\r\n- ½ Gurke\r\n- 1,5 EL Olivenöl\r\nZubereitung:\r\n1. Nudeln kochen.\r\n2. Alles vermischen.');
   assert.equal(r.name,'Nudelsalat');assert.equal(r.servings,4);assert.deepEqual(r.ingredients.map(x=>x.amount),[250,0.5,1.5]);assert.equal(r.steps.length,2);

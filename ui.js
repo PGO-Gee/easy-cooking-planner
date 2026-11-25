@@ -519,8 +519,9 @@ function initializeDesign(){
     const action=event.target.closest('button');
     if(!action)return;
     shopMenu.details.open=false;
-    if(action===manualAction||action===clearAction)shopMenuSummary.focus({preventScroll:true});
+    if(action===manualAction||action===clearAction||action===historyAction)shopMenuSummary.focus({preventScroll:true});
     if(action===clearAction)openClearDialog();
+    if(action===historyAction)void openShoppingHistory();
   });
   document.addEventListener('pointerdown',event=>{
     const open=document.querySelector('.shopping-swipe-row.is-swipe-open');

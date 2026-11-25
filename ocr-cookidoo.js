@@ -121,11 +121,12 @@
   }
 
   async function readAmount(engine,bitmap,crop){
+    if(crop.y1<=crop.y0||crop.x1<=crop.x0)return {};
     const {text}=await readCrop(engine,bitmap,crop,'7',{blocks:false});
     const {columns,...ink}=amountInk(bitmap,crop);
     if(!columns.length)return {};
-    const widest=Math.max(...columns.map(col=>col.y1-col.y0));
-    const candidates=columns.slice(1).filter((col,i)=>col.x0-columns[i].x1>=widest*0.31);
+    const glyphHeight=Math.max(...columns.map(col=>col.y1-col.y0));
+    const candidates=columns.slice(1).filter((col,i)=>col.x0-columns[i].x1>=glyphHeight*0.31);
     const direct=text.match(amountPattern);
     const readPart=(x0,x1,y0=0,y1=crop.y1-crop.y0,whitelist='')=>readCrop(engine,bitmap,
       {x0:crop.x0+x0,x1:crop.x0+x1,y0:crop.y0+y0,y1:crop.y0+y1},'7',{scale:2,whitelist,blocks:false});
@@ -134,8 +135,8 @@
       let unit=(await readPart(unitStart.x0,columns.at(-1).x1)).text;
       // The double-storey g is often read as 8. Its descender sits below the
       // neighbouring digits, and it is separated from them by the unit gap.
-      if(unitStart===columns.at(-1)&&unitStart.y0>prev.y0+widest*0.13&&unitStart.y1>prev.y1+widest*0.16&&
-        unitStart.y1-unitStart.y0>=widest*0.86&&/^[gG238]$/.test(unit))unit='g';
+      if(unitStart===columns.at(-1)&&unitStart.y0>prev.y0+glyphHeight*0.13&&unitStart.y1>prev.y1+glyphHeight*0.16&&
+        unitStart.y1-unitStart.y0>=glyphHeight*0.86&&/^[gG238]$/.test(unit))unit='g';
       if(!('1 '+unit).match(amountPattern)?.[3])continue;
       const fraction=columns[0]===prev?fractionDigits(ink,prev):null;
       let amount='';
@@ -160,9 +161,11 @@
     const {width}=bitmap,{ingredientTop:y0,ingredientBottom:y1}=layout;
     if(y1-y0<width*0.035)return [];
     const {lines}=await readCrop(engine,bitmap,{x0:width*0.159,x1:width*0.785,y0,y1},'11');
-    const alternatives=layout.content.filter(line=>line.words?.[0]?.bbox.x0>=width*0.18&&
-      line.words[0].bbox.x0<width*0.22&&line.words[1]?.bbox.x0>width*0.23&&
-      /^\d+(?:[¼½¾])?$/.test(line.words[1].text));
+    const alternatives=layout.content.filter(({words})=>{
+      const [icon,quantity,name]=words||[];
+      return name&&icon.bbox.x0>=width*0.18&&icon.bbox.x0<width*0.22&&icon.bbox.x1-icon.bbox.x0<width*0.045&&
+        quantity.bbox.x0>width*0.23&&quantity.bbox.x0<width*0.31&&/^\d+(?:[¼½¾])?$/.test(quantity.text)&&/\p{L}/u.test(name.text);
+    });
     const groups=[];
     for(const line of lines){
       const value=clean(line.text);

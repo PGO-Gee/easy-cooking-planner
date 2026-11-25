@@ -15,6 +15,7 @@ KOCHASSISTENT-PLAN.md
 !/supabase/migrations/20261110203532_shopping_history_display_name.sql
 !/supabase/migrations/20261115095535_household_cooking_portions.sql
 !/supabase/migrations/20261118120000_trial_dishes.sql
+!/supabase/migrations/20261125204127_shopping_clear_history.sql
 plan.md
 /.ui-check/
 *.mp4

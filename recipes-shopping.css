@@ -382,7 +382,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .nav-item[hidden]{display:none!important}
 #dish-dialog:focus{outline:none}
 #dish-dialog{box-sizing:border-box;max-height:calc(var(--visual-viewport-height,100dvh) - 24px);overflow:auto;overscroll-behavior:contain}
-.dish-keyboard-open :is(#dish-dialog[open], #recipe-import-dialog:is([data-trial], [data-text-import])[open]) {
+.dish-keyboard-open :is(#dish-dialog[open], #recipe-import-dialog:is([data-trial], [data-text-import], :has(.screenshot-mode))[open]) {
   position: fixed;
   inset-block-start: calc(var(--visual-viewport-top, 0px) + 8px + env(safe-area-inset-top));
   inset-block-end: auto;
@@ -495,7 +495,13 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .recipe-row-pager button:disabled { opacity: .45; }
 
 /* Local recipe text import */
-#recipe-import-dialog { box-sizing: border-box; width: min(560px, calc(100% - 24px)); max-height: calc(var(--visual-viewport-height, 100dvh) - 24px); overflow: auto; overscroll-behavior: contain; }
+#recipe-import-dialog {
+  box-sizing: border-box;
+  width: min(560px, calc(100% - 2 * max(12px, env(safe-area-inset-left), env(safe-area-inset-right))));
+  max-height: calc(var(--visual-viewport-height, 100dvh) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: auto;
+  overscroll-behavior: contain;
+}
 .recipe-import-content { padding: 24px; }
 .recipe-import-content p, .recipe-import-source p, .recipe-import-defaults { color: var(--muted); font-size: 13px; line-height: 1.5; }
 #recipe-import-choice { display: grid; gap: 10px; }
@@ -504,6 +510,19 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .recipe-import-content .close-button { min-width: 44px; min-height: 44px; }
 #recipe-import-input label, .recipe-import-source label { display: block; margin: 12px 0 6px; color: var(--ink); font-weight: 700; }
 #recipe-import-text, #dish-form #dish-import-source-text { display: block; width: 100%; min-height: 150px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); resize: vertical; }
+#recipe-import-text[hidden], #recipe-import-input:has(#recipe-import-text[hidden]) > label,
+.recipe-text-review[hidden], .recipe-text-review-lines[hidden] { display: none; }
+.recipe-text-review { margin: 12px 0; min-width: 0; }
+.recipe-text-review-header, .recipe-text-review-undo { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; }
+.recipe-text-review-header p { margin: 0; font-weight: 700; }
+.recipe-text-review-lines { display: grid; gap: 8px; margin-top: 8px; }
+.recipe-text-review-plain, .recipe-text-review-value { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 16px; line-height: 1.5; }
+.recipe-text-review-plain { padding: 4px 10px; }
+.recipe-text-review-flag { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #bc852f; border-radius: 10px; background: #fff3d7; color: #392614; }
+.recipe-text-review-reason { display: block; font-size: 12px; font-weight: 700; }
+.recipe-text-review-undo { padding: 4px 10px; color: var(--muted); font-size: 14px; }
+.recipe-text-review button { min-width: 44px; max-width: 100%; white-space: normal; }
+.recipe-text-review button:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 .recipe-import-source { margin: 0 0 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
 .recipe-import-source summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-weight: 700; }
 .recipe-import-source pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
@@ -559,7 +578,6 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 #recipe-import-dialog .dialog-head h2, #recipe-import-dialog .eyebrow { overflow-wrap: anywhere; }
 #recipe-import-dialog .dialog-head .close-button { flex: 0 0 44px; }
 #recipe-import-dialog[data-text-import] {
-  width: min(560px, calc(100% - 2 * max(12px, env(safe-area-inset-left), env(safe-area-inset-right))));
   overscroll-behavior-y: none;
 }
 #recipe-import-dialog[data-text-import] .eyebrow,
@@ -578,7 +596,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 .dish-keyboard-open #recipe-import-dialog[data-text-import] .dialog-head { margin-bottom: 4px; }
 .dish-keyboard-open #recipe-import-dialog[data-text-import] #recipe-import-hint { display: none; }
 .dish-keyboard-open #recipe-import-dialog[data-text-import] .dialog-actions { margin-top: 6px; padding-top: 4px; }
-.dish-keyboard-open #recipe-import-dialog[data-text-import] #recipe-import-text {
+.dish-keyboard-open #recipe-import-dialog :is([data-text-import] #recipe-import-text, .screenshot-mode > #recipe-import-text) {
   min-height: 64px;
   height: clamp(64px, calc(var(--visual-viewport-height, 100dvh) - 145px - env(safe-area-inset-top) - env(safe-area-inset-bottom)), 240px);
   padding: 8px 10px;
@@ -586,6 +604,9 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 }
 @media (max-width: 600px) {
   #recipe-import-input .dialog-actions { width: auto; margin: 12px -16px -16px; padding: 12px 16px max(12px, env(safe-area-inset-bottom)); }
+  #recipe-import-dialog:has(.screenshot-mode) { scroll-padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+  #recipe-import-dialog:has(.screenshot-mode) .recipe-import-content { padding-bottom: 0; }
+  #recipe-import-input.screenshot-mode .dialog-actions { bottom: 0; margin-bottom: 0; }
 }
 
 #recipe-import-input.screenshot-mode > textarea { width: 100%; box-sizing: border-box; font-size: 16px; }
@@ -622,6 +643,7 @@ html.design.keyboard-open #shopping-view:has(.shopping-row-editor:focus-within) 
 }
 .shopping-history-content { padding: 16px 20px 20px; overflow-wrap: anywhere; }
 .shopping-history-content .dialog-head { align-items: center; margin-bottom: 8px; }
+html.design #shopping-history-title:focus { outline: none; }
 .shopping-history-content .close-button { width: 44px; height: 44px; }
 #shopping-history-status { margin: 0; }
 #shopping-history-list { margin: 0; padding: 0; list-style: none; }

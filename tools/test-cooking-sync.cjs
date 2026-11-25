@@ -7,6 +7,7 @@ function fn(file,name){const source=read(file),start=source.indexOf('create or r
 (async()=>{const db=new PGlite();try{
  await db.exec(`create role anon;create role authenticated;create schema auth;create schema wochentisch_private;
  create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+ create table auth.users(id uuid primary key,raw_user_meta_data jsonb);
  create table public.households(id uuid primary key default gen_random_uuid(),name text,created_by uuid,updated_at timestamptz default now());
  create table public.household_members(household_id uuid references households,user_id uuid,primary key(household_id,user_id));
  create function public.is_household_member(uuid) returns boolean language sql stable as $$ select exists(select 1 from public.household_members where household_id=$1 and user_id=auth.uid()) $$;
@@ -27,4 +28,9 @@ function fn(file,name){const source=read(file),start=source.indexOf('create or r
  console.log('Migration installed in isolated PostgreSQL.');
  await db.exec(read('tests/sync-cooking-v3.sql'));
  console.log('v3 SQL transactions, trial dishes, retry, conflicts, legacy protection, validation and access checks passed.');
+ for(const migration of ['20261110201227_shopping_history.sql','20261110203532_shopping_history_display_name.sql','20261125204127_shopping_clear_history.sql']){
+   await db.exec(read('supabase/migrations/'+migration));
+ }
+ await db.exec(read('tests/shopping-clear-history.sql'));
+ console.log('Shopping history attribution, week filtering, request retries and household access passed.');
  }finally{await db.close()}})().catch(error=>{console.error(error);process.exitCode=1});

@@ -15,11 +15,10 @@ self.onmessage=async ({data})=>{
         logger:progress=>self.postMessage({type:'progress',progress}),
         errorHandler:()=>self.postMessage({type:'error'})
       });
-      await engine.setParameters({tessedit_pageseg_mode:'3'});
       self.postMessage({type:'ready'});
     }else if(data.type==='recognize'){
       const image=new Uint8Array(data.image);
-      const result=await engine.recognize(image,{}, {text:true,blocks:true});
+      const result=await engine.recognize(image,{tessedit_pageseg_mode:'3',tessedit_char_whitelist:''},{text:true,blocks:true});
       let page;
       try{page=await WochentischOCRCookidoo.recognize(engine,image,result.data,data.width,data.height)}
       catch{/* The original OCR still works when the browser cannot prepare the additional crops. */}

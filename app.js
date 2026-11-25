@@ -184,12 +184,13 @@ function syncVisualViewport(){
   document.documentElement.style.setProperty('--visual-viewport-top',`${viewport.offsetTop}px`);
   const focused=document.activeElement;
   const textImportFocus=focused?.closest('#recipe-import-dialog[data-text-import][open]');
+  const screenshotEditorFocus=focused?.matches('#recipe-import-input.screenshot-mode > textarea');
   const isEditable=focused?.matches('input, textarea');
   const dishEditor=isEditable&&focused.closest('#dish-dialog[open]');
   const trialEditorFocus=isEditable&&focused.closest('#recipe-import-dialog[data-trial][open]');
   const viewportReduction=window.innerHeight-viewport.height;
-  const keyboardOpen=viewportReduction>(textImportFocus||dishEditor?100:150);
-  document.documentElement.classList.toggle('dish-keyboard-open',keyboardOpen&&Boolean(textImportFocus||dishEditor||trialEditorFocus));
+  const keyboardOpen=viewportReduction>(textImportFocus||screenshotEditorFocus||dishEditor?100:150);
+  document.documentElement.classList.toggle('dish-keyboard-open',keyboardOpen&&Boolean(textImportFocus||screenshotEditorFocus||dishEditor||trialEditorFocus));
   const heightChanged=lastVisualViewportHeight!==viewport.height;lastVisualViewportHeight=viewport.height;
   const topChanged=lastVisualViewportTop!==viewport.offsetTop;lastVisualViewportTop=viewport.offsetTop;
   const dishFieldChanged=lastDishEditorField!==(dishEditor?focused:null);
@@ -198,6 +199,9 @@ function syncVisualViewport(){
     if(document.activeElement===focused)revealDishEditorField(dishEditor,focused);
   });
   if(heightChanged&&trialEditorFocus&&keyboardOpen)requestAnimationFrame(()=>focused.scrollIntoView({block:'nearest',inline:'nearest'}));
+  if((heightChanged||topChanged)&&screenshotEditorFocus&&keyboardOpen)requestAnimationFrame(()=>{
+    if(document.activeElement===focused)focused.scrollIntoView({block:'nearest',inline:'nearest'});
+  });
   if(heightChanged&&focused?.matches('.shopping-row-editor input'))requestAnimationFrame(()=>revealShoppingEditorField(focused));
   if(heightChanged&&focused?.id==='choose-dish-search'&&$('#choose-dialog').open)requestAnimationFrame(revealChooserResults);
 }
@@ -262,7 +266,7 @@ function setupNativeDialog(dialog,{restoreFocus=false,revealImmediately=false}={
   });
 }
 document.querySelectorAll('dialog').forEach(dialog=>{
-  setupNativeDialog(dialog,{revealImmediately:dialog.id==='pantry-dialog'});
+  setupNativeDialog(dialog,{revealImmediately:dialog.id==='pantry-dialog',restoreFocus:dialog.id==='shopping-history-dialog'});
   dialog.addEventListener('close',()=>{if(dialog.id==='dish-dialog'&&!dialog.open)document.documentElement.classList.remove('dish-keyboard-open')});
   dialog.addEventListener('focusin',event=>{
     if(!event.target.matches('input,select,textarea'))return;
@@ -988,6 +992,8 @@ async function syncStateToCloud({notify=false}={}){
   const pending=await window.WochentischStore.get('records',coordinator.keys.pending);
   if(scope!==authScope||householdId!==currentHouseholdId)return;
   if(pending||hasCloudChanges(cloudBaseState,state))scheduleCloudSync();
+  try{await syncShoppingClearHistory(scope,householdId)}
+  catch(error){console.warn('Aktivität im Einkaufsverlauf bleibt zur Synchronisierung vorgemerkt:',error)}
 }
 function scheduleCloudSync({notify=false}={}){
   if(!cloudReady||loadingCloudState||cloudStateOverrideInProgress||!navigator.onLine)return;
@@ -2592,7 +2598,7 @@ function applyRecipeImport(result,source,notice=''){
 }
 const recipeImportDialog=$('#recipe-import-dialog'),recipeImportInput=$('#recipe-import-input'),recipeImportText=$('#recipe-import-text'),recipeImportError=$('#recipe-import-error');let creationDefaultType='meal';
 let trialImportTarget=null;
-const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze')});
+const fullRecipeOCR=window.WochentischOCRUI.attach({before:recipeImportInput.querySelector('label'),text:recipeImportText,parseButton:$('#recipe-import-analyze'),review:()=>!recipeImportDialog.hasAttribute('data-trial')});
 function updateRecipeImportAction(){
   const screenshotMode=recipeImportInput.classList.contains('screenshot-mode');
   $('#recipe-import-analyze').disabled=fullRecipeOCR.isBusy()||!recipeImportText.value.trim();
@@ -2660,7 +2666,7 @@ $('#recipe-import-text-choice').addEventListener('click',()=>{
   $('#recipe-import-choice').hidden=true;
   recipeImportInput.hidden=false;
   updateRecipeImportAction();
-  recipeImportText.focus({preventScroll:true});
+  (recipeImportText.hidden?recipeImportInput.querySelector('.recipe-text-review-header button'):recipeImportText).focus({preventScroll:true});
 });
 $('#recipe-import-screenshot-choice').addEventListener('click',()=>{recipeImportInput.classList.add('screenshot-mode');$('#recipe-import-choice').hidden=true;recipeImportInput.hidden=false;fullRecipeOCR.panel.hidden=false;fullRecipeOCR.panel.open=true;updateRecipeImportAction();fullRecipeOCR.panel.querySelector('input').focus()});
 $('#recipe-import-back').addEventListener('click',()=>{
@@ -2680,7 +2686,7 @@ $('#recipe-import-analyze').addEventListener('click',()=>{
   if(targetChanged||(message&&!trialTitleOnly)){
     recipeImportError.textContent=targetChanged?'Der Haushalt wurde inzwischen gewechselt. Wähle den Tag erneut aus.':message;
     recipeImportError.hidden=false;
-    if(recipeImportInput.classList.contains('screenshot-mode')){recipeImportError.tabIndex=-1;recipeImportError.focus()}
+    if(recipeImportInput.classList.contains('screenshot-mode')||recipeImportText.hidden){recipeImportError.tabIndex=-1;recipeImportError.focus()}
     else recipeImportText.focus();
     return
   }
@@ -3134,39 +3140,80 @@ function undoShoppingCheck(action){
   showToast(`${action.name} ist wieder auf der Liste.`);
 }
 let shoppingHistoryLoad=0;
+function shoppingClearHistoryPrefix(householdId){
+  return `shopping-clear:${currentUserId}:${householdId}:`;
+}
+async function pendingShoppingClearHistory(householdId){
+  if(!offlineStoreReady||!currentUserId||!householdId)return [];
+  const store=window.WochentischStore;
+  const keys=await store.getKeys('records',shoppingClearHistoryPrefix(householdId));
+  const events=await Promise.all(keys.map(async key=>({key,args:await store.get('records',key)})));
+  return events.filter(({args})=>args);
+}
+async function syncShoppingClearHistory(scope,householdId){
+  await offlineStoreWriteQueue;
+  if(scope!==authScope||householdId!==currentHouseholdId)return;
+  for(const {key,args} of await pendingShoppingClearHistory(householdId)){
+    if(scope!==authScope||householdId!==currentHouseholdId)return;
+    const {error}=await authClient.rpc('record_shopping_clear',args);
+    if(error){
+      if(error.code==='PGRST202')return;
+      throw error;
+    }
+    await window.WochentischStore.remove('records',key);
+  }
+}
 async function openShoppingHistory(){
   const dialog=$('#shopping-history-dialog'),status=$('#shopping-history-status'),list=$('#shopping-history-list');
-  const load=++shoppingHistoryLoad,scope=authScope,householdId=currentHouseholdId;
+  const load=++shoppingHistoryLoad,scope=authScope,householdId=currentHouseholdId||cookingHouseholdScopeId;
   list.replaceChildren();
   status.textContent='Wird geladen …';
   dialog.showModal();
-  if(!navigator.onLine){status.textContent='Verlauf offline nicht verfügbar.';return}
-  if(!authClient||!householdId){status.textContent='Verlauf gerade nicht verfügbar.';return}
+  $('#shopping-history-title').focus({preventScroll:true});
   const weeks=[...new Set(rangeDates().map(date=>keyFor(mondayFor(date))))];
-  const {data,error}=await authClient.rpc('read_shopping_history',{p_household_id:householdId,p_weeks:weeks});
-  if(!dialog.open||load!==shoppingHistoryLoad||scope!==authScope||householdId!==currentHouseholdId)return;
-  if(error){status.textContent='Verlauf gerade nicht verfügbar.';return}
-  status.textContent=data?.length?'':'Noch keine Ergänzungen.';
+  const local=await offlineStoreWriteQueue.then(()=>pendingShoppingClearHistory(householdId)).catch(()=>[]);
+  const stillOpen=()=>dialog.open&&load===shoppingHistoryLoad&&scope===authScope&&householdId===(currentHouseholdId||cookingHouseholdScopeId);
+  if(!stillOpen())return;
+  let data=[],message='Verlauf gerade nicht verfügbar.';
+  if(!navigator.onLine)message='Der Haushaltsverlauf ist offline nicht verfügbar.';
+  else if(authClient&&currentHouseholdId){
+    const args={p_household_id:householdId,p_weeks:weeks};
+    let result=await authClient.rpc('read_shopping_history_v2',args);
+    if(result.error?.code==='PGRST202')result=await authClient.rpc('read_shopping_history',args);
+    if(!stillOpen())return;
+    if(!result.error){data=result.data||[];message=''}
+  }
+  const synced=new Set(data.map(entry=>entry.event_id));
+  const pending=local.filter(({args})=>!synced.has(args.p_request_id)&&args.p_weeks.some(week=>weeks.includes(week)))
+    .map(({args})=>({actor_id:currentUserId,added_at:args.p_cleared_at,clear_scope:args.p_scope,include_checked:args.p_include_checked}));
+  const entries=[...pending,...data].sort((a,b)=>Date.parse(b.added_at)-Date.parse(a.added_at)).slice(0,30);
+  status.textContent=message||(entries.length?'':'Noch keine Aktivitäten.');
   const groups=[];
-  for(const entry of data||[]){
+  for(const entry of entries){
     const date=new Date(entry.added_at),previous=groups.at(-1);
-    if(previous?.actorId===entry.actor_id&&previous.date-date<=5*60*1000)previous.items.push(...entry.items);
-    else groups.push({actorId:entry.actor_id,actorName:entry.actor_name,date,items:[...entry.items]});
+    if(!entry.clear_scope&&previous&&!previous.clearScope&&previous.actorId===entry.actor_id&&previous.date-date<=5*60*1000)previous.items.push(...entry.items);
+    else groups.push({actorId:entry.actor_id,actorName:entry.actor_name,date,items:[...(entry.items||[])],clearScope:entry.clear_scope,includeChecked:entry.include_checked});
   }
   const formatDate=new Intl.DateTimeFormat('de-DE',{dateStyle:'short',timeStyle:'short'});
-  for(const {actorId,actorName,date,items} of groups){
+  const clearLabels={manual:'manuelle Artikel',planned:'Artikel aus dem Wochenplan',all:'alle Artikel'};
+  for(const {actorId,actorName,date,items,clearScope,includeChecked} of groups){
     const row=document.createElement('li'),title=document.createElement('strong');
-    const time=document.createElement('time'),names=document.createElement('p');
+    const time=document.createElement('time');
     const who=actorId===currentUserId?'Du hast':`${actorName||'Haushaltsmitglied'} hat`;
-    title.textContent=`${who} ${items.length} Artikel hinzugefügt`;
+    title.textContent=clearScope
+      ?`${who} ${includeChecked?clearLabels[clearScope]:clearScope==='all'?'alle offenen Artikel':`offene ${clearLabels[clearScope]}`} von der Liste entfernt`
+      :`${who} ${items.length} Artikel hinzugefügt`;
     time.dateTime=date.toISOString();
     time.textContent=formatDate.format(date);
-    names.textContent=items.join(', ');
-    row.append(title,time,names);
+    row.append(title,time);
+    if(items.length){
+      const names=document.createElement('p');
+      names.textContent=items.join(', ');
+      row.append(names);
+    }
     list.append(row);
   }
 }
-$('#shopping-history-open').addEventListener('click',openShoppingHistory);
 function clearShoppingList(source,includeChecked){
   const {counts}=shoppingListItems(),removed=[];
   for(const [key,item] of counts){
@@ -3174,6 +3221,14 @@ function clearShoppingList(source,includeChecked){
     removed.push(...removeShoppingItemSources(key,item,source));
   }
   if(!removed.length){showToast('Keine Artikel in dieser Auswahl.');return}
+  const householdId=currentHouseholdId||cookingHouseholdScopeId;
+  if(currentUserId&&householdId&&offlineStoreReady){
+    const requestId=newId();
+    enqueueOfflineStoreWrite('records',shoppingClearHistoryPrefix(householdId)+requestId,{
+      p_household_id:householdId,p_request_id:requestId,p_scope:source,p_include_checked:includeChecked,
+      p_weeks:[...new Set(removed.map(({week})=>week))],p_cleared_at:new Date().toISOString()
+    });
+  }
   save();renderShoppingList();
   showToast('Artikel entfernt.',{actionLabel:'Rückgängig',duration:6500,onAction:()=>{
     if(!restoreShoppingItemSources(removed))return;
